@@ -18,7 +18,7 @@
  */
 const std::string CLIENT_NAME("Satoshi");
 
-#define CLIENT_VERSION_SUFFIX " Anisoptera"
+#define CLIENT_VERSION_SUFFIX " Grimpoteuthis"
 
 #ifdef HAVE_BUILD_INFO
 #include <obj/build.h>
