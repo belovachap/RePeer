@@ -60,7 +60,6 @@ public:
         SpendZeroConfChange,    // bool
         SplitCoins,             // bool
         CombineCoins,           // bool
-        CheckGithub,            // bool
         MaxMintingUtxos,        // int
         Listen,                 // bool
         Server,                 // bool

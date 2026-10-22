@@ -202,7 +202,6 @@ void OptionsDialog::setModel(OptionsModel *_model)
     connect(ui->spendZeroConfChange, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->splitCoins, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->combineCoins, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
-    connect(ui->checkGithub, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->maxMintingUtxos, &QLineEdit::textChanged, [this]{ showRestartWarning(); });
     /* Network */
     connect(ui->allowIncoming, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
@@ -236,7 +235,6 @@ void OptionsDialog::setMapper()
     mapper->addMapping(ui->spendZeroConfChange, OptionsModel::SpendZeroConfChange);
     mapper->addMapping(ui->splitCoins, OptionsModel::SplitCoins);
     mapper->addMapping(ui->combineCoins, OptionsModel::CombineCoins);
-    mapper->addMapping(ui->checkGithub, OptionsModel::CheckGithub);
     mapper->addMapping(ui->maxMintingUtxos, OptionsModel::MaxMintingUtxos);
     mapper->addMapping(ui->coinControlFeatures, OptionsModel::CoinControlFeatures);
     mapper->addMapping(ui->subFeeFromAmount, OptionsModel::SubFeeFromAmount);

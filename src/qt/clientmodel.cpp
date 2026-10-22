@@ -72,8 +72,6 @@ ClientModel::ClientModel(interfaces::Node& node, OptionsModel *_optionsModel, QO
     });
 
     subscribeToCoreSignals();
-
-    last_checked_time = 0;
 }
 
 ClientModel::~ClientModel()
@@ -305,45 +303,4 @@ bool ClientModel::getProxyInfo(std::string& ip_port) const
       return true;
     }
     return false;
-}
-
-void ClientModel::checkGithub() {
-    auto now = std::chrono::system_clock::now();
-    std::time_t current_time = std::chrono::system_clock::to_time_t(now);
-    std::tm current_date = *std::localtime(&current_time);
-    std::tm last_date = *std::localtime(&last_checked_time);
-
-    if (current_date.tm_yday != last_date.tm_yday) {
-        QNetworkAccessManager* nam = new QNetworkAccessManager(this);
-        connect(nam, &QNetworkAccessManager::finished, this, &ClientModel::onResult);
-        QUrl url("http://mirror.peercoin.net/latest_release.json");
-        nam->get(QNetworkRequest(url));
-        last_checked_time = current_time;
-    }
-}
-
-void ClientModel::onResult(QNetworkReply *reply) {
-    if(reply->error() == QNetworkReply::NoError) {
-        std::regex versionRgx("v([0-9]+).([0-9]+).([0-9]+)ppc");
-        std::smatch matches;
-        int newVersion=0;
-        QByteArray result = reply->readAll();
-        QJsonDocument jsonResponse = QJsonDocument::fromJson(result);
-        QJsonObject obj = jsonResponse.object();
-        std::string tag_name = obj["tag_name"].toString().toStdString();
-        if(std::regex_search(tag_name, matches, versionRgx) && matches.size()==4) {
-            newVersion = std::stoi(matches[1].str()) * 1000000 + std::stoi(matches[2]) * 10000 + std::stoi(matches[3]) * 100;
-            if (newVersion > PEERCOIN_VERSION) {
-                char versionInfo[200];
-                snprintf(versionInfo, 200, "This client is not the most recent version available, please update to release %s from github or disable this check in settings.", obj["tag_name"].toString().toUtf8().constData());
-                std::string strVersionInfo = versionInfo;
-                SetMiscWarning(Untranslated(strVersionInfo));
-                Q_EMIT alertsChanged(getStatusBarWarnings());
-            }
-        }
-    }
-    else {
-        LogPrintf("Network Error during latest github version fetch: %s\n", qPrintable(reply->errorString()));
-    }
-    reply->deleteLater();
 }

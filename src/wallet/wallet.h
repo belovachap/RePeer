@@ -98,8 +98,6 @@ static const bool DEFAULT_SPEND_ZEROCONF_CHANGE = true;
 static const bool DEFAULT_SPLIT_COINS = true;
 //! Default for -combinecoins
 static const bool DEFAULT_COMBINE_COINS = true;
-//! Default for -checkgithub
-static const bool DEFAULT_CHECK_GITHUB = true;
 static const int MAX_COINSTAKE_INPUTS = 4;
 static const CAmount MIN_TARGET_OUTPUT_AMOUNT = 10*COIN;
 static const int RECOMBINE_DIVISOR = 3;
@@ -641,7 +639,6 @@ public:
     bool m_spend_zero_conf_change{DEFAULT_SPEND_ZEROCONF_CHANGE};
     bool m_split_coins{DEFAULT_SPLIT_COINS};
     bool m_combine_coins{DEFAULT_COMBINE_COINS};
-    bool m_check_github{DEFAULT_CHECK_GITHUB};
 
     /** When the actual feerate is less than the consolidate feerate, we will tend to make transactions which
      * consolidate inputs. When the actual feerate is greater than the consolidate feerate, we will tend to make

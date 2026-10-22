@@ -3104,9 +3104,6 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
     walletInstance->m_combine_coins = args.GetBoolArg("-combinecoins", DEFAULT_COMBINE_COINS);
     walletInstance->WalletLogPrintf("Wallet will%s combine coins during minting\n", walletInstance->m_combine_coins? "" : " not");
 
-    walletInstance->m_check_github = args.GetBoolArg("-checkgithub", DEFAULT_CHECK_GITHUB);
-    walletInstance->WalletLogPrintf("Wallet will%s check github for newer version on startup\n", walletInstance->m_check_github? "" : " not");
-
     walletInstance->WalletLogPrintf("Wallet completed loading in %15dms\n", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
 
     // Try to top up keypool. No-op if the wallet is locked.
