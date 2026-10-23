@@ -38,10 +38,8 @@
 
 #include <sys/types.h>
 
-#ifndef WIN32
 #include <signal.h>
 #include <sys/wait.h>
-#endif
 
 #include <boost/test/unit_test.hpp>
 
@@ -75,12 +73,9 @@ BOOST_AUTO_TEST_CASE(util_datadir)
     args.ClearPathCache();
     BOOST_CHECK_EQUAL(dd_norm, args.GetDataDirBase());
 
-#ifndef WIN32
-    // Windows does not consider "datadir/.//" to be a valid directory path.
     args.ForceSetArg("-datadir", fs::PathToString(dd_norm) + "/.//");
     args.ClearPathCache();
     BOOST_CHECK_EQUAL(dd_norm, args.GetDataDirBase());
-#endif
 }
 
 namespace {
@@ -1125,7 +1120,6 @@ static void TestOtherThread(fs::path dirname, fs::path lockname, bool *result)
     *result = LockDirectory(dirname, lockname);
 }
 
-#ifndef WIN32 // Cannot do this test on WIN32 due to lack of fork()
 static constexpr char LockCommand = 'L';
 static constexpr char UnlockCommand = 'U';
 static constexpr char ExitCommand = 'X';
@@ -1156,13 +1150,11 @@ static constexpr char ExitCommand = 'X';
         }
     }
 }
-#endif
 
 BOOST_AUTO_TEST_CASE(test_LockDirectory)
 {
     fs::path dirname = m_args.GetDataDirBase() / "lock_dir";
     const fs::path lockname = ".lock";
-#ifndef WIN32
     // Revert SIGCHLD to default, otherwise boost.test will catch and fail on
     // it: there is BOOST_TEST_IGNORE_SIGCHLD but that only works when defined
     // at build-time of the boost library
@@ -1179,7 +1171,6 @@ BOOST_AUTO_TEST_CASE(test_LockDirectory)
         TestOtherProcess(dirname, lockname, fd[0]);
     }
     BOOST_CHECK_EQUAL(close(fd[0]), 0); // Parent: close child end
-#endif
     // Lock on non-existent directory should fail
     BOOST_CHECK_EQUAL(LockDirectory(dirname, lockname), false);
 
@@ -1199,7 +1190,7 @@ BOOST_AUTO_TEST_CASE(test_LockDirectory)
     std::thread thr(TestOtherThread, dirname, lockname, &threadresult);
     thr.join();
     BOOST_CHECK_EQUAL(threadresult, true);
-#ifndef WIN32
+
     // Try to acquire lock in child process while we're holding it, this should fail.
     char ch;
     BOOST_CHECK_EQUAL(write(fd[1], &LockCommand, 1), 1);
@@ -1240,7 +1231,7 @@ BOOST_AUTO_TEST_CASE(test_LockDirectory)
     // Restore SIGCHLD
     signal(SIGCHLD, old_handler);
     BOOST_CHECK_EQUAL(close(fd[1]), 0); // Close our side of the socketpair
-#endif
+
     // Clean up
     ReleaseDirectoryLocks();
     fs::remove_all(dirname);

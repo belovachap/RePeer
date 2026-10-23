@@ -159,12 +159,8 @@ static inline std::string PathToString(const path& path)
     // POSIX, u8string/u8path functions are not safe to use because paths are
     // not always valid UTF-8, so plain string methods which do not transform
     // the path there are used.
-#ifdef WIN32
-    return path.u8string();
-#else
     static_assert(std::is_same<path::string_type, std::string>::value, "PathToString not implemented on this platform");
     return path.std::filesystem::path::string();
-#endif
 }
 
 /**
@@ -172,11 +168,7 @@ static inline std::string PathToString(const path& path)
  */
 static inline path PathFromString(const std::string& string)
 {
-#ifdef WIN32
-    return u8path(string);
-#else
     return std::filesystem::path(string);
-#endif
 }
 
 /**
@@ -231,11 +223,7 @@ namespace fsbridge {
 
     private:
         std::string reason;
-#ifndef WIN32
         int fd = -1;
-#else
-        void* hFile = (void*)-1; // INVALID_HANDLE_VALUE
-#endif
     };
 
     std::string get_filesystem_error_message(const fs::filesystem_error& e);

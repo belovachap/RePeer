@@ -24,7 +24,6 @@
 #include <system_error>
 #include <utility>
 
-#ifndef WIN32
 // for posix_fallocate, in configure.ac we check if it is present after this
 #ifdef __linux__
 
@@ -39,10 +38,6 @@
 #include <fcntl.h>
 #include <sys/resource.h>
 #include <unistd.h>
-#else
-#include <io.h> /* For _get_osfhandle, _chsize */
-#include <shlobj.h> /* For SHGetSpecialFolderPathW */
-#endif // WIN32
 
 /** Mutex to protect dir_locks. */
 static GlobalMutex cs_dir_locks;
@@ -123,13 +118,7 @@ bool FileCommit(FILE* file)
         LogPrintf("%s: fflush failed: %d\n", __func__, errno);
         return false;
     }
-#ifdef WIN32
-    HANDLE hFile = (HANDLE)_get_osfhandle(_fileno(file));
-    if (FlushFileBuffers(hFile) == 0) {
-        LogPrintf("%s: FlushFileBuffers failed: %d\n", __func__, GetLastError());
-        return false;
-    }
-#elif defined(MAC_OSX) && defined(F_FULLFSYNC)
+#if defined(MAC_OSX) && defined(F_FULLFSYNC)
     if (fcntl(fileno(file), F_FULLFSYNC, 0) == -1) { // Manpage says "value other than -1" is returned on success
         LogPrintf("%s: fcntl F_FULLFSYNC failed: %d\n", __func__, errno);
         return false;
@@ -150,22 +139,16 @@ bool FileCommit(FILE* file)
 
 void DirectoryCommit(const fs::path& dirname)
 {
-#ifndef WIN32
     FILE* file = fsbridge::fopen(dirname, "r");
     if (file) {
         fsync(fileno(file));
         fclose(file);
     }
-#endif
 }
 
 bool TruncateFile(FILE* file, unsigned int length)
 {
-#if defined(WIN32)
-    return _chsize(_fileno(file), length) == 0;
-#else
     return ftruncate(fileno(file), length) == 0;
-#endif
 }
 
 /**
@@ -174,9 +157,6 @@ bool TruncateFile(FILE* file, unsigned int length)
  */
 int RaiseFileDescriptorLimit(int nMinFD)
 {
-#if defined(WIN32)
-    return 2048;
-#else
     struct rlimit limitFD;
     if (getrlimit(RLIMIT_NOFILE, &limitFD) != -1) {
         if (limitFD.rlim_cur < (rlim_t)nMinFD) {
@@ -189,7 +169,6 @@ int RaiseFileDescriptorLimit(int nMinFD)
         return limitFD.rlim_cur;
     }
     return nMinFD; // getrlimit failed, assume it's fine
-#endif
 }
 
 /**
@@ -198,16 +177,7 @@ int RaiseFileDescriptorLimit(int nMinFD)
  */
 void AllocateFileRange(FILE* file, unsigned int offset, unsigned int length)
 {
-#if defined(WIN32)
-    // Windows-specific version
-    HANDLE hFile = (HANDLE)_get_osfhandle(_fileno(file));
-    LARGE_INTEGER nFileSize;
-    int64_t nEndPos = (int64_t)offset + length;
-    nFileSize.u.LowPart = nEndPos & 0xFFFFFFFF;
-    nFileSize.u.HighPart = nEndPos >> 32;
-    SetFilePointerEx(hFile, nFileSize, 0, FILE_BEGIN);
-    SetEndOfFile(hFile);
-#elif defined(MAC_OSX)
+#if defined(MAC_OSX)
     // OSX specific version
     // NOTE: Contrary to other OS versions, the OSX version assumes that
     // NOTE: offset is the size of the file.
@@ -243,20 +213,6 @@ void AllocateFileRange(FILE* file, unsigned int offset, unsigned int length)
     }
 #endif
 }
-
-#ifdef WIN32
-fs::path GetSpecialFolderPath(int nFolder, bool fCreate)
-{
-    WCHAR pszPath[MAX_PATH] = L"";
-
-    if (SHGetSpecialFolderPathW(nullptr, pszPath, nFolder, fCreate)) {
-        return fs::path(pszPath);
-    }
-
-    LogPrintf("SHGetSpecialFolderPathW() failed, could not obtain requested path.\n");
-    return fs::path("");
-}
-#endif
 
 bool RenameOver(fs::path src, fs::path dest)
 {

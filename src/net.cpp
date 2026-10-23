@@ -36,11 +36,7 @@
 #include <util/trace.h>
 #include <util/translation.h>
 
-#ifdef WIN32
-#include <string.h>
-#else
 #include <fcntl.h>
-#endif
 
 #if HAVE_DECL_GETIFADDRS && HAVE_DECL_FREEIFADDRS
 #include <ifaddrs.h>
@@ -2163,13 +2159,6 @@ bool CConnman::BindListenPort(const CService& addrBind, bilingual_str& strError,
             LogPrintf("%s\n", strError.original);
         }
 #endif
-#ifdef WIN32
-        int nProtLevel = PROTECTION_LEVEL_UNRESTRICTED;
-        if (sock->SetSockOpt(IPPROTO_IPV6, IPV6_PROTECTION_LEVEL, (const char*)&nProtLevel, sizeof(int)) == SOCKET_ERROR) {
-            strError = strprintf(Untranslated("Error setting IPV6_PROTECTION_LEVEL on socket: %s, continuing anyway"), NetworkErrorString(WSAGetLastError()));
-            LogPrintf("%s\n", strError.original);
-        }
-#endif
     }
 
     if (sock->Bind(reinterpret_cast<struct sockaddr*>(&sockaddr), len) == SOCKET_ERROR) {
@@ -2200,22 +2189,7 @@ void Discover()
     if (!fDiscover)
         return;
 
-#ifdef WIN32
-    // Get local host IP
-    char pszHostName[256] = "";
-    if (gethostname(pszHostName, sizeof(pszHostName)) != SOCKET_ERROR)
-    {
-        std::vector<CNetAddr> vaddr;
-        if (LookupHost(pszHostName, vaddr, 0, true))
-        {
-            for (const CNetAddr &addr : vaddr)
-            {
-                if (AddLocal(addr, LOCAL_IF))
-                    LogPrintf("%s: %s - %s\n", __func__, pszHostName, addr.ToStringAddr());
-            }
-        }
-    }
-#elif (HAVE_DECL_GETIFADDRS && HAVE_DECL_FREEIFADDRS)
+#if HAVE_DECL_GETIFADDRS && HAVE_DECL_FREEIFADDRS
     // Get local host ip
     struct ifaddrs* myaddrs;
     if (getifaddrs(&myaddrs) == 0)
@@ -2429,10 +2403,6 @@ public:
 
     ~CNetCleanup()
     {
-#ifdef WIN32
-        // Shutdown Windows Sockets
-        WSACleanup();
-#endif
     }
 };
 static CNetCleanup instance_of_cnetcleanup;

@@ -7,8 +7,6 @@
 #include <config/bitcoin-config.h>
 #endif
 
-#ifndef WIN32
-
 #include <errno.h>
 #include <fcntl.h>
 #include <optional>
@@ -108,4 +106,3 @@ void TokenPipe::Close()
     m_fds[0] = m_fds[1] = -1;
 }
 
-#endif // WIN32

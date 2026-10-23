@@ -16,9 +16,6 @@
 
 #include <assert.h>
 #include <atomic>
-#ifdef WIN32
-#include <condition_variable>
-#endif
 
 bool AbortNode(const std::string& strMessage, bilingual_str user_message)
 {
@@ -33,35 +30,22 @@ bool AbortNode(const std::string& strMessage, bilingual_str user_message)
 }
 
 static std::atomic<bool> fRequestShutdown(false);
-#ifdef WIN32
-/** On windows it is possible to simply use a condition variable. */
-std::mutex g_shutdown_mutex;
-std::condition_variable g_shutdown_cv;
-#else
 /** On UNIX-like operating systems use the self-pipe trick.
  */
 static TokenPipeEnd g_shutdown_r;
 static TokenPipeEnd g_shutdown_w;
-#endif
 
 bool InitShutdownState()
 {
-#ifndef WIN32
     std::optional<TokenPipe> pipe = TokenPipe::Make();
     if (!pipe) return false;
     g_shutdown_r = pipe->TakeReadEnd();
     g_shutdown_w = pipe->TakeWriteEnd();
-#endif
     return true;
 }
 
 void StartShutdown()
 {
-#ifdef WIN32
-    std::unique_lock<std::mutex> lk(g_shutdown_mutex);
-    fRequestShutdown = true;
-    g_shutdown_cv.notify_one();
-#else
     // This must be reentrant and safe for calling in a signal handler, so using a condition variable is not safe.
     // Make sure that the token is only written once even if multiple threads call this concurrently or in
     // case of a reentrant signal.
@@ -73,7 +57,6 @@ void StartShutdown()
             assert(0);
         }
     }
-#endif
 }
 
 void AbortShutdown()
@@ -93,14 +76,9 @@ bool ShutdownRequested()
 
 void WaitForShutdown()
 {
-#ifdef WIN32
-    std::unique_lock<std::mutex> lk(g_shutdown_mutex);
-    g_shutdown_cv.wait(lk, [] { return fRequestShutdown.load(); });
-#else
     int res = g_shutdown_r.TokenRead();
     if (res != 'x') {
         LogPrintf("Reading shutdown token failed\n");
         assert(0);
     }
-#endif
 }

@@ -34,9 +34,7 @@
 #include <string>
 #include <tuple>
 
-#ifndef WIN32
 #include <unistd.h>
-#endif
 
 #include <event2/buffer.h>
 #include <event2/keyvalq_struct.h>
@@ -90,7 +88,7 @@ static void SetupCliArgs(ArgsManager& argsman)
     argsman.AddArg("-netinfo", "Get network peer connection information from the remote server. An optional integer argument from 0 to 4 can be passed for different peers listings (default: 0). Pass \"help\" for detailed help documentation.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
 
     SetupChainParamsBaseOptions(argsman);
-    argsman.AddArg("-color=<when>", strprintf("Color setting for CLI output (default: %s). Valid values: always, auto (add color codes when standard output is connected to a terminal and OS is not WIN32), never.", DEFAULT_COLOR_SETTING), ArgsManager::ALLOW_ANY | ArgsManager::DISALLOW_NEGATION, OptionsCategory::OPTIONS);
+    argsman.AddArg("-color=<when>", strprintf("Color setting for CLI output (default: %s). Valid values: always, auto (add color codes when standard output is connected to a terminal), never.", DEFAULT_COLOR_SETTING), ArgsManager::ALLOW_ANY | ArgsManager::DISALLOW_NEGATION, OptionsCategory::OPTIONS);
     argsman.AddArg("-named", strprintf("Pass named instead of positional arguments (default: %s)", DEFAULT_NAMED), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-rpcclienttimeout=<n>", strprintf("Timeout in seconds during HTTP requests, or 0 for no timeout. (default: %d)", DEFAULT_HTTP_CLIENT_TIMEOUT), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-rpcconnect=<ip>", strprintf("Send commands to node running on <ip> (default: %s)", DEFAULT_RPCCONNECT), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
@@ -965,12 +963,10 @@ static void ParseGetInfoResult(UniValue& result)
     std::string RESET, GREEN, BLUE, YELLOW, MAGENTA, CYAN;
     bool should_colorize = false;
 
-#ifndef WIN32
     if (isatty(fileno(stdout))) {
-        // By default, only print colored text if OS is not WIN32 and stdout is connected to a terminal.
+        // By default, only print colored text if stdout is connected to a terminal.
         should_colorize = true;
     }
-#endif
 
     if (gArgs.IsArgSet("-color")) {
         const std::string color{gArgs.GetArg("-color", DEFAULT_COLOR_SETTING)};
@@ -1227,10 +1223,6 @@ static int CommandLineRPC(int argc, char *argv[])
 
 MAIN_FUNCTION
 {
-#ifdef WIN32
-    util::WinCmdLineArgs winArgs;
-    std::tie(argc, argv) = winArgs.get();
-#endif
     SetupEnvironment();
     if (!SetupNetworking()) {
         tfm::format(std::cerr, "Error: Initializing networking failed\n");

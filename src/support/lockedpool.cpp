@@ -9,14 +9,10 @@
 #include <config/bitcoin-config.h>
 #endif
 
-#ifdef WIN32
-#include <windows.h>
-#else
 #include <sys/mman.h> // for mmap
 #include <sys/resource.h> // for getrlimit
 #include <limits.h> // for PAGESIZE
 #include <unistd.h> // for sysconf
-#endif
 
 #include <algorithm>
 #include <limits>
@@ -158,63 +154,8 @@ void Arena::walk() const
 #endif
 
 /*******************************************************************************/
-// Implementation: Win32LockedPageAllocator
-
-#ifdef WIN32
-/** LockedPageAllocator specialized for Windows.
- */
-class Win32LockedPageAllocator: public LockedPageAllocator
-{
-public:
-    Win32LockedPageAllocator();
-    void* AllocateLocked(size_t len, bool *lockingSuccess) override;
-    void FreeLocked(void* addr, size_t len) override;
-    size_t GetLimit() override;
-private:
-    size_t page_size;
-};
-
-Win32LockedPageAllocator::Win32LockedPageAllocator()
-{
-    // Determine system page size in bytes
-    SYSTEM_INFO sSysInfo;
-    GetSystemInfo(&sSysInfo);
-    page_size = sSysInfo.dwPageSize;
-}
-void *Win32LockedPageAllocator::AllocateLocked(size_t len, bool *lockingSuccess)
-{
-    len = align_up(len, page_size);
-    void *addr = VirtualAlloc(nullptr, len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (addr) {
-        // VirtualLock is used to attempt to keep keying material out of swap. Note
-        // that it does not provide this as a guarantee, but, in practice, memory
-        // that has been VirtualLock'd almost never gets written to the pagefile
-        // except in rare circumstances where memory is extremely low.
-        *lockingSuccess = VirtualLock(const_cast<void*>(addr), len) != 0;
-    }
-    return addr;
-}
-void Win32LockedPageAllocator::FreeLocked(void* addr, size_t len)
-{
-    len = align_up(len, page_size);
-    memory_cleanse(addr, len);
-    VirtualUnlock(const_cast<void*>(addr), len);
-}
-
-size_t Win32LockedPageAllocator::GetLimit()
-{
-    size_t min, max;
-    if(GetProcessWorkingSetSize(GetCurrentProcess(), &min, &max) != 0) {
-        return min;
-    }
-    return std::numeric_limits<size_t>::max();
-}
-#endif
-
-/*******************************************************************************/
 // Implementation: PosixLockedPageAllocator
 
-#ifndef WIN32
 /** LockedPageAllocator specialized for OSes that don't try to be
  * special snowflakes.
  */
@@ -276,7 +217,6 @@ size_t PosixLockedPageAllocator::GetLimit()
 #endif
     return std::numeric_limits<size_t>::max();
 }
-#endif
 
 /*******************************************************************************/
 // Implementation: LockedPool
@@ -398,11 +338,7 @@ void LockedPoolManager::CreateInstance()
     // it are done with it.  I can think of one unlikely scenario where we may
     // have a static deinitialization order/problem, but the check in
     // LockedPoolManagerBase's destructor helps us detect if that ever happens.
-#ifdef WIN32
-    std::unique_ptr<LockedPageAllocator> allocator(new Win32LockedPageAllocator());
-#else
     std::unique_ptr<LockedPageAllocator> allocator(new PosixLockedPageAllocator());
-#endif
     static LockedPoolManager instance(std::move(allocator));
     LockedPoolManager::_instance = &instance;
 }

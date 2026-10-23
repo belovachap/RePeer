@@ -22,7 +22,6 @@ BOOST_AUTO_TEST_CASE(fsbridge_pathtostring)
     BOOST_CHECK_EQUAL(fs::u8path(u8_str).u8string(), u8_str);
     BOOST_CHECK_EQUAL(fs::PathFromString(u8_str).u8string(), u8_str);
     BOOST_CHECK_EQUAL(fs::PathToString(fs::u8path(u8_str)), u8_str);
-#ifndef WIN32
     // On non-windows systems, verify that arbitrary byte strings containing
     // invalid UTF-8 can be round tripped successfully with PathToString and
     // PathFromString. On non-windows systems, paths are just byte strings so
@@ -32,7 +31,6 @@ BOOST_AUTO_TEST_CASE(fsbridge_pathtostring)
     std::string invalid_u8_str = "\xf0";
     BOOST_CHECK_EQUAL(invalid_u8_str.size(), 1);
     BOOST_CHECK_EQUAL(fs::PathToString(fs::PathFromString(invalid_u8_str)), invalid_u8_str);
-#endif
 }
 
 BOOST_AUTO_TEST_CASE(fsbridge_stem)

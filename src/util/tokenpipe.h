@@ -5,8 +5,6 @@
 #ifndef BITCOIN_UTIL_TOKENPIPE_H
 #define BITCOIN_UTIL_TOKENPIPE_H
 
-#ifndef WIN32
-
 #include <cstdint>
 #include <optional>
 
@@ -121,7 +119,5 @@ public:
     TokenPipe(const TokenPipe&) = delete;
     TokenPipe& operator=(const TokenPipe&) = delete;
 };
-
-#endif // WIN32
 
 #endif // BITCOIN_UTIL_TOKENPIPE_H

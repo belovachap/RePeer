@@ -13,18 +13,9 @@
 #include <string>
 #include <typeinfo>
 
-#ifdef WIN32
-#include <windows.h>
-#endif // WIN32
-
 static std::string FormatException(const std::exception* pex, std::string_view thread_name)
 {
-#ifdef WIN32
-    char pszModule[MAX_PATH] = "";
-    GetModuleFileNameA(nullptr, pszModule, sizeof(pszModule));
-#else
     const char* pszModule = "bitcoin";
-#endif
     if (pex)
         return strprintf(
             "EXCEPTION: %s       \n%s       \n%s in %s       \n", typeid(*pex).name(), pex->what(), pszModule, thread_name);

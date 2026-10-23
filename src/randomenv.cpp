@@ -26,10 +26,6 @@
 
 #include <sys/types.h> // must go before a number of other headers
 
-#ifdef WIN32
-#include <windows.h>
-#include <winreg.h>
-#else
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/resource.h>
@@ -38,7 +34,6 @@
 #include <sys/time.h>
 #include <sys/utsname.h>
 #include <unistd.h>
-#endif
 #if HAVE_DECL_GETIFADDRS && HAVE_DECL_FREEIFADDRS
 #include <ifaddrs.h>
 #endif
@@ -64,41 +59,6 @@ namespace {
 
 void RandAddSeedPerfmon(CSHA512& hasher)
 {
-#ifdef WIN32
-    // Seed with the entire set of perfmon data
-
-    // This can take up to 2 seconds, so only do it every 10 minutes.
-    // Initialize last_perfmon to 0 seconds, we don't skip the first call.
-    static std::atomic<std::chrono::seconds> last_perfmon{0s};
-    auto last_time = last_perfmon.load();
-    auto current_time = GetTime<std::chrono::seconds>();
-    if (current_time < last_time + std::chrono::minutes{10}) return;
-    last_perfmon = current_time;
-
-    std::vector<unsigned char> vData(250000, 0);
-    long ret = 0;
-    unsigned long nSize = 0;
-    const size_t nMaxSize = 10000000; // Bail out at more than 10MB of performance data
-    while (true) {
-        nSize = vData.size();
-        ret = RegQueryValueExA(HKEY_PERFORMANCE_DATA, "Global", nullptr, nullptr, vData.data(), &nSize);
-        if (ret != ERROR_MORE_DATA || vData.size() >= nMaxSize)
-            break;
-        vData.resize(std::min((vData.size() * 3) / 2, nMaxSize)); // Grow size of buffer exponentially
-    }
-    RegCloseKey(HKEY_PERFORMANCE_DATA);
-    if (ret == ERROR_SUCCESS) {
-        hasher.Write(vData.data(), nSize);
-        memory_cleanse(vData.data(), nSize);
-    } else {
-        // Performance data is only a best-effort attempt at improving the
-        // situation when the OS randomness (and other sources) aren't
-        // adequate. As a result, failure to read it is isn't considered critical,
-        // so we don't call RandFailure().
-        // TODO: Add logging when the logger is made functional before global
-        // constructors have been invoked.
-    }
-#endif
 }
 
 /** Helper to easily feed data into a CSHA512.
@@ -116,7 +76,6 @@ CSHA512& operator<<(CSHA512& hasher, const T& data) {
     return hasher;
 }
 
-#ifndef WIN32
 void AddSockaddr(CSHA512& hasher, const struct sockaddr *addr)
 {
     if (addr == nullptr) return;
@@ -160,7 +119,6 @@ void AddPath(CSHA512& hasher, const char *path)
         hasher << sb;
     }
 }
-#endif
 
 #if HAVE_SYSCTL
 template<int... S>
@@ -228,11 +186,6 @@ void RandAddDynamicEnv(CSHA512& hasher)
     RandAddSeedPerfmon(hasher);
 
     // Various clocks
-#ifdef WIN32
-    FILETIME ftime;
-    GetSystemTimeAsFileTime(&ftime);
-    hasher << ftime;
-#else
     struct timespec ts = {};
 #    ifdef CLOCK_MONOTONIC
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -250,17 +203,14 @@ void RandAddDynamicEnv(CSHA512& hasher)
     struct timeval tv = {};
     gettimeofday(&tv, nullptr);
     hasher << tv;
-#endif
     // Probably redundant, but also use all the standard library clocks:
     hasher << std::chrono::system_clock::now().time_since_epoch().count();
     hasher << std::chrono::steady_clock::now().time_since_epoch().count();
     hasher << std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
-#ifndef WIN32
     // Current resource usage.
     struct rusage usage = {};
     if (getrusage(RUSAGE_SELF, &usage) == 0) hasher << usage;
-#endif
 
 #ifdef __linux__
     AddFile(hasher, "/proc/diskstats");
@@ -378,7 +328,6 @@ void RandAddStaticEnv(CSHA512& hasher)
     freeifaddrs(ifad);
 #endif
 
-#ifndef WIN32
     // UNIX kernel information
     struct utsname name;
     if (uname(&name) != -1) {
@@ -406,7 +355,6 @@ void RandAddStaticEnv(CSHA512& hasher)
     AddFile(hasher, "/etc/resolv.conf");
     AddFile(hasher, "/etc/timezone");
     AddFile(hasher, "/etc/localtime");
-#endif
 
     // For MacOS/BSDs, gather data through sysctl instead of /proc. Not all of these
     // will exist on every system.
@@ -491,10 +439,6 @@ void RandAddStaticEnv(CSHA512& hasher)
     }
 
     // Process, thread, user, session, group, ... ids.
-#ifdef WIN32
-    hasher << GetCurrentProcessId() << GetCurrentThreadId();
-#else
     hasher << getpid() << getppid() << getsid(0) << getpgid(0) << getuid() << geteuid() << getgid() << getegid();
-#endif
     hasher << std::this_thread::get_id();
 }

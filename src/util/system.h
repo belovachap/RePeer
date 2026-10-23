@@ -45,9 +45,7 @@ bool SetupNetworking();
 // Return true if -datadir option points to a valid directory or is not specified.
 bool CheckDataDirOption(const ArgsManager& args);
 fs::path GetConfigFile(const ArgsManager& args, const fs::path& configuration_file_path);
-#ifndef WIN32
 std::string ShellEscape(const std::string& arg);
-#endif
 #if HAVE_SYSTEM
 void runCommand(const std::string& strCommand);
 #endif
@@ -65,11 +63,7 @@ fs::path AbsPathForConfigVal(const ArgsManager& args, const fs::path& path, bool
 
 inline bool IsSwitchChar(char c)
 {
-#ifdef WIN32
-    return c == '-' || c == '/';
-#else
     return c == '-';
-#endif
 }
 
 enum class OptionsCategory {
@@ -495,21 +489,6 @@ T* AnyPtr(const std::any& any) noexcept
     T* const* ptr = std::any_cast<T*>(&any);
     return ptr ? *ptr : nullptr;
 }
-
-#ifdef WIN32
-class WinCmdLineArgs
-{
-public:
-    WinCmdLineArgs();
-    ~WinCmdLineArgs();
-    std::pair<int, char**> get();
-
-private:
-    int argc;
-    char** argv;
-    std::vector<std::string> args;
-};
-#endif
 
 } // namespace util
 

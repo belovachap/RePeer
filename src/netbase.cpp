@@ -21,9 +21,7 @@
 #include <limits>
 #include <memory>
 
-#ifndef WIN32
 #include <fcntl.h>
-#endif
 
 #ifdef USE_POLL
 #include <poll.h>
@@ -597,11 +595,7 @@ bool ConnectSocketDirectly(const CService &addrConnect, const Sock& sock, int nT
                 return false;
             }
         }
-#ifdef WIN32
-        else if (WSAGetLastError() != WSAEISCONN)
-#else
         else
-#endif
         {
             LogConnectFailure(manual_connection, "connect() to %s failed: %s", addrConnect.ToStringAddrPort(), NetworkErrorString(WSAGetLastError()));
             return false;

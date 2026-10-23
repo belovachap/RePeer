@@ -444,11 +444,7 @@ bool InitHTTPServer()
     // Update libevent's log handling.
     UpdateHTTPServerLogging(LogInstance().WillLogCategory(BCLog::LIBEVENT));
 
-#ifdef WIN32
-    evthread_use_windows_threads();
-#else
     evthread_use_pthreads();
-#endif
 
     raii_event_base base_ctr = obtain_event_base();
 

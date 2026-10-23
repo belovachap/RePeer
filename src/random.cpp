@@ -20,13 +20,8 @@
 #include <cstdlib>
 #include <thread>
 
-#ifdef WIN32
-#include <windows.h>
-#include <wincrypt.h>
-#else
 #include <fcntl.h>
 #include <sys/time.h>
-#endif
 
 #ifdef HAVE_SYS_GETRANDOM
 #include <sys/syscall.h>
@@ -248,7 +243,6 @@ static void Strengthen(const unsigned char (&seed)[32], SteadyClock::duration du
     memory_cleanse(buffer, sizeof(buffer));
 }
 
-#ifndef WIN32
 /** Fallback: get 32 bytes of system entropy from /dev/urandom. The most
  * compatible way to get cryptographic randomness on UNIX-ish platforms.
  */
@@ -269,23 +263,11 @@ static void GetDevURandom(unsigned char *ent32)
     } while (have < NUM_OS_RANDOM_BYTES);
     close(f);
 }
-#endif
 
 /** Get 32 bytes of system entropy. */
 void GetOSRand(unsigned char *ent32)
 {
-#if defined(WIN32)
-    HCRYPTPROV hProvider;
-    int ret = CryptAcquireContextW(&hProvider, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
-    if (!ret) {
-        RandFailure();
-    }
-    ret = CryptGenRandom(hProvider, NUM_OS_RANDOM_BYTES, ent32);
-    if (!ret) {
-        RandFailure();
-    }
-    CryptReleaseContext(hProvider, 0);
-#elif defined(HAVE_SYS_GETRANDOM)
+#if defined(HAVE_SYS_GETRANDOM)
     /* Linux. From the getrandom(2) man page:
      * "If the urandom source has been initialized, reads of up to 256 bytes
      * will always return as many bytes as requested and will not be

@@ -56,8 +56,4 @@ void ReleaseDirectoryLocks();
 bool TryCreateDirectories(const fs::path& p);
 fs::path GetDefaultDataDir();
 
-#ifdef WIN32
-fs::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
-#endif
-
 #endif // BITCOIN_UTIL_FS_HELPERS_H

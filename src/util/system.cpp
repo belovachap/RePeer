@@ -22,21 +22,12 @@
 #include <pthread_np.h>
 #endif
 
-#ifndef WIN32
 #include <algorithm>
 #include <cassert>
 #include <fcntl.h>
 #include <sched.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-
-#else
-
-#include <codecvt>
-
-#include <shellapi.h>
-#include <shlobj.h>
-#endif
 
 #ifdef HAVE_MALLOPT_ARENA_MAX
 #include <malloc.h>
@@ -224,11 +215,6 @@ bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::strin
             val = key.substr(is_index + 1);
             key.erase(is_index);
         }
-#ifdef WIN32
-        key = ToLower(key);
-        if (key[0] == '/')
-            key[0] = '-';
-#endif
 
         if (key[0] != '-') {
             if (!m_accept_any_command && m_command.empty()) {
@@ -711,14 +697,8 @@ std::string HelpMessageOpt(const std::string &option, const std::string &message
 
 fs::path GetDefaultDataDir()
 {
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\Peercoin
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\Peercoin
     // Mac: ~/Library/Application Support/Peercoin
     // Unix: ~/.peercoin
-#ifdef WIN32
-    // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Peercoin";
-#else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
     if (pszHome == nullptr || strlen(pszHome) == 0)
@@ -731,7 +711,6 @@ fs::path GetDefaultDataDir()
 #else
     // Unix
     return pathRet / ".peercoin";
-#endif
 #endif
 }
 
@@ -1009,24 +988,18 @@ void ArgsManager::LogArgs() const
     logArgsPrefix("Command-line arg:", "", m_settings.command_line_options);
 }
 
-#ifndef WIN32
 std::string ShellEscape(const std::string& arg)
 {
     std::string escaped = arg;
     ReplaceAll(escaped, "'", "'\"'\"'");
     return "'" + escaped + "'";
 }
-#endif
 
 #if HAVE_SYSTEM
 void runCommand(const std::string& strCommand)
 {
     if (strCommand.empty()) return;
-#ifndef WIN32
     int nErr = ::system(strCommand.c_str());
-#else
-    int nErr = ::_wsystem(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>,wchar_t>().from_bytes(strCommand).c_str());
-#endif
     if (nErr)
         LogPrintf("runCommand error: system(%s) returned %d\n", strCommand, nErr);
 }
@@ -1046,33 +1019,20 @@ void SetupEnvironment()
 #endif
     // On most POSIX systems (e.g. Linux, but not BSD) the environment's locale
     // may be invalid, in which case the "C.UTF-8" locale is used as fallback.
-#if !defined(WIN32) && !defined(MAC_OSX) && !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__)
+#if !defined(MAC_OSX) && !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__)
     try {
         std::locale(""); // Raises a runtime error if current locale is invalid
     } catch (const std::runtime_error&) {
         setenv("LC_ALL", "C.UTF-8", 1);
     }
-#elif defined(WIN32)
-    // Set the default input/output charset is utf-8
-    SetConsoleCP(CP_UTF8);
-    SetConsoleOutputCP(CP_UTF8);
 #endif
 
-#ifndef WIN32
     constexpr mode_t private_umask = 0077;
     umask(private_umask);
-#endif
 }
 
 bool SetupNetworking()
 {
-#ifdef WIN32
-    // Initialize Windows Sockets
-    WSADATA wsadata;
-    int ret = WSAStartup(MAKEWORD(2,2), &wsadata);
-    if (ret != NO_ERROR || LOBYTE(wsadata.wVersion ) != 2 || HIBYTE(wsadata.wVersion) != 2)
-        return false;
-#endif
     return true;
 }
 
@@ -1107,28 +1067,5 @@ void ScheduleBatchPriority()
 }
 
 namespace util {
-#ifdef WIN32
-WinCmdLineArgs::WinCmdLineArgs()
-{
-    wchar_t** wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> utf8_cvt;
-    argv = new char*[argc];
-    args.resize(argc);
-    for (int i = 0; i < argc; i++) {
-        args[i] = utf8_cvt.to_bytes(wargv[i]);
-        argv[i] = &*args[i].begin();
-    }
-    LocalFree(wargv);
-}
 
-WinCmdLineArgs::~WinCmdLineArgs()
-{
-    delete[] argv;
-}
-
-std::pair<int, char**> WinCmdLineArgs::get()
-{
-    return std::make_pair(argc, argv);
-}
-#endif
 } // namespace util

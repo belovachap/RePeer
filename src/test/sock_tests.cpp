@@ -69,8 +69,6 @@ BOOST_AUTO_TEST_CASE(move_assignment)
     BOOST_CHECK(SocketIsClosed(s));
 }
 
-#ifndef WIN32 // Windows does not have socketpair(2).
-
 static void CreateSocketPair(int s[2])
 {
     BOOST_REQUIRE_EQUAL(socketpair(AF_UNIX, SOCK_STREAM, 0, s), 0);
@@ -156,7 +154,5 @@ BOOST_AUTO_TEST_CASE(recv_until_terminator_limit)
 
     receiver.join();
 }
-
-#endif /* WIN32 */
 
 BOOST_AUTO_TEST_SUITE_END()

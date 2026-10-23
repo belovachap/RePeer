@@ -288,27 +288,6 @@ BOOST_AUTO_TEST_CASE(patharg)
     ResetArgs(local_args, "-dir=/.//");
     BOOST_CHECK_EQUAL(local_args.GetPathArg("-dir"), root_path);
 
-#ifdef WIN32
-    const fs::path win_root_path{"C:\\"};
-    ResetArgs(local_args, "-dir=C:\\");
-    BOOST_CHECK_EQUAL(local_args.GetPathArg("-dir"), win_root_path);
-
-    ResetArgs(local_args, "-dir=C:/");
-    BOOST_CHECK_EQUAL(local_args.GetPathArg("-dir"), win_root_path);
-
-    ResetArgs(local_args, "-dir=C:\\\\");
-    BOOST_CHECK_EQUAL(local_args.GetPathArg("-dir"), win_root_path);
-
-    ResetArgs(local_args, "-dir=C:\\.");
-    BOOST_CHECK_EQUAL(local_args.GetPathArg("-dir"), win_root_path);
-
-    ResetArgs(local_args, "-dir=C:\\.\\");
-    BOOST_CHECK_EQUAL(local_args.GetPathArg("-dir"), win_root_path);
-
-    ResetArgs(local_args, "-dir=C:\\.\\\\");
-    BOOST_CHECK_EQUAL(local_args.GetPathArg("-dir"), win_root_path);
-#endif
-
     const fs::path absolute_path{"/home/user/.bitcoin"};
     ResetArgs(local_args, "-dir=/home/user/.bitcoin");
     BOOST_CHECK_EQUAL(local_args.GetPathArg("-dir"), absolute_path);

@@ -25,12 +25,6 @@
 #include <util/system.h>
 #include <util/time.h>
 
-#ifdef WIN32
-#include <shellapi.h>
-#include <shlobj.h>
-#include <shlwapi.h>
-#endif
-
 #include <QAbstractButton>
 #include <QAbstractItemView>
 #include <QApplication>
@@ -491,77 +485,7 @@ bool LabelOutOfFocusEventFilter::eventFilter(QObject* watched, QEvent* event)
     return QObject::eventFilter(watched, event);
 }
 
-#ifdef WIN32
-fs::path static StartupShortcutPath()
-{
-    std::string chain = gArgs.GetChainName();
-    if (chain == CBaseChainParams::MAIN)
-        return GetSpecialFolderPath(CSIDL_STARTUP) / "Peercoin.lnk";
-    if (chain == CBaseChainParams::TESTNET) // Remove this special case when CBaseChainParams::TESTNET = "testnet4"
-        return GetSpecialFolderPath(CSIDL_STARTUP) / "Peercoin (testnet).lnk";
-    return GetSpecialFolderPath(CSIDL_STARTUP) / fs::u8path(strprintf("Peercoin (%s).lnk", chain));
-}
-
-bool GetStartOnSystemStartup()
-{
-    // check for Bitcoin*.lnk
-    return fs::exists(StartupShortcutPath());
-}
-
-bool SetStartOnSystemStartup(bool fAutoStart)
-{
-    // If the shortcut exists already, remove it for updating
-    fs::remove(StartupShortcutPath());
-
-    if (fAutoStart)
-    {
-        CoInitialize(nullptr);
-
-        // Get a pointer to the IShellLink interface.
-        IShellLinkW* psl = nullptr;
-        HRESULT hres = CoCreateInstance(CLSID_ShellLink, nullptr,
-            CLSCTX_INPROC_SERVER, IID_IShellLinkW,
-            reinterpret_cast<void**>(&psl));
-
-        if (SUCCEEDED(hres))
-        {
-            // Get the current executable path
-            WCHAR pszExePath[MAX_PATH];
-            GetModuleFileNameW(nullptr, pszExePath, ARRAYSIZE(pszExePath));
-
-            // Start client minimized
-            QString strArgs = "-min";
-            // Set -testnet /-regtest options
-            strArgs += QString::fromStdString(strprintf(" -chain=%s", gArgs.GetChainName()));
-
-            // Set the path to the shortcut target
-            psl->SetPath(pszExePath);
-            PathRemoveFileSpecW(pszExePath);
-            psl->SetWorkingDirectory(pszExePath);
-            psl->SetShowCmd(SW_SHOWMINNOACTIVE);
-            psl->SetArguments(strArgs.toStdWString().c_str());
-
-            // Query IShellLink for the IPersistFile interface for
-            // saving the shortcut in persistent storage.
-            IPersistFile* ppf = nullptr;
-            hres = psl->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&ppf));
-            if (SUCCEEDED(hres))
-            {
-                // Save the link by calling IPersistFile::Save.
-                hres = ppf->Save(StartupShortcutPath().wstring().c_str(), TRUE);
-                ppf->Release();
-                psl->Release();
-                CoUninitialize();
-                return true;
-            }
-            psl->Release();
-        }
-        CoUninitialize();
-        return false;
-    }
-    return true;
-}
-#elif defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX)
 
 // Follow the Desktop Application Autostart Spec:
 // https://specifications.freedesktop.org/autostart-spec/autostart-spec-latest.html

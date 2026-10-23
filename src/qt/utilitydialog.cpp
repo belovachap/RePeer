@@ -121,13 +121,7 @@ void HelpMessageDialog::printToConsole()
 
 void HelpMessageDialog::showOrPrint()
 {
-#if defined(WIN32)
-    // On Windows, show a message box, as there is no stderr/stdout in windowed applications
-    exec();
-#else
-    // On other operating systems, print help text to console
     printToConsole();
-#endif
 }
 
 void HelpMessageDialog::on_okButton_accepted()

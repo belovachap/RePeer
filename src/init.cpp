@@ -91,11 +91,9 @@
 #include <thread>
 #include <vector>
 
-#ifndef WIN32
 #include <cerrno>
 #include <signal.h>
 #include <sys/stat.h>
-#endif
 
 #include <boost/signals2/signal.hpp>
 
@@ -127,14 +125,7 @@ static constexpr bool DEFAULT_PROXYRANDOMIZE{true};
 static constexpr bool DEFAULT_REST_ENABLE{false};
 static constexpr bool DEFAULT_I2P_ACCEPT_INCOMING{true};
 
-#ifdef WIN32
-// Win32 LevelDB doesn't use filedescriptors, and the ones used for
-// accessing block files don't count towards the fd_set size limit
-// anyway.
-#define MIN_CORE_FILEDESCRIPTORS 0
-#else
 #define MIN_CORE_FILEDESCRIPTORS 150
-#endif
 
 static const char* DEFAULT_ASMAP_FILENAME="ip_asn.map";
 
@@ -152,11 +143,7 @@ static fs::path GetPidFile(const ArgsManager& args)
 {
     std::ofstream file{GetPidFile(args)};
     if (file) {
-#ifdef WIN32
-        tfm::format(file, "%d\n", GetCurrentProcessId());
-#else
         tfm::format(file, "%d\n", getpid());
-#endif
         return true;
     } else {
         return InitError(strprintf(_("Unable to create the PID file '%s': %s"), fs::PathToString(GetPidFile(args)), SysErrorString(errno)));
@@ -355,7 +342,6 @@ void Shutdown(NodeContext& node)
  * The execution context the handler is invoked in is not guaranteed,
  * so we restrict handler operations to just touching variables:
  */
-#ifndef WIN32
 static void HandleSIGTERM(int)
 {
     StartShutdown();
@@ -365,16 +351,7 @@ static void HandleSIGHUP(int)
 {
     LogInstance().m_reopen_file = true;
 }
-#else
-static BOOL WINAPI consoleCtrlHandler(DWORD dwCtrlType)
-{
-    StartShutdown();
-    Sleep(INFINITE);
-    return true;
-}
-#endif
 
-#ifndef WIN32
 static void registerSignalHandler(int signal, void(*handler)(int))
 {
     struct sigaction sa;
@@ -383,7 +360,6 @@ static void registerSignalHandler(int signal, void(*handler)(int))
     sa.sa_flags = 0;
     sigaction(signal, &sa, nullptr);
 }
-#endif
 
 static boost::signals2::connection rpc_notify_block_change_connection;
 static void OnRPCStarted()
@@ -803,10 +779,6 @@ bool AppInitBasicSetup(const ArgsManager& args)
     // Disable confusing "helpful" text message on abort, Ctrl-C
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
-#ifdef WIN32
-    // Enable heap terminate-on-corruption
-    HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
-#endif
     if (!InitShutdownState()) {
         return InitError(Untranslated("Initializing wait-for-shutdown state failed."));
     }
@@ -815,7 +787,6 @@ bool AppInitBasicSetup(const ArgsManager& args)
         return InitError(Untranslated("Initializing networking failed."));
     }
 
-#ifndef WIN32
     // Clean shutdown on SIGTERM
     registerSignalHandler(SIGTERM, HandleSIGTERM);
     registerSignalHandler(SIGINT, HandleSIGTERM);
@@ -825,9 +796,6 @@ bool AppInitBasicSetup(const ArgsManager& args)
 
     // Ignore SIGPIPE, otherwise it will bring the daemon down if the client closes unexpectedly
     signal(SIGPIPE, SIG_IGN);
-#else
-    SetConsoleCtrlHandler(consoleCtrlHandler, true);
-#endif
 
     std::set_new_handler(new_handler_terminate);
 
