@@ -1,0 +1,4 @@
+[submodule "src/leveldb"]
+	path = src/leveldb
+	url = https://github.com/google/leveldb.git
+	ignore = untracked
