@@ -2,3 +2,6 @@
 	path = src/leveldb
 	url = https://github.com/google/leveldb.git
 	ignore = untracked
+[submodule "src/minisketch"]
+	path = src/minisketch
+	url = https://github.com/bitcoin-core/minisketch.git
