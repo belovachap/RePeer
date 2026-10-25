@@ -697,21 +697,13 @@ std::string HelpMessageOpt(const std::string &option, const std::string &message
 
 fs::path GetDefaultDataDir()
 {
-    // Mac: ~/Library/Application Support/Peercoin
-    // Unix: ~/.peercoin
     fs::path pathRet;
     char* pszHome = getenv("HOME");
     if (pszHome == nullptr || strlen(pszHome) == 0)
         pathRet = fs::path("/");
     else
         pathRet = fs::path(pszHome);
-#ifdef MAC_OSX
-    // Mac
-    return pathRet / "Library/Application Support/Peercoin";
-#else
-    // Unix
-    return pathRet / ".peercoin";
-#endif
+    return pathRet / ".repeer";
 }
 
 bool CheckDataDirOption(const ArgsManager& args)
