@@ -5,3 +5,6 @@
 [submodule "src/minisketch"]
 	path = src/minisketch
 	url = https://github.com/bitcoin-core/minisketch.git
+[submodule "src/secp256k1"]
+	path = src/secp256k1
+	url = https://github.com/bitcoin-core/secp256k1.git
