@@ -2,10 +2,10 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-bin_PROGRAMS += qt/peercoin-qt
+bin_PROGRAMS += qt/repeer-qt
 
 if BUILD_BITCOIN_GUI
-  bin_PROGRAMS += peercoin-gui
+  bin_PROGRAMS += repeer-gui
 endif
 
 EXTRA_LIBRARIES += qt/libbitcoinqt.a
@@ -360,7 +360,7 @@ QT_FORMS_H=$(join $(dir $(QT_FORMS_UI)),$(addprefix ui_, $(notdir $(QT_FORMS_UI:
 # Most files will depend on the forms and moc files as includes. Generate them
 # before anything else.
 $(QT_MOC): $(QT_FORMS_H)
-$(qt_libbitcoinqt_a_OBJECTS) $(qt_peercoin_qt_OBJECTS) $(peercoin_gui_OBJECTS) : | $(QT_MOC)
+$(qt_libbitcoinqt_a_OBJECTS) $(qt_repeer_qt_OBJECTS) $(repeer_gui_OBJECTS) : | $(QT_MOC)
 
 # bitcoin-qt and bitcoin-gui binaries #
 peercoin_qt_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BITCOIN_QT_INCLUDES) \
@@ -384,19 +384,19 @@ peercoin_qt_ldadd += $(LIBBITCOIN_CLI) $(LIBBITCOIN_COMMON) $(LIBBITCOIN_UTIL) $
 peercoin_qt_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(QT_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 peercoin_qt_libtoolflags = $(AM_LIBTOOLFLAGS) --tag CXX
 
-qt_peercoin_qt_CPPFLAGS = $(peercoin_qt_cppflags)
-qt_peercoin_qt_CXXFLAGS = $(peercoin_qt_cxxflags)
-qt_peercoin_qt_SOURCES = $(peercoin_qt_sources) init/bitcoin-qt.cpp
-qt_peercoin_qt_LDADD = $(peercoin_qt_ldadd)
-qt_peercoin_qt_LDFLAGS = $(peercoin_qt_ldflags)
-qt_peercoin_qt_LIBTOOLFLAGS = $(peercoin_qt_libtoolflags)
+qt_repeer_qt_CPPFLAGS = $(peercoin_qt_cppflags)
+qt_repeer_qt_CXXFLAGS = $(peercoin_qt_cxxflags)
+qt_repeer_qt_SOURCES = $(peercoin_qt_sources) init/bitcoin-qt.cpp
+qt_repeer_qt_LDADD = $(peercoin_qt_ldadd)
+qt_repeer_qt_LDFLAGS = $(peercoin_qt_ldflags)
+qt_repeer_qt_LIBTOOLFLAGS = $(peercoin_qt_libtoolflags)
 
-peercoin_gui_CPPFLAGS = $(peercoin_qt_cppflags)
-peercoin_gui_CXXFLAGS = $(peercoin_qt_cxxflags)
-peercoin_gui_SOURCES = $(peercoin_qt_sources) init/bitcoin-gui.cpp
-peercoin_gui_LDADD = $(peercoin_qt_ldadd) $(LIBBITCOIN_IPC) $(LIBBITCOIN_UTIL) $(LIBMULTIPROCESS_LIBS)
-peercoin_gui_LDFLAGS = $(peercoin_qt_ldflags)
-peercoin_gui_LIBTOOLFLAGS = $(peercoin_qt_libtoolflags)
+repeer_gui_CPPFLAGS = $(peercoin_qt_cppflags)
+repeer_gui_CXXFLAGS = $(peercoin_qt_cxxflags)
+repeer_gui_SOURCES = $(peercoin_qt_sources) init/bitcoin-gui.cpp
+repeer_gui_LDADD = $(peercoin_qt_ldadd) $(LIBBITCOIN_IPC) $(LIBBITCOIN_UTIL) $(LIBMULTIPROCESS_LIBS)
+repeer_gui_LDFLAGS = $(peercoin_qt_ldflags)
+repeer_gui_LIBTOOLFLAGS = $(peercoin_qt_libtoolflags)
 
 #locale/foo.ts -> locale/foo.qm
 QT_QM=$(QT_TS:.ts=.qm)
@@ -432,7 +432,7 @@ CLEAN_QT = $(nodist_qt_libbitcoinqt_a_SOURCES) $(QT_QM) $(QT_FORMS_H) qt/*.gcda 
 CLEANFILES += $(CLEAN_QT)
 
 peercoin_qt_clean: FORCE
-	rm -f $(CLEAN_QT) $(qt_libbitcoinqt_a_OBJECTS) $(qt_peercoin_qt_OBJECTS) qt/bitcoin-qt$(EXEEXT) $(LIBBITCOINQT)
+	rm -f $(CLEAN_QT) $(qt_libbitcoinqt_a_OBJECTS) $(qt_repeer_qt_OBJECTS) qt/bitcoin-qt$(EXEEXT) $(LIBBITCOINQT)
 
 peercoin_qt : qt/bitcoin-qt$(EXEEXT)
 

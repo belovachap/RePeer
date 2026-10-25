@@ -5,20 +5,18 @@ valgrind_ctime_test
 ecdh_example
 ecdsa_example
 schnorr_example
-*.exe
 *.pdb
-src/*/*.exe
-src/peercoin
-src/peercoind
-src/peercoin-cli
-src/peercoin-gui
-src/peercoin-node
-src/peercoin-tx
-src/peercoin-util
-src/peercoin-wallet
-src/test/fuzz/fuzz
-src/test/test_peercoin
-src/qt/test/test_peercoin-qt
+
+src/bench/bench_repeer
+src/qt/repeer-qt
+src/qt/test/test_repeer-qt
+src/repeer-cli
+src/repeer-tx
+src/repeer-util
+src/repeer-wallet
+src/repeerd
+src/test/fuzz/fuzz_repeer
+src/test/test_repeer
 
 # autoreconf
 Makefile.in

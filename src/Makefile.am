@@ -85,33 +85,33 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_ZMQ)
 
 if BUILD_BITCOIND
-  bin_PROGRAMS += peercoind
+  bin_PROGRAMS += repeerd
 endif
 
 if BUILD_BITCOIN_NODE
-  bin_PROGRAMS += peercoin-node
+  bin_PROGRAMS += repeer-node
 endif
 
 if BUILD_BITCOIN_CLI
-  bin_PROGRAMS += peercoin-cli
+  bin_PROGRAMS += repeer-cli
 endif
 
 if BUILD_BITCOIN_TX
-  bin_PROGRAMS += peercoin-tx
+  bin_PROGRAMS += repeer-tx
 endif
 
 if ENABLE_WALLET
 if BUILD_BITCOIN_WALLET
-  bin_PROGRAMS += peercoin-wallet
+  bin_PROGRAMS += repeer-wallet
 endif
 endif
 
 if BUILD_BITCOIN_UTIL
-  bin_PROGRAMS += peercoin-util
+  bin_PROGRAMS += repeer-util
 endif
 
 if BUILD_BITCOIN_CHAINSTATE
-  bin_PROGRAMS += peercoin-chainstate
+  bin_PROGRAMS += repeer-chainstate
 endif
 
 .PHONY: FORCE check-symbols check-security
@@ -460,7 +460,7 @@ endif
 #
 
 
-# wallet: shared between peercoind and peercoin-qt, but only linked
+# wallet: shared between repeerd and repeer-qt, but only linked
 # when wallet enabled
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BOOST_CPPFLAGS) $(BDB_CPPFLAGS) $(SQLITE_CFLAGS)
 libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
@@ -630,7 +630,7 @@ libbitcoin_consensus_a_SOURCES = \
   version.h
 #
 
-# common: shared between peercoind, and peercoin-qt and non-server tools
+# common: shared between repeerd, and repeer-qt and non-server tools
 libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_common_a_SOURCES = \
@@ -757,67 +757,67 @@ bitcoin_bin_ldadd = \
 
 bitcoin_bin_ldadd += $(BDB_LIBS) $(MINIUPNPC_LIBS) $(NATPMP_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(SQLITE_LIBS) $(CRYPTO_LIBS)
 
-peercoind_SOURCES = $(bitcoin_daemon_sources) init/bitcoind.cpp
-peercoind_CPPFLAGS = $(bitcoin_bin_cppflags)
-peercoind_CXXFLAGS = $(bitcoin_bin_cxxflags)
-peercoind_LDFLAGS = $(bitcoin_bin_ldflags)
-peercoind_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd)
+repeerd_SOURCES = $(bitcoin_daemon_sources) init/bitcoind.cpp
+repeerd_CPPFLAGS = $(bitcoin_bin_cppflags)
+repeerd_CXXFLAGS = $(bitcoin_bin_cxxflags)
+repeerd_LDFLAGS = $(bitcoin_bin_ldflags)
+repeerd_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd)
 
-peercoin_node_SOURCES = $(bitcoin_daemon_sources) init/bitcoin-node.cpp
-peercoin_node_CPPFLAGS = $(bitcoin_bin_cppflags)
-peercoin_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
-peercoin_node_LDFLAGS = $(bitcoin_bin_ldflags)
-peercoin_node_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS)
+repeer_node_SOURCES = $(bitcoin_daemon_sources) init/bitcoin-node.cpp
+repeer_node_CPPFLAGS = $(bitcoin_bin_cppflags)
+repeer_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
+repeer_node_LDFLAGS = $(bitcoin_bin_ldflags)
+repeer_node_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS)
 
 # peercoin-cli binary #
-peercoin_cli_SOURCES = bitcoin-cli.cpp
-peercoin_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
-peercoin_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-peercoin_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
+repeer_cli_SOURCES = bitcoin-cli.cpp
+repeer_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
+repeer_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+repeer_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 
 if TARGET_WINDOWS
-peercoin_cli_SOURCES += bitcoin-cli-res.rc
+repeer_cli_SOURCES += bitcoin-cli-res.rc
 endif
 
-peercoin_cli_LDADD = \
+repeer_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO)
 
-peercoin_cli_LDADD += $(CRYPTO_LIBS) $(EVENT_LIBS)
+repeer_cli_LDADD += $(CRYPTO_LIBS) $(EVENT_LIBS)
 #
 
 # peercoin-tx binary #
-peercoin_tx_SOURCES = \
+repeer_tx_SOURCES = \
   bitcoin-tx.cpp \
   timedatadummy.cpp
-peercoin_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-peercoin_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-peercoin_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
+repeer_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+repeer_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+repeer_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 
 if TARGET_WINDOWS
-peercoin_tx_SOURCES += bitcoin-tx-res.rc
+repeer_tx_SOURCES += bitcoin-tx-res.rc
 endif
 
-peercoin_tx_LDADD = \
+repeer_tx_LDADD = \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
-peercoin_tx_LDADD += $(CRYPTO_LIBS)
+repeer_tx_LDADD += $(CRYPTO_LIBS)
 #
 
 # bitcoin-wallet binary #
-peercoin_wallet_SOURCES = bitcoin-wallet.cpp
-peercoin_wallet_SOURCES += init/bitcoin-wallet.cpp
-peercoin_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
-peercoin_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
-peercoin_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
-peercoin_wallet_LDADD = \
+repeer_wallet_SOURCES = bitcoin-wallet.cpp
+repeer_wallet_SOURCES += init/bitcoin-wallet.cpp
+repeer_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
+repeer_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
+repeer_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
+repeer_wallet_LDADD = \
   $(LIBBITCOIN_WALLET_TOOL) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_NODE) \
@@ -836,21 +836,21 @@ peercoin_wallet_LDADD = \
   $(CRYPTO_LIBS)
 
 if TARGET_WINDOWS
-peercoin_wallet_SOURCES += bitcoin-wallet-res.rc
+repeer_wallet_SOURCES += bitcoin-wallet-res.rc
 endif
 #
 
 # bitcoin-util binary #
-peercoin_util_SOURCES = bitcoin-util.cpp
-peercoin_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-peercoin_util_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-peercoin_util_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
+repeer_util_SOURCES = bitcoin-util.cpp
+repeer_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+repeer_util_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+repeer_util_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 
 if TARGET_WINDOWS
-peercoin_util_SOURCES += bitcoin-util-res.rc
+repeer_util_SOURCES += bitcoin-util-res.rc
 endif
 
-peercoin_util_LDADD = \
+repeer_util_LDADD = \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
   $(LIBUNIVALUE) \
@@ -861,16 +861,16 @@ peercoin_util_LDADD = \
 
 
 # bitcoin-chainstate binary #
-peercoin_chainstate_SOURCES = bitcoin-chainstate.cpp
-peercoin_chainstate_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BOOST_CPPFLAGS)
-peercoin_chainstate_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+repeer_chainstate_SOURCES = bitcoin-chainstate.cpp
+repeer_chainstate_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BOOST_CPPFLAGS)
+repeer_chainstate_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
-peercoin_chainstate_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(PTHREAD_FLAGS) $(LIBTOOL_APP_LDFLAGS) -static
-peercoin_chainstate_LDADD = $(LIBBITCOINKERNEL)
+repeer_chainstate_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(PTHREAD_FLAGS) $(LIBTOOL_APP_LDFLAGS) -static
+repeer_chainstate_LDADD = $(LIBBITCOINKERNEL)
 
 # libtool is unable to calculate this indirect dependency, presumably because it's a subproject.
 # libsecp256k1 only needs to be linked in when libbitcoinkernel is static.
-peercoin_chainstate_LDADD += $(LIBSECP256K1)
+repeer_chainstate_LDADD += $(LIBSECP256K1)
 #
 
 # peercoinkernel library #
