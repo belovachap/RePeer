@@ -52,10 +52,10 @@ static const int TOOLTIP_WRAP_THRESHOLD = 80;
 
 #define QAPP_ORG_NAME "Peercoin"
 #define QAPP_ORG_DOMAIN "peercoin.net"
-#define QAPP_APP_NAME_DEFAULT "Peercoin-Qt"
-#define QAPP_APP_NAME_TESTNET "Peercoin-Qt-testnet"
-#define QAPP_APP_NAME_REGTEST "Peercoin-Qt-regtest"
-#define QAPP_APP_NAME_SIGNET "Peercoin-Qt-signet"
+#define QAPP_APP_NAME_DEFAULT "Repeer-Qt"
+#define QAPP_APP_NAME_TESTNET "Repeer-Qt-testnet"
+#define QAPP_APP_NAME_REGTEST "Repeer-Qt-regtest"
+#define QAPP_APP_NAME_SIGNET "Repeer-Qt-signet"
 
 /* Colors for minting tab for each coin age group */
 #define COLOR_MINT_YOUNG QColor(255, 224, 226)
