@@ -22,15 +22,6 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libbitcoinconsensus.pc
 endif
 
-BITCOIN_QT_BIN=$(top_builddir)/src/qt/$(BITCOIN_GUI_NAME)$(EXEEXT)
-BITCOIN_TEST_BIN=$(top_builddir)/src/test/$(BITCOIN_TEST_NAME)$(EXEEXT)
-BITCOIN_CLI_BIN=$(top_builddir)/src/$(BITCOIN_CLI_NAME)$(EXEEXT)
-BITCOIN_TX_BIN=$(top_builddir)/src/$(BITCOIN_TX_NAME)$(EXEEXT)
-BITCOIN_UTIL_BIN=$(top_builddir)/src/$(BITCOIN_UTIL_NAME)$(EXEEXT)
-BITCOIN_WALLET_BIN=$(top_builddir)/src/$(BITCOIN_WALLET_TOOL_NAME)$(EXEEXT)
-BITCOIN_NODE_BIN=$(top_builddir)/src/$(BITCOIN_MP_NODE_NAME)$(EXEEXT)
-BITCOIN_GUI_BIN=$(top_builddir)/src/$(BITCOIN_MP_GUI_NAME)$(EXEEXT)
-
 empty :=
 space := $(empty) $(empty)
 
@@ -72,27 +63,6 @@ COVERAGE_INFO = $(COV_TOOL_WRAPPER) baseline.info \
 
 dist-hook:
 	-$(GIT) archive --format=tar HEAD -- src/clientversion.cpp | $(AMTAR) -C $(top_distdir) -xf -
-
-$(BITCOIN_QT_BIN): FORCE
-	$(MAKE) -C src qt/$(@F)
-
-$(BITCOIN_CLI_BIN): FORCE
-	$(MAKE) -C src $(@F)
-
-$(BITCOIN_TX_BIN): FORCE
-	$(MAKE) -C src $(@F)
-
-$(BITCOIN_UTIL_BIN): FORCE
-	$(MAKE) -C src $(@F)
-
-$(BITCOIN_WALLET_BIN): FORCE
-	$(MAKE) -C src $(@F)
-
-$(BITCOIN_NODE_BIN): FORCE
-	$(MAKE) -C src $(@F)
-
-$(BITCOIN_GUI_BIN): FORCE
-	$(MAKE) -C src $(@F)
 
 if USE_LCOV
 LCOV_FILTER_PATTERN = \
