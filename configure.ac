@@ -32,17 +32,17 @@ if test -n "$PKG_CONFIG_LIBDIR"; then
   PKG_CONFIG="env PKG_CONFIG_LIBDIR=$PKG_CONFIG_LIBDIR $PKG_CONFIG"
 fi
 
-BITCOIN_DAEMON_NAME=peercoind
-BITCOIN_GUI_NAME=peercoin-qt
-BITCOIN_TEST_NAME=test_peercoin
-BITCOIN_CLI_NAME=peercoin-cli
-BITCOIN_TX_NAME=peercoin-tx
-BITCOIN_UTIL_NAME=peercoin-util
-BITCOIN_CHAINSTATE_NAME=peercoin-chainstate
-BITCOIN_WALLET_TOOL_NAME=peercoin-wallet
+BITCOIN_DAEMON_NAME=repeerd
+BITCOIN_GUI_NAME=repeer-qt
+BITCOIN_TEST_NAME=test_repeer
+BITCOIN_CLI_NAME=repeer-cli
+BITCOIN_TX_NAME=repeer-tx
+BITCOIN_UTIL_NAME=repeer-util
+BITCOIN_CHAINSTATE_NAME=repeer-chainstate
+BITCOIN_WALLET_TOOL_NAME=repeer-wallet
 dnl Multi Process
-BITCOIN_MP_NODE_NAME=peercoin-node
-BITCOIN_MP_GUI_NAME=peercoin-gui
+BITCOIN_MP_NODE_NAME=repeer-node
+BITCOIN_MP_GUI_NAME=repeer-gui
 
 dnl Unless the user specified ARFLAGS, force it to be cr
 dnl This is also the default as-of libtool 2.4.7
