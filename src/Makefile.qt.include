@@ -102,8 +102,6 @@ QT_MOC = \
 
 QT_QRC_CPP = qt/qrc_bitcoin.cpp
 QT_QRC = qt/bitcoin.qrc
-QT_QRC_LOCALE_CPP = qt/qrc_bitcoin_locale.cpp
-QT_QRC_LOCALE = qt/bitcoin_locale.qrc
 
 BITCOIN_QT_H = \
   qt/addressbookpage.h \
@@ -392,17 +390,11 @@ translate: $(srcdir)/qt/bitcoinstrings.cpp $(QT_FORMS_UI) $(QT_FORMS_UI) $(BITCO
 	@$(SED) -i.old -e 's|source-language="en" target-language="en"|source-language="en"|' -e '/<target xml:space="preserve"><\/target>/d' $(srcdir)/qt/locale/bitcoin_en.xlf
 	@rm -f $(srcdir)/qt/locale/bitcoin_en.xlf.old
 
-$(QT_QRC_LOCALE_CPP): $(QT_QRC_LOCALE) $(QT_QM)
-	@test -f $(RCC)
-	@cp -f $< $(@D)/temp_$(<F)
-	$(AM_V_GEN) QT_SELECT=$(QT_SELECT) $(RCC) -name bitcoin_locale --format-version 1 $(@D)/temp_$(<F) > $@
-	@rm $(@D)/temp_$(<F)
-
 $(QT_QRC_CPP): $(QT_QRC) $(QT_FORMS_H) $(QT_RES_FONTS) $(QT_RES_ICONS) $(QT_RES_ANIMATION)
 	@test -f $(RCC)
 	$(AM_V_GEN) QT_SELECT=$(QT_SELECT) $(RCC) -name bitcoin --format-version 1 $< > $@
 
-CLEAN_QT = $(nodist_qt_libbitcoinqt_a_SOURCES) $(QT_QM) $(QT_FORMS_H) qt/*.gcda qt/*.gcno qt/temp_bitcoin_locale.qrc
+CLEAN_QT = $(nodist_qt_libbitcoinqt_a_SOURCES) $(QT_QM) $(QT_FORMS_H) qt/*.gcda qt/*.gcno
 
 CLEANFILES += $(CLEAN_QT)
 
