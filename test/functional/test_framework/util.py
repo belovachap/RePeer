@@ -407,8 +407,6 @@ def write_config(config_path, *, n, chain, extra_config="", disable_autoconnect=
         # in tests.
         f.write("peertimeout=999999999\n")
         f.write("printtoconsole=0\n")
-        f.write("upnp=0\n")
-        f.write("natpmp=0\n")
         f.write("shrinkdebugfile=0\n")
         f.write("debug=1\n")
         f.write("par=1\n")

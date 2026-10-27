@@ -35,7 +35,6 @@ void OptionTests::migrateSettings()
     QSettings settings;
     settings.setValue("nDatabaseCache", 600);
     settings.setValue("nThreadsScriptVerif", 12);
-    settings.setValue("fUseUPnP", false);
     settings.setValue("fListen", false);
     settings.setValue("fUseProxy", true);
     settings.setValue("addrProxy", "proxy:123");
@@ -49,7 +48,6 @@ void OptionTests::migrateSettings()
     QVERIFY(options.Init(error));
     QVERIFY(!settings.contains("nDatabaseCache"));
     QVERIFY(!settings.contains("nThreadsScriptVerif"));
-    QVERIFY(!settings.contains("fUseUPnP"));
     QVERIFY(!settings.contains("fListen"));
     QVERIFY(!settings.contains("fUseProxy"));
     QVERIFY(!settings.contains("addrProxy"));

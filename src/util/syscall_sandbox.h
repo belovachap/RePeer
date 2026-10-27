@@ -10,7 +10,6 @@ enum class SyscallSandboxPolicy {
     INITIALIZATION,
     INITIALIZATION_DNS_SEED,
     INITIALIZATION_LOAD_BLOCKS,
-    INITIALIZATION_MAP_PORT,
 
     // 2. Steady state (non-initialization, non-shutdown)
     MESSAGE_HANDLER,

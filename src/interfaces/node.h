@@ -120,9 +120,6 @@ public:
     //! previous settings in <datadir>/settings.json.bak.
     virtual void resetSettings() = 0;
 
-    //! Map port.
-    virtual void mapPort(bool use_upnp, bool use_natpmp) = 0;
-
     //! Get proxy.
     virtual bool getProxy(Network net, Proxy& proxy_info) = 0;
 
