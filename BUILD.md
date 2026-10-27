@@ -7,7 +7,6 @@ sudo apt install git
 sudo apt install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3
 sudo apt install libevent-dev libboost-dev libssl-dev
 sudo apt install libsqlite3-dev
-sudo apt install libminiupnpc-dev libnatpmp-dev
 sudo apt install libzmq3-dev
 sudo apt install systemtap-sdt-dev
 sudo apt install libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools
