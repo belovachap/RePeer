@@ -49,7 +49,6 @@ public:
         ProxyPortTor,           // int
         DisplayUnit,            // BitcoinUnit
         ThirdPartyTxUrls,       // QString
-        Language,               // QString
         UseEmbeddedMonospacedFont, // bool
         CoinControlFeatures,    // bool
         SubFeeFromAmount,       // bool
@@ -106,7 +105,6 @@ private:
     bool m_show_tray_icon;
     bool fMinimizeToTray;
     bool fMinimizeOnClose;
-    QString language;
     BitcoinUnit m_display_bitcoin_unit;
     QString strThirdPartyTxUrls;
     bool m_use_embedded_monospaced_font;

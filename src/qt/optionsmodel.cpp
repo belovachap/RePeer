@@ -52,7 +52,6 @@ static const char* SettingName(OptionsModel::OptionID option)
     case OptionsModel::ProxyIPTor: return "onion";
     case OptionsModel::ProxyPortTor: return "onion";
     case OptionsModel::ProxyUseTor: return "onion";
-    case OptionsModel::Language: return "lang";
     case OptionsModel::SplitCoins: return "splitcoins";
     case OptionsModel::CombineCoins: return "combinecoins";
     case OptionsModel::MaxMintingUtxos: return "maxmintingutxos";
@@ -131,8 +130,6 @@ void OptionsModel::addOverriddenOption(const std::string &option)
 bool OptionsModel::Init(bilingual_str& error)
 {
     // Initialize display settings from stored settings.
-    language = QString::fromStdString(SettingToString(node().getPersistentSetting("lang"), ""));
-
     checkAndMigrate();
 
     QSettings settings;
@@ -186,7 +183,7 @@ bool OptionsModel::Init(bilingual_str& error)
     // and we want command-line parameters to overwrite the GUI settings.
     for (OptionID option : {DatabaseCache, ThreadsScriptVerif, SpendZeroConfChange, ExternalSignerPath,
                             SplitCoins, CombineCoins, MaxMintingUtxos, MapPortUPnP, MapPortNatpmp, Listen, Server,
-                            ProxyUse, ProxyUseTor, Language}) {
+                            ProxyUse, ProxyUseTor}) {
         std::string setting = SettingName(option);
         if (node().isSettingIgnored(setting)) addOverriddenOption("-" + setting);
         try {
@@ -413,8 +410,6 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
         return QVariant::fromValue(m_display_bitcoin_unit);
     case ThirdPartyTxUrls:
         return strThirdPartyTxUrls;
-    case Language:
-        return QString::fromStdString(SettingToString(setting(), ""));
     case UseEmbeddedMonospacedFont:
         return m_use_embedded_monospaced_font;
     case CoinControlFeatures:
@@ -580,12 +575,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
             setRestartRequired(true);
         }
         break;
-    case Language:
-        if (changed()) {
-            update(value.toString().toStdString());
-            setRestartRequired(true);
-        }
-        break;
     case UseEmbeddedMonospacedFont:
         m_use_embedded_monospaced_font = value.toBool();
         settings.setValue("UseEmbeddedMonospacedFont", m_use_embedded_monospaced_font);
@@ -722,7 +711,6 @@ void OptionsModel::checkAndMigrate()
     migrate_setting(ProxyUse, "fUseProxy");
     migrate_setting(ProxyIPTor, "addrSeparateProxyTor");
     migrate_setting(ProxyUseTor, "fUseSeparateProxyTor");
-    migrate_setting(Language, "language");
 
     // In case migrating QSettings caused any settings value to change, rerun
     // parameter interaction code to update other settings. This is particularly
