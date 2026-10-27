@@ -126,8 +126,6 @@ AC_PATH_PROG([CCACHE], [ccache])
 AC_PATH_PROG([XGETTEXT], [xgettext])
 AC_PATH_PROG([HEXDUMP], [hexdump])
 AC_PATH_TOOL([OBJCOPY], [objcopy])
-AC_PATH_PROG([DOXYGEN], [doxygen])
-AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 
 AC_ARG_VAR([PYTHONPATH], [Augments the default search path for python module files])
 
@@ -290,12 +288,6 @@ AC_ARG_ENABLE([multiprocess],
   [build multiprocess bitcoin-node, bitcoin-wallet, and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental (default is no)])],
   [enable_multiprocess=$enableval],
   [enable_multiprocess=no])
-
-AC_ARG_ENABLE(man,
-    [AS_HELP_STRING([--disable-man],
-                    [do not install man pages (default is to install)])],,
-    enable_man=yes)
-AM_CONDITIONAL([ENABLE_MAN], [test "$enable_man" != "no"])
 
 dnl Enable debug
 AC_ARG_ENABLE([debug],
@@ -2039,9 +2031,8 @@ AC_SUBST(HAVE_MM_PREFETCH)
 AC_SUBST(HAVE_STRONG_GETAUXVAL)
 AC_SUBST(ANDROID_ARCH)
 AC_SUBST(HAVE_EVHTTP_CONNECTION_GET_PEER_CONST_CHAR)
-AC_CONFIG_FILES([Makefile src/Makefile doc/man/Makefile share/qt/Info.plist test/config.ini])
+AC_CONFIG_FILES([Makefile src/Makefile share/qt/Info.plist test/config.ini])
 AC_CONFIG_FILES([contrib/devtools/split-debug.sh],[chmod +x contrib/devtools/split-debug.sh])
-AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/Doxyfile])])
 AC_CONFIG_LINKS([contrib/devtools/iwyu/bitcoin.core.imp:contrib/devtools/iwyu/bitcoin.core.imp])
 AC_CONFIG_LINKS([contrib/filter-lcov.py:contrib/filter-lcov.py])
 AC_CONFIG_LINKS([contrib/macdeploy/background.tiff:contrib/macdeploy/background.tiff])

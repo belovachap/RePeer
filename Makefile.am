@@ -9,9 +9,6 @@ print-%:
 
 ACLOCAL_AMFLAGS = -I build-aux/m4
 SUBDIRS = src
-if ENABLE_MAN
-SUBDIRS += doc/man
-endif
 .PHONY: deploy FORCE
 .INTERMEDIATE: $(COVERAGE_INFO)
 
@@ -213,22 +210,7 @@ CLEANFILES = $(OSX_DMG)
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-man
 
-doc/doxygen/.stamp: doc/Doxyfile FORCE
-	$(MKDIR_P) $(@D)
-	$(DOXYGEN) $^
-	$(AM_V_at) touch $@
-
-if HAVE_DOXYGEN
-docs: doc/doxygen/.stamp
-else
-docs:
-	@echo "error: doxygen not found"
-endif
-
-clean-docs:
-	rm -rf doc/doxygen
-
-clean-local: clean-docs
+clean-local:
 	rm -rf coverage_percent.txt test_bitcoin.coverage/ total.coverage/ fuzz.coverage/ test/tmp/ cache/ $(OSX_APP)
 	rm -rf test/functional/__pycache__ test/functional/test_framework/__pycache__ test/cache share/rpcauth/__pycache__
 	rm -rf osx_volname dist/
