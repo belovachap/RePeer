@@ -343,14 +343,10 @@ CLEAN_BITCOIN_TEST = test/*.gcda test/*.gcno test/fuzz/*.gcda test/fuzz/*.gcno t
 
 CLEANFILES += $(CLEAN_BITCOIN_TEST)
 
-if TARGET_WINDOWS
-bitcoin_test: $(TEST_BINARY)
-else
 if ENABLE_BENCH
 bitcoin_test: $(TEST_BINARY) $(BENCH_BINARY)
 else
 bitcoin_test: $(TEST_BINARY)
-endif
 endif
 
 bitcoin_test_check: $(TEST_BINARY) FORCE
@@ -366,12 +362,9 @@ if BUILD_BITCOIN_TX
 endif
 	@echo "Running test/util/rpcauth-test.py..."
 	$(PYTHON) $(top_builddir)/test/util/rpcauth-test.py
-if TARGET_WINDOWS
-else
 if ENABLE_BENCH
 	@echo "Running bench/bench_bitcoin (one iteration sanity check, only high priority)..."
 	$(BENCH_BINARY) -sanity-check -priority-level=high
-endif
 endif
 	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C secp256k1 check
 

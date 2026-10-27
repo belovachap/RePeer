@@ -159,12 +159,6 @@ AC_ARG_WITH([sqlite],
   [use_sqlite=$withval],
   [use_sqlite=auto])
 
-AC_ARG_WITH([miniupnpc],
-  [AS_HELP_STRING([--with-miniupnpc],
-  [enable UPNP (default is yes if libminiupnpc is found)])],
-  [use_upnp=$withval],
-  [use_upnp=auto])
-
 AC_ARG_WITH([natpmp],
             [AS_HELP_STRING([--with-natpmp],
                             [enable NAT-PMP (default is yes if libnatpmp is found)])],
@@ -674,155 +668,6 @@ AC_ARG_WITH([daemon],
 dnl Require C++17 compiler (no GNU extensions)
 AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory], [nodefault])
 
-case $host in
-  *mingw*)
-     TARGET_OS=windows
-     AC_CHECK_LIB([kernel32], [GetModuleFileNameA],      [], [AC_MSG_ERROR([libkernel32 missing])])
-     AC_CHECK_LIB([user32],   [main],                    [], [AC_MSG_ERROR([libuser32 missing])])
-     AC_CHECK_LIB([gdi32],    [main],                    [], [AC_MSG_ERROR([libgdi32 missing])])
-     AC_CHECK_LIB([comdlg32], [main],                    [], [AC_MSG_ERROR([libcomdlg32 missing])])
-     AC_CHECK_LIB([winmm],    [main],                    [], [AC_MSG_ERROR([libwinmm missing])])
-     AC_CHECK_LIB([shell32],  [SHGetSpecialFolderPathW], [], [AC_MSG_ERROR([libshell32 missing])])
-     AC_CHECK_LIB([comctl32], [main],                    [], [AC_MSG_ERROR([libcomctl32 missing])])
-     AC_CHECK_LIB([ole32],    [CoCreateInstance],        [], [AC_MSG_ERROR([libole32 missing])])
-     AC_CHECK_LIB([oleaut32], [main],                    [], [AC_MSG_ERROR([liboleaut32 missing])])
-     AC_CHECK_LIB([uuid],     [main],                    [], [AC_MSG_ERROR([libuuid missing])])
-     AC_CHECK_LIB([advapi32], [CryptAcquireContextW],    [], [AC_MSG_ERROR([libadvapi32 missing])])
-     AC_CHECK_LIB([ws2_32],   [WSAStartup],              [], [AC_MSG_ERROR([libws2_32 missing])])
-     AC_CHECK_LIB([shlwapi],  [PathRemoveFileSpecW],     [], [AC_MSG_ERROR([libshlwapi missing])])
-     AC_CHECK_LIB([iphlpapi], [GetAdaptersAddresses],    [], [AC_MSG_ERROR([libiphlpapi missing])])
-
-     dnl -static is interpreted by libtool, where it has a different meaning.
-     dnl In libtool-speak, it's -all-static.
-     AX_CHECK_LINK_FLAG([-static], [LIBTOOL_APP_LDFLAGS="$LIBTOOL_APP_LDFLAGS -all-static"])
-
-     AC_PATH_PROG([MAKENSIS], [makensis], [none])
-     if test "$MAKENSIS" = "none"; then
-       AC_MSG_WARN([makensis not found. Cannot create installer.])
-     fi
-
-     AC_PATH_TOOL([WINDRES], [windres], [none])
-     if test "$WINDRES" = "none"; then
-       AC_MSG_ERROR([windres not found])
-     fi
-
-     CORE_CPPFLAGS="$CORE_CPPFLAGS -D_MT -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0601 -D_WIN32_IE=0x0501 -DWIN32_LEAN_AND_MEAN"
-     dnl Prevent the definition of min/max macros.
-     dnl We always want to use the standard library.
-     CORE_CPPFLAGS="$CORE_CPPFLAGS -DNOMINMAX"
-
-     dnl libtool insists upon adding -nostdlib and a list of objects/libs to link against.
-     dnl That breaks our ability to build dll's with static libgcc/libstdc++/libssp. Override
-     dnl its command here, with the predeps/postdeps removed, and -static inserted. Postdeps are
-     dnl also overridden to prevent their insertion later.
-     dnl This should only affect dll's.
-     archive_cmds_CXX="\$CC -shared \$libobjs \$deplibs \$compiler_flags -static -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
-     postdeps_CXX=
-
-     dnl We require Windows 7 (NT 6.1) or later
-     AX_CHECK_LINK_FLAG([-Wl,--major-subsystem-version -Wl,6 -Wl,--minor-subsystem-version -Wl,1], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,--major-subsystem-version -Wl,6 -Wl,--minor-subsystem-version -Wl,1"], [], [$LDFLAG_WERROR])
-     ;;
-  *darwin*)
-     TARGET_OS=darwin
-     if  test $cross_compiling != "yes"; then
-       BUILD_OS=darwin
-       AC_CHECK_PROG([BREW], [brew], [brew])
-       if test "$BREW" = "brew"; then
-         dnl These Homebrew packages may be keg-only, meaning that they won't be found
-         dnl in expected paths because they may conflict with system files. Ask
-         dnl Homebrew where each one is located, then adjust paths accordingly.
-         dnl It's safe to add these paths even if the functionality is disabled by
-         dnl the user (--without-wallet or --without-gui for example).
-         openssl_prefix=`$BREW --prefix openssl 2>/dev/null`
-         if test x$openssl_prefix != x; then
-           PKG_CONFIG_PATH="$openssl_prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-           export PKG_CONFIG_PATH
-           CRYPTO_CPPFLAGS="-I$openssl_prefix/include"
-         fi
-         if test "x$use_bdb" != xno && $BREW list --versions berkeley-db4 >/dev/null && test "x$BDB_CFLAGS" = "x" && test "x$BDB_LIBS" = "x"; then
-           bdb_prefix=$($BREW --prefix berkeley-db4 2>/dev/null)
-           dnl This must precede the call to BITCOIN_FIND_BDB48 below.
-           BDB_CFLAGS="-I$bdb_prefix/include"
-           BDB_LIBS="-L$bdb_prefix/lib -ldb_cxx-4.8"
-         fi
-
-         if $BREW list --versions qt@5 >/dev/null; then
-           export PKG_CONFIG_PATH="$($BREW --prefix qt@5 2>/dev/null)/lib/pkgconfig:$PKG_CONFIG_PATH"
-         fi
-
-         case $host in
-           *aarch64*)
-             dnl The preferred Homebrew prefix for Apple Silicon is /opt/homebrew.
-             dnl Therefore, as we do not use pkg-config to detect miniupnpc and libnatpmp
-             dnl packages, we should set the CPPFLAGS and LDFLAGS variables for them
-             dnl explicitly.
-             if test "$use_upnp" != "no" && $BREW list --versions miniupnpc >/dev/null; then
-               miniupnpc_prefix=$($BREW --prefix miniupnpc 2>/dev/null)
-               if test "$suppress_external_warnings" != "no"; then
-                 MINIUPNPC_CPPFLAGS="-isystem $miniupnpc_prefix/include"
-               else
-                 MINIUPNPC_CPPFLAGS="-I$miniupnpc_prefix/include"
-               fi
-               MINIUPNPC_LIBS="-L$miniupnpc_prefix/lib"
-             fi
-             if test "$use_natpmp" != "no" && $BREW list --versions libnatpmp >/dev/null; then
-               libnatpmp_prefix=$($BREW --prefix libnatpmp 2>/dev/null)
-               if test "$suppress_external_warnings" != "no"; then
-                 NATPMP_CPPFLAGS="-isystem $libnatpmp_prefix/include"
-               else
-                 NATPMP_CPPFLAGS="-I$libnatpmp_prefix/include"
-               fi
-               NATPMP_LIBS="-L$libnatpmp_prefix/lib"
-             fi
-             ;;
-         esac
-       fi
-     else
-       case $build_os in
-         *darwin*)
-           BUILD_OS=darwin
-           ;;
-         *)
-           AC_PATH_TOOL([DSYMUTIL], [dsymutil], [dsymutil])
-           AC_PATH_TOOL([INSTALL_NAME_TOOL], [install_name_tool], [install_name_tool])
-           AC_PATH_TOOL([OTOOL], [otool], [otool])
-           AC_PATH_PROGS([XORRISOFS], [xorrisofs], [xorrisofs])
-           AC_PATH_PROGS([DMG], [dmg], [dmg])
-
-           dnl libtool will try to strip the static lib, which is a problem for
-           dnl cross-builds because strip attempts to call a hard-coded ld,
-           dnl which may not exist in the path. Stripping the .a is not
-           dnl necessary, so just disable it.
-           old_striplib=
-           ;;
-       esac
-     fi
-
-     AX_CHECK_LINK_FLAG([-Wl,-headerpad_max_install_names], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,-headerpad_max_install_names"], [], [$LDFLAG_WERROR])
-     CORE_CPPFLAGS="$CORE_CPPFLAGS -DMAC_OSX -DOBJC_OLD_DISPATCH_PROTOTYPES=0"
-     OBJCXXFLAGS="$CXXFLAGS"
-     ;;
-   *android*)
-     dnl make sure android stays above linux for hosts like *linux-android*
-     TARGET_OS=android
-     case $host in
-       *x86_64*)
-          ANDROID_ARCH=x86_64
-          ;;
-        *aarch64*)
-          ANDROID_ARCH=arm64-v8a
-          ;;
-        *armv7a*)
-          ANDROID_ARCH=armeabi-v7a
-          ;;
-        *) AC_MSG_ERROR([Could not determine Android arch, or it is unsupported]) ;;
-      esac
-     ;;
-   *linux*)
-     TARGET_OS=linux
-     ;;
-esac
-
 if test "$use_extended_functional_tests" != "no"; then
   AC_SUBST(EXTENDED_FUNCTIONAL_TESTS, --extended)
 fi
@@ -926,10 +771,7 @@ if test "$enable_gprof" = "yes"; then
         [AC_MSG_ERROR([gprof profiling requested but not available])], [$GPROF_LDFLAGS])
 fi
 
-if test "$TARGET_OS" != "windows"; then
-  dnl All windows code is PIC, forcing it on just adds useless compile warnings
-  AX_CHECK_COMPILE_FLAG([-fPIC], [PIC_FLAGS="-fPIC"])
-fi
+AX_CHECK_COMPILE_FLAG([-fPIC], [PIC_FLAGS="-fPIC"])
 
 dnl Versions of gcc prior to 12.1 (commit
 dnl https://github.com/gcc-mirror/gcc/commit/551aa75778a4c5165d9533cd447c8fc822f583e1)
@@ -981,15 +823,6 @@ if test "$use_hardening" != "no"; then
        AC_CHECK_LIB([ssp], [main], [], [AC_MSG_ERROR([libssp missing])])
     ;;
   esac
-fi
-
-dnl These flags are specific to ld64, and may cause issues with other linkers.
-dnl For example: GNU ld will interpret -dead_strip as -de and then try and use
-dnl "ad_strip" as the symbol for the entry point.
-if test "$TARGET_OS" = "darwin"; then
-  AX_CHECK_LINK_FLAG([-Wl,-dead_strip], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,-dead_strip"], [], [$LDFLAG_WERROR])
-  AX_CHECK_LINK_FLAG([-Wl,-dead_strip_dylibs], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,-dead_strip_dylibs"], [], [$LDFLAG_WERROR])
-  AX_CHECK_LINK_FLAG([-Wl,-bind_at_load], [HARDENED_LDFLAGS="$HARDENED_LDFLAGS -Wl,-bind_at_load"], [], [$LDFLAG_WERROR])
 fi
 
 AC_CHECK_HEADERS([endian.h sys/endian.h byteswap.h sys/select.h sys/prctl.h sys/sysctl.h vm/vm_param.h sys/vmmeter.h sys/resources.h])
@@ -1627,9 +1460,7 @@ dnl libevent check
 use_libevent=no
 if test "$build_bitcoin_cli$build_bitcoind$bitcoin_enable_qt$enable_fuzz_binary$use_tests$use_bench" != "nononononono"; then
   PKG_CHECK_MODULES([EVENT], [libevent >= 2.1.8], [use_libevent=yes], [AC_MSG_ERROR([libevent version 2.1.8 or greater not found.])])
-  if test "$TARGET_OS" != "windows"; then
-    PKG_CHECK_MODULES([EVENT_PTHREADS], [libevent_pthreads >= 2.1.8], [], [AC_MSG_ERROR([libevent_pthreads version 2.1.8 or greater not found.])])
-  fi
+  PKG_CHECK_MODULES([EVENT_PTHREADS], [libevent_pthreads >= 2.1.8], [], [AC_MSG_ERROR([libevent_pthreads version 2.1.8 or greater not found.])])
 
   if test "$suppress_external_warnings" != "no"; then
     EVENT_CFLAGS=SUPPRESS_WARNINGS($EVENT_CFLAGS)
@@ -1810,9 +1641,6 @@ else
     AC_MSG_RESULT([yes])
     use_upnp=yes
     AC_DEFINE([USE_UPNP], [1], [Define to 1 if UPnP support should be compiled in.])
-    if test "$TARGET_OS" = "windows"; then
-      MINIUPNPC_CPPFLAGS="$MINIUPNPC_CPPFLAGS -DMINIUPNP_STATICLIB"
-    fi
   else
     AC_MSG_RESULT([no])
   fi
@@ -1831,9 +1659,6 @@ else
     AC_MSG_RESULT([yes])
     use_natpmp=yes
     AC_DEFINE([USE_NATPMP], [1], [Define to 1 if UPnP support should be compiled in.])
-    if test "$TARGET_OS" = "windows"; then
-      NATPMP_CPPFLAGS="$NATPMP_CPPFLAGS -DSTATICLIB -DNATPMP_STATICLIB"
-    fi
   else
     AC_MSG_RESULT([no])
   fi
@@ -1928,10 +1753,6 @@ if test "$build_bitcoin_wallet$build_bitcoin_cli$build_bitcoin_tx$build_bitcoin_
   AC_MSG_ERROR([No targets! Please specify at least one of: --with-utils --with-libs --with-daemon --with-gui --enable-fuzz(-binary) --enable-bench or --enable-tests])
 fi
 
-AM_CONDITIONAL([TARGET_DARWIN], [test "$TARGET_OS" = "darwin"])
-AM_CONDITIONAL([BUILD_DARWIN], [test "$BUILD_OS" = "darwin"])
-AM_CONDITIONAL([TARGET_LINUX], [test "$TARGET_OS" = "linux"])
-AM_CONDITIONAL([TARGET_WINDOWS], [test "$TARGET_OS" = "windows"])
 AM_CONDITIONAL([ENABLE_WALLET], [test "$enable_wallet" = "yes"])
 AM_CONDITIONAL([USE_SQLITE], [test "$use_sqlite" = "yes"])
 AM_CONDITIONAL([USE_BDB], [test "$use_bdb" = "yes"])
@@ -2100,7 +1921,6 @@ echo "  werror          = $enable_werror"
 echo "  LTO             = $enable_lto"
 echo
 echo "  target os       = $host_os"
-echo "  build os        = $build_os"
 echo
 echo "  CC              = $CC"
 echo "  CFLAGS          = $PTHREAD_CFLAGS $CFLAGS"

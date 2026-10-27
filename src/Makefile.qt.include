@@ -267,8 +267,6 @@ BITCOIN_QT_BASE_CPP = \
   qt/trafficgraphwidget.cpp \
   qt/utilitydialog.cpp
 
-BITCOIN_QT_WINDOWS_CPP = qt/winshutdownmonitor.cpp
-
 BITCOIN_QT_WALLET_CPP = \
   qt/addressbookpage.cpp \
   qt/addresstablemodel.cpp \
@@ -305,9 +303,6 @@ BITCOIN_QT_WALLET_CPP = \
   qt/mintingview.cpp 
 
 BITCOIN_QT_CPP = $(BITCOIN_QT_BASE_CPP)
-if TARGET_WINDOWS
-BITCOIN_QT_CPP += $(BITCOIN_QT_WINDOWS_CPP)
-endif
 if ENABLE_WALLET
 BITCOIN_QT_CPP += $(BITCOIN_QT_WALLET_CPP)
 endif # ENABLE_WALLET
@@ -325,9 +320,6 @@ qt_libbitcoinqt_a_OBJCXXFLAGS = $(AM_OBJCXXFLAGS) $(QT_PIE_FLAGS)
 
 qt_libbitcoinqt_a_SOURCES = $(BITCOIN_QT_CPP) $(BITCOIN_QT_H) $(QT_FORMS_UI) \
   $(QT_QRC) $(QT_QRC_LOCALE) $(QT_TS) $(QT_RES_FONTS) $(QT_RES_ICONS) $(QT_RES_ANIMATION)
-if TARGET_DARWIN
-  qt_libbitcoinqt_a_SOURCES += $(BITCOIN_MM)
-endif
 
 nodist_qt_libbitcoinqt_a_SOURCES = $(QT_MOC_CPP) $(QT_MOC) $(QT_QRC_CPP) $(QT_QRC_LOCALE_CPP)
 
@@ -345,9 +337,6 @@ peercoin_qt_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BITCOIN_QT_INCLUDES)
 peercoin_qt_cxxflags = $(AM_CXXFLAGS) $(QT_PIE_FLAGS)
 
 peercoin_qt_sources = qt/main.cpp
-if TARGET_WINDOWS
-  peercoin_qt_sources += $(BITCOIN_QT_RC)
-endif
 peercoin_qt_ldadd = qt/libbitcoinqt.a $(LIBBITCOIN_NODE)
 if ENABLE_WALLET
 peercoin_qt_ldadd += $(LIBBITCOIN_UTIL) $(LIBBITCOIN_WALLET)
@@ -379,16 +368,6 @@ repeer_gui_LIBTOOLFLAGS = $(peercoin_qt_libtoolflags)
 QT_QM=$(QT_TS:.ts=.qm)
 
 SECONDARY: $(QT_QM)
-
-# The resulted bitcoin_en.xlf source file should follow Transifex requirements.
-# See: https://docs.transifex.com/formats/xliff#how-to-distinguish-between-a-source-file-and-a-translation-file
-translate: $(srcdir)/qt/bitcoinstrings.cpp $(QT_FORMS_UI) $(QT_FORMS_UI) $(BITCOIN_QT_BASE_CPP) qt/bitcoin.cpp $(BITCOIN_QT_WINDOWS_CPP) $(BITCOIN_QT_WALLET_CPP) $(BITCOIN_QT_H) $(BITCOIN_MM)
-	@test -n $(LUPDATE) || echo "lupdate is required for updating translations"
-	$(AM_V_GEN) QT_SELECT=$(QT_SELECT) $(LUPDATE) -no-obsolete -I $(srcdir) -locations relative $^ -ts $(srcdir)/qt/locale/bitcoin_en.ts
-	@test -n $(LCONVERT) || echo "lconvert is required for updating translations"
-	$(AM_V_GEN) QT_SELECT=$(QT_SELECT) $(LCONVERT) -drop-translations -o $(srcdir)/qt/locale/bitcoin_en.xlf -i $(srcdir)/qt/locale/bitcoin_en.ts
-	@$(SED) -i.old -e 's|source-language="en" target-language="en"|source-language="en"|' -e '/<target xml:space="preserve"><\/target>/d' $(srcdir)/qt/locale/bitcoin_en.xlf
-	@rm -f $(srcdir)/qt/locale/bitcoin_en.xlf.old
 
 $(QT_QRC_CPP): $(QT_QRC) $(QT_FORMS_H) $(QT_RES_FONTS) $(QT_RES_ICONS) $(QT_RES_ANIMATION)
 	@test -f $(RCC)

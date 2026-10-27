@@ -739,10 +739,6 @@ bitcoin_bin_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 bitcoin_bin_cxxflags = $(AM_CXXFLAGS) $(PIE_FLAGS)
 bitcoin_bin_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 
-if TARGET_WINDOWS
-bitcoin_daemon_sources += bitcoind-res.rc
-endif
-
 bitcoin_bin_ldadd = \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_COMMON) \
@@ -775,10 +771,6 @@ repeer_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
 repeer_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 repeer_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 
-if TARGET_WINDOWS
-repeer_cli_SOURCES += bitcoin-cli-res.rc
-endif
-
 repeer_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
@@ -796,10 +788,6 @@ repeer_tx_SOURCES = \
 repeer_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 repeer_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 repeer_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
-
-if TARGET_WINDOWS
-repeer_tx_SOURCES += bitcoin-tx-res.rc
-endif
 
 repeer_tx_LDADD = \
   $(LIBUNIVALUE) \
@@ -835,20 +823,11 @@ repeer_wallet_LDADD = \
   $(LIBMEMENV) \
   $(CRYPTO_LIBS)
 
-if TARGET_WINDOWS
-repeer_wallet_SOURCES += bitcoin-wallet-res.rc
-endif
-#
-
 # bitcoin-util binary #
 repeer_util_SOURCES = bitcoin-util.cpp
 repeer_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 repeer_util_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 repeer_util_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
-
-if TARGET_WINDOWS
-repeer_util_SOURCES += bitcoin-util-res.rc
-endif
 
 repeer_util_LDADD = \
   $(LIBBITCOIN_COMMON) \
