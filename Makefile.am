@@ -22,13 +22,6 @@ endif
 empty :=
 space := $(empty) $(empty)
 
-OSX_APP=Peercoin-Qt.app
-OSX_VOLNAME = $(subst $(space),-,$(PACKAGE_NAME))
-OSX_DMG = $(OSX_VOLNAME).dmg
-OSX_DEPLOY_SCRIPT=$(top_srcdir)/contrib/macdeploy/macdeployqtplus
-OSX_INSTALLER_ICONS=$(top_srcdir)/src/qt/res/icons/peercoin.icns
-OSX_PLIST=$(top_builddir)/share/qt/Info.plist #not installed
-
 DIST_CONTRIB = \
            $(top_srcdir)/test/sanitizer_suppressions/lsan \
            $(top_srcdir)/test/sanitizer_suppressions/tsan \
@@ -49,9 +42,6 @@ WINDOWS_PACKAGING = $(top_srcdir)/share/pixmaps/peercoin.ico \
   $(top_srcdir)/share/pixmaps/nsis-header.bmp \
   $(top_srcdir)/share/pixmaps/nsis-wizard.bmp \
   $(top_srcdir)/doc/README_windows.txt
-
-OSX_PACKAGING = $(OSX_DEPLOY_SCRIPT) $(OSX_INSTALLER_ICONS) \
-  $(top_srcdir)/contrib/macdeploy/detached-sig-create.sh
 
 COVERAGE_INFO = $(COV_TOOL_WRAPPER) baseline.info \
   test_bitcoin_filtered.info total_coverage.info \
@@ -144,7 +134,7 @@ endif
 
 dist_noinst_SCRIPTS = autogen.sh
 
-EXTRA_DIST = $(DIST_SHARE) $(DIST_CONTRIB) $(WINDOWS_PACKAGING) $(OSX_PACKAGING) $(BIN_CHECKS)
+EXTRA_DIST = $(DIST_SHARE) $(DIST_CONTRIB) $(WINDOWS_PACKAGING) $(BIN_CHECKS)
 
 EXTRA_DIST += \
     test/functional \
@@ -206,14 +196,10 @@ EXTRA_DIST += \
     test/util/data/txcreatesignv2.hex \
     test/util/rpcauth-test.py
 
-CLEANFILES = $(OSX_DMG)
-
-DISTCHECK_CONFIGURE_FLAGS = --enable-man
-
 clean-local:
-	rm -rf coverage_percent.txt test_bitcoin.coverage/ total.coverage/ fuzz.coverage/ test/tmp/ cache/ $(OSX_APP)
+	rm -rf coverage_percent.txt test_bitcoin.coverage/ total.coverage/ fuzz.coverage/ test/tmp/ cache/
 	rm -rf test/functional/__pycache__ test/functional/test_framework/__pycache__ test/cache share/rpcauth/__pycache__
-	rm -rf osx_volname dist/
+	rm -rf dist/
 
 test-security-check:
 if TARGET_DARWIN

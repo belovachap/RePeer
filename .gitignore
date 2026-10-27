@@ -55,7 +55,6 @@ src/config/bitcoin-config.h
 src/config/bitcoin-config.h.in
 src/config/stamp-h1
 src/obj
-share/qt/Info.plist
 src/obj/build.h
 src/univalue/gen
 
@@ -109,17 +108,12 @@ src/qt/bitcoin-qt.includes
 *.qm
 Makefile
 !depends/Makefile
-src/qt/peercoin-qt
-PPCoin-Qt.app
-Peercoin-Qt.app
 
 # Qt Creator
 Makefile.am.user
 
 # Unit-tests
 Makefile.test
-ppcoin-qt_test
-peercoin-qt_test
 
 # Resources cpp
 qrc_*.cpp
@@ -160,9 +154,6 @@ db4/
 
 # clang-check
 *.plist
-
-osx_volname
-dist/
 
 /guix-build-*
 
