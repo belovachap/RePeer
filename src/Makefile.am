@@ -995,7 +995,6 @@ clean-local:
 	-$(MAKE) -C secp256k1 clean
 	-rm -f leveldb/*/*.gcda leveldb/*/*.gcno leveldb/helpers/memenv/*.gcda leveldb/helpers/memenv/*.gcno
 	-rm -f config.h
-	-rm -rf test/__pycache__
 
 .rc.o:
 	@test -f $(WINDRES)
@@ -1065,21 +1064,8 @@ include Makefile.minisketch.include
 include Makefile.crc32c.include
 include Makefile.leveldb.include
 
-include Makefile.test_util.include
-include Makefile.test_fuzz.include
-
-include Makefile.test.include
-
-if ENABLE_BENCH
-include Makefile.bench.include
-endif
-
 if ENABLE_QT
 include Makefile.qt.include
-endif
-
-if ENABLE_QT_TESTS
-include Makefile.qttest.include
 endif
 
 include Makefile.univalue.include
