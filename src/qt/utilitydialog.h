@@ -12,31 +12,6 @@ QT_BEGIN_NAMESPACE
 class QMainWindow;
 QT_END_NAMESPACE
 
-namespace Ui {
-    class HelpMessageDialog;
-}
-
-/** "Help message" dialog box */
-class HelpMessageDialog : public QDialog
-{
-    Q_OBJECT
-
-public:
-    explicit HelpMessageDialog(QWidget *parent, bool about);
-    ~HelpMessageDialog();
-
-    void printToConsole();
-    void showOrPrint();
-
-private:
-    Ui::HelpMessageDialog *ui;
-    QString text;
-
-private Q_SLOTS:
-    void on_okButton_accepted();
-};
-
-
 /** "Shutdown" window */
 class ShutdownWindow : public QWidget
 {

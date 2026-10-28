@@ -119,7 +119,6 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
 
 
     rpcConsole = new RPCConsole(node, _platformStyle, nullptr);
-    helpMessageDialog = new HelpMessageDialog(this, false);
 #ifdef ENABLE_WALLET
     if(enableWallet)
     {
@@ -322,13 +321,6 @@ void BitcoinGUI::createActions()
     quitAction->setStatusTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(tr("Ctrl+Q")));
     quitAction->setMenuRole(QAction::QuitRole);
-    aboutAction = new QAction(tr("&About %1").arg(PACKAGE_NAME), this);
-    aboutAction->setStatusTip(tr("Show information about %1").arg(PACKAGE_NAME));
-    aboutAction->setMenuRole(QAction::AboutRole);
-    aboutAction->setEnabled(false);
-    aboutQtAction = new QAction(tr("About &Qt"), this);
-    aboutQtAction->setStatusTip(tr("Show information about Qt"));
-    aboutQtAction->setMenuRole(QAction::AboutQtRole);
     optionsAction = new QAction(tr("&Options…"), this);
     optionsAction->setStatusTip(tr("Modify configuration options for %1").arg(PACKAGE_NAME));
     optionsAction->setMenuRole(QAction::PreferencesRole);
@@ -370,8 +362,6 @@ void BitcoinGUI::createActions()
     openAction = new QAction(tr("Open &URI…"), this);
     openAction->setStatusTip(tr("Open a peercoin: URI"));
 
-    showHelpMessageAction = new QAction(tr("&Command-line Options"), this);
-
     m_open_wallet_action = new QAction(tr("Open Wallet"), this);
     m_open_wallet_action->setEnabled(false);
     m_open_wallet_action->setStatusTip(tr("Open a wallet"));
@@ -391,20 +381,6 @@ void BitcoinGUI::createActions()
     m_restore_wallet_action->setStatusTip(tr("Restore a wallet from a backup file"));
 
     m_close_all_wallets_action = new QAction(tr("Close All Wallets…"), this);
-    showHelpMessageAction->setMenuRole(QAction::NoRole);
-    showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible Peercoin command-line options").arg(PACKAGE_NAME));
-
-    openWebAction = new QAction(tr("&Website"), this);
-    openWebAction->setStatusTip(tr("Open the Peercoin website in a web browser."));
-
-    openDonateAction = new QAction(tr("&Donate"), this);
-    openDonateAction->setStatusTip(tr("Finacially support development of the Peercoin project."));
-
-    openChatroomAction = new QAction(tr("&Chatroom"), this);
-    openChatroomAction->setStatusTip(tr("Open the Peercoin Discord chat in a web browser."));
-
-    openForumAction = new QAction(tr("&Forum"), this);
-    openForumAction->setStatusTip(tr("Open talk.peercoin.net in a web browser."));
 
     m_mask_values_action = new QAction(tr("&Mask values"), this);
     m_mask_values_action->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_M));
@@ -412,18 +388,10 @@ void BitcoinGUI::createActions()
     m_mask_values_action->setCheckable(true);
 
     connect(quitAction, &QAction::triggered, this, &BitcoinGUI::quitRequested);
-    connect(aboutAction, &QAction::triggered, this, &BitcoinGUI::aboutClicked);
-    connect(aboutQtAction, &QAction::triggered, qApp, QApplication::aboutQt);
     connect(optionsAction, &QAction::triggered, this, &BitcoinGUI::optionsClicked);
-    connect(showHelpMessageAction, &QAction::triggered, this, &BitcoinGUI::showHelpMessageClicked);
     connect(openRPCConsoleAction, &QAction::triggered, this, &BitcoinGUI::showDebugWindow);
     // prevents an open debug window from becoming stuck/unusable on client shutdown
     connect(quitAction, &QAction::triggered, rpcConsole, &QWidget::hide);
-
-    connect(openWebAction, SIGNAL(triggered()), this, SLOT(openWeb()));
-    connect(openDonateAction, SIGNAL(triggered()), this, SLOT(openDonate()));
-    connect(openChatroomAction, SIGNAL(triggered()), this, SLOT(openChatroom()));
-    connect(openForumAction, SIGNAL(triggered()), this, SLOT(openForum()));
 
 #ifdef ENABLE_WALLET
     if(walletFrame)
@@ -602,16 +570,6 @@ void BitcoinGUI::createMenuBar()
             showDebugWindow();
         });
     }
-
-    QMenu *help = appMenuBar->addMenu(tr("&Help"));
-    help->addAction(openWebAction);
-    help->addAction(openDonateAction);
-    help->addAction(openChatroomAction);
-    help->addAction(openForumAction);
-    help->addAction(showHelpMessageAction);
-    help->addSeparator();
-    help->addAction(aboutAction);
-    help->addAction(aboutQtAction);
 }
 
 void BitcoinGUI::createToolBars()
@@ -962,15 +920,6 @@ void BitcoinGUI::optionsClicked()
     openOptionsDialogWithTab(OptionsDialog::TAB_MAIN);
 }
 
-void BitcoinGUI::aboutClicked()
-{
-    if(!clientModel)
-        return;
-
-    auto dlg = new HelpMessageDialog(this, /*about=*/true);
-    GUIUtil::ShowModalDialogAsynchronously(dlg);
-}
-
 void BitcoinGUI::showDebugWindow()
 {
     GUIUtil::bringToFront(rpcConsole);
@@ -981,11 +930,6 @@ void BitcoinGUI::showDebugWindowActivateConsole()
 {
     rpcConsole->setTabFocus(RPCConsole::TabTypes::CONSOLE);
     showDebugWindow();
-}
-
-void BitcoinGUI::showHelpMessageClicked()
-{
-    GUIUtil::bringToFront(helpMessageDialog);
 }
 
 #ifdef ENABLE_WALLET
@@ -1041,22 +985,6 @@ void BitcoinGUI::gotoLoadPSBT(bool from_clipboard)
     if (walletFrame) walletFrame->gotoLoadPSBT(from_clipboard);
 }
 #endif // ENABLE_WALLET
-
-void BitcoinGUI::openWeb() {
-    QDesktopServices::openUrl(QUrl("https://peercoin.net"));
-}
-
-void BitcoinGUI::openDonate() {
-    QDesktopServices::openUrl(QUrl("https://www.peercoin.net/foundation"));
-}
-
-void BitcoinGUI::openChatroom() {
-    QDesktopServices::openUrl(QUrl("https://discord.gg/XPxfwtG"));
-}
-
-void BitcoinGUI::openForum() {
-    QDesktopServices::openUrl(QUrl("https://talk.peercoin.net"));
-}
 
 void BitcoinGUI::updateNetworkState()
 {
@@ -1383,7 +1311,6 @@ void BitcoinGUI::showEvent(QShowEvent *event)
 {
     // enable the debug window when the main window shows up
     openRPCConsoleAction->setEnabled(true);
-    aboutAction->setEnabled(true);
     optionsAction->setEnabled(true);
 }
 

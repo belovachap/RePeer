@@ -43,7 +43,6 @@ class UnitDisplayStatusBarControl;
 class WalletController;
 class WalletFrame;
 class WalletModel;
-class HelpMessageDialog;
 class ModalOverlay;
 enum class SynchronizationState;
 
@@ -151,7 +150,6 @@ private:
     QAction* verifyMessageAction = nullptr;
     QAction* m_load_psbt_action = nullptr;
     QAction* m_load_psbt_clipboard_action = nullptr;
-    QAction* aboutAction = nullptr;
     QAction* receiveCoinsAction = nullptr;
     QAction* optionsAction = nullptr;
     QAction* encryptWalletAction = nullptr;
@@ -159,20 +157,14 @@ private:
     QAction* changePassphraseAction = nullptr;
     QAction* decryptForMintingAction = nullptr;
     QAction* decryptCompletelyAction = nullptr;
-    QAction* aboutQtAction = nullptr;
     QAction* openRPCConsoleAction = nullptr;
     QAction* openAction = nullptr;
-    QAction* showHelpMessageAction = nullptr;
     QAction* m_create_wallet_action{nullptr};
     QAction* m_open_wallet_action{nullptr};
     QMenu* m_open_wallet_menu{nullptr};
     QAction* m_restore_wallet_action{nullptr};
     QAction* m_close_wallet_action{nullptr};
     QAction* m_close_all_wallets_action{nullptr};
-    QAction* openWebAction = nullptr;
-    QAction* openDonateAction = nullptr;
-    QAction* openChatroomAction = nullptr;
-    QAction* openForumAction = nullptr;
     QAction* m_wallet_selector_label_action = nullptr;
     QAction* m_wallet_selector_action = nullptr;
     QAction* m_mask_values_action{nullptr};
@@ -185,7 +177,6 @@ private:
     Notificator* notificator = nullptr;
     MintingView* mintingView = nullptr;
     RPCConsole* rpcConsole = nullptr;
-    HelpMessageDialog* helpMessageDialog = nullptr;
     ModalOverlay* modalOverlay = nullptr;
 
     QMenu* m_network_context_menu = new QMenu(this);
@@ -312,21 +303,10 @@ public Q_SLOTS:
 #endif // ENABLE_WALLET
     /** Show configuration dialog */
     void optionsClicked();
-    /** Show about dialog */
-    void aboutClicked();
     /** Show debug window */
     void showDebugWindow();
     /** Show debug window and set focus to the console */
     void showDebugWindowActivateConsole();
-    /** Show help message dialog */
-    void showHelpMessageClicked();
-
-    // Open chatroom / forum URL in the system's browser.
-    void openWeb();
-    void openDonate();
-    void openChatroom();
-    void openForum();
-
 
     /** Show window if hidden, unminimize when minimized, rise when obscured or show if hidden and fToggleHidden is true */
     void showNormalIfMinimized() { showNormalIfMinimized(false); }
