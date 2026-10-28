@@ -136,14 +136,6 @@ coverage_percent.txt
 /cov_tool_wrapper.sh
 qa-assets/
 
-#build tests
-linux-coverage-build
-linux-build
-win32-build
-test/config.ini
-test/cache/*
-test/.mypy_cache/
-
 libbitcoinconsensus.pc
 contrib/devtools/split-debug.sh
 
