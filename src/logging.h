@@ -42,7 +42,6 @@ namespace BCLog {
         MEMPOOL     = (1 <<  2),
         HTTP        = (1 <<  3),
         BENCH       = (1 <<  4),
-        ZMQ         = (1 <<  5),
         WALLETDB    = (1 <<  6),
         RPC         = (1 <<  7),
         ESTIMATEFEE = (1 <<  8),

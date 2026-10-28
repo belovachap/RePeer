@@ -156,7 +156,6 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::MEMPOOL, "mempool"},
     {BCLog::HTTP, "http"},
     {BCLog::BENCH, "bench"},
-    {BCLog::ZMQ, "zmq"},
     {BCLog::WALLETDB, "walletdb"},
     {BCLog::RPC, "rpc"},
     {BCLog::ESTIMATEFEE, "estimatefee"},
@@ -236,8 +235,6 @@ std::string LogCategoryToStr(BCLog::LogFlags category)
         return "http";
     case BCLog::LogFlags::BENCH:
         return "bench";
-    case BCLog::LogFlags::ZMQ:
-        return "zmq";
     case BCLog::LogFlags::WALLETDB:
         return "walletdb";
     case BCLog::LogFlags::RPC:

@@ -35,9 +35,6 @@ LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.la
 LIBBITCOINQT=qt/libbitcoinqt.a
 LIBSECP256K1=secp256k1/libsecp256k1.la
 
-if ENABLE_ZMQ
-LIBBITCOIN_ZMQ=libbitcoin_zmq.a
-endif
 if BUILD_BITCOIN_KERNEL_LIB
 LIBBITCOINKERNEL=libpeercoinkernel.la
 endif
@@ -78,8 +75,7 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_IPC) \
   $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_WALLET_TOOL) \
-  $(LIBBITCOIN_ZMQ)
+  $(LIBBITCOIN_WALLET_TOOL)
 
 if BUILD_BITCOIND
   bin_PROGRAMS += repeerd
@@ -332,11 +328,6 @@ BITCOIN_CORE_H = \
   wallet/walletutil.h \
   walletinitinterface.h \
   warnings.h \
-  zmq/zmqabstractnotifier.h \
-  zmq/zmqnotificationinterface.h \
-  zmq/zmqpublishnotifier.h \
-  zmq/zmqrpc.h \
-  zmq/zmqutil.h \
 ## --- peercoin headers start from this line --- ##
   kernel.h \
   kernelrecord.h
@@ -440,20 +431,6 @@ if !ENABLE_WALLET
 libbitcoin_node_a_SOURCES += dummywallet.cpp
 endif
 #
-
-# zmq #
-if ENABLE_ZMQ
-libbitcoin_zmq_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
-libbitcoin_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_zmq_a_SOURCES = \
-  zmq/zmqabstractnotifier.cpp \
-  zmq/zmqnotificationinterface.cpp \
-  zmq/zmqpublishnotifier.cpp \
-  zmq/zmqrpc.cpp \
-  zmq/zmqutil.cpp
-endif
-#
-
 
 # wallet: shared between repeerd and repeer-qt, but only linked
 # when wallet enabled
@@ -739,14 +716,13 @@ bitcoin_bin_ldadd = \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
   $(LIBUNIVALUE) \
-  $(LIBBITCOIN_ZMQ) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBLEVELDB) \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-bitcoin_bin_ldadd += $(BDB_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(SQLITE_LIBS) $(CRYPTO_LIBS)
+bitcoin_bin_ldadd += $(BDB_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(SQLITE_LIBS) $(CRYPTO_LIBS)
 
 repeerd_SOURCES = $(bitcoin_daemon_sources) init/bitcoind.cpp
 repeerd_CPPFLAGS = $(bitcoin_bin_cppflags)
@@ -978,7 +954,6 @@ CLEANFILES += univalue/*.gcda univalue/*.gcno
 CLEANFILES += util/*.gcda util/*.gcno
 CLEANFILES += wallet/*.gcda wallet/*.gcno
 CLEANFILES += wallet/test/*.gcda wallet/test/*.gcno
-CLEANFILES += zmq/*.gcda zmq/*.gcno
 CLEANFILES += obj/build.h
 
 EXTRA_DIST = $(CTAES_DIST)

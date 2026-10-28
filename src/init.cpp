@@ -96,12 +96,6 @@
 
 #include <boost/signals2/signal.hpp>
 
-#if ENABLE_ZMQ
-#include <zmq/zmqabstractnotifier.h>
-#include <zmq/zmqnotificationinterface.h>
-#include <zmq/zmqrpc.h>
-#endif
-
 using kernel::DumpMempool;
 using kernel::ValidationCacheSizes;
 
@@ -303,14 +297,6 @@ void Shutdown(NodeContext& node)
         client->stop();
     }
 
-#if ENABLE_ZMQ
-    if (g_zmq_notification_interface) {
-        UnregisterValidationInterface(g_zmq_notification_interface);
-        delete g_zmq_notification_interface;
-        g_zmq_notification_interface = nullptr;
-    }
-#endif
-
     node.chain_clients.clear();
     UnregisterAllValidationInterfaces();
     GetMainSignals().UnregisterBackgroundSignalScheduler();
@@ -480,30 +466,6 @@ void SetupServerArgs(ArgsManager& argsman)
         "-whitebind. Can be specified multiple times." , ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
 
     g_wallet_init_interface.AddWalletOptions(argsman);
-
-#if ENABLE_ZMQ
-    argsman.AddArg("-zmqpubhashblock=<address>", "Enable publish hash block in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubhashtx=<address>", "Enable publish hash transaction in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubrawblock=<address>", "Enable publish raw block in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubrawtx=<address>", "Enable publish raw transaction in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubsequence=<address>", "Enable publish hash block and tx sequence in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubhashblockhwm=<n>", strprintf("Set publish hash block outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubhashtxhwm=<n>", strprintf("Set publish hash transaction outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubrawblockhwm=<n>", strprintf("Set publish raw block outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubrawtxhwm=<n>", strprintf("Set publish raw transaction outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-    argsman.AddArg("-zmqpubsequencehwm=<n>", strprintf("Set publish hash sequence message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-#else
-    hidden_args.emplace_back("-zmqpubhashblock=<address>");
-    hidden_args.emplace_back("-zmqpubhashtx=<address>");
-    hidden_args.emplace_back("-zmqpubrawblock=<address>");
-    hidden_args.emplace_back("-zmqpubrawtx=<address>");
-    hidden_args.emplace_back("-zmqpubsequence=<n>");
-    hidden_args.emplace_back("-zmqpubhashblockhwm=<n>");
-    hidden_args.emplace_back("-zmqpubhashtxhwm=<n>");
-    hidden_args.emplace_back("-zmqpubrawblockhwm=<n>");
-    hidden_args.emplace_back("-zmqpubrawtxhwm=<n>");
-    hidden_args.emplace_back("-zmqpubsequencehwm=<n>");
-#endif
 
     argsman.AddArg("-checkblocks=<n>", strprintf("How many blocks to check at startup (default: %u, 0 = all)", DEFAULT_CHECKBLOCKS), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-checklevel=<n>", strprintf("How thorough the block verification of -checkblocks is: %s (0-4, default: %u)", Join(CHECKLEVEL_DOC, ", "), DEFAULT_CHECKLEVEL), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
@@ -1114,9 +1076,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     for (const auto& client : node.chain_clients) {
         client->registerRpcs();
     }
-#if ENABLE_ZMQ
-    RegisterZMQRPCCommands(tableRPC);
-#endif
 
     /* Start the RPC server already.  It will be started in "warmup" mode
      * and not really process calls already (but it will signify connections
@@ -1225,11 +1184,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         "-rpcbind",
         "-torcontrol",
         "-whitebind",
-        "-zmqpubhashblock",
-        "-zmqpubhashtx",
-        "-zmqpubrawblock",
-        "-zmqpubrawtx",
-        "-zmqpubsequence",
     }) {
         for (const std::string& socket_addr : args.GetArgs(port_option)) {
             std::string host_out;
@@ -1369,14 +1323,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         else
             return InitError(ResolveErrMsg("externalip", strAddr));
     }
-
-#if ENABLE_ZMQ
-    g_zmq_notification_interface = CZMQNotificationInterface::Create();
-
-    if (g_zmq_notification_interface) {
-        RegisterValidationInterface(g_zmq_notification_interface);
-    }
-#endif
 
     // ********************************************************* Step 7: load block chain
 

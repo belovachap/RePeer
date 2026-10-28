@@ -253,12 +253,6 @@ if test "$use_asm" = "yes"; then
   AC_DEFINE([USE_ASM], [1], [Define this symbol to build in assembly routines])
 fi
 
-AC_ARG_ENABLE([zmq],
-  [AS_HELP_STRING([--disable-zmq],
-  [disable ZMQ notifications])],
-  [use_zmq=$enableval],
-  [use_zmq=yes])
-
 AC_ARG_WITH([libmultiprocess],
   [AS_HELP_STRING([--with-libmultiprocess=yes|no|auto],
   [Build with libmultiprocess library. (default: auto, i.e. detect with pkg-config)])],
@@ -1214,10 +1208,6 @@ if test "$use_usdt" != "no"; then
 fi
 AM_CONDITIONAL([ENABLE_USDT_TRACEPOINTS], [test "$use_usdt" = "yes"])
 
-if test "$build_bitcoind$bitcoin_enable_qt$use_bench$use_tests" = "nononono"; then
-  use_zmq=no
-fi
-
 if test "$build_bitcoin_wallet$build_bitcoin_cli$build_bitcoin_tx$build_bitcoin_util$build_bitcoind$bitcoin_enable_qt$use_tests$use_bench$enable_fuzz_binary" = "nonononononononono"; then
   use_boost=no
 else
@@ -1405,27 +1395,6 @@ if test "$use_qr" != "no"; then
   BITCOIN_QT_CHECK([PKG_CHECK_MODULES([QR], [libqrencode], [have_qrencode=yes], [have_qrencode=no])])
 fi
 
-dnl ZMQ check
-
-if test "$use_zmq" = "yes"; then
-  PKG_CHECK_MODULES([ZMQ], [libzmq >= 4],
-    AC_DEFINE([ENABLE_ZMQ], [1], [Define to 1 to enable ZMQ functions]),
-    [AC_DEFINE([ENABLE_ZMQ], [0], [Define to 1 to enable ZMQ functions])
-    AC_MSG_WARN([libzmq version 4.x or greater not found, disabling])
-    use_zmq=no])
-else
-  AC_DEFINE_UNQUOTED([ENABLE_ZMQ], [0], [Define to 1 to enable ZMQ functions])
-fi
-
-if test "$use_zmq" = "yes"; then
-  dnl Assume libzmq was built for static linking
-  case $host in
-    *mingw*)
-      ZMQ_CFLAGS="$ZMQ_CFLAGS -DZMQ_STATIC"
-    ;;
-  esac
-fi
-
 dnl libmultiprocess library check
 
 libmultiprocess_found=no
@@ -1567,8 +1536,6 @@ if test "$bitcoin_enable_qt" != "no"; then
     AC_MSG_RESULT([no])
   fi
 fi
-
-AM_CONDITIONAL([ENABLE_ZMQ], [test "$use_zmq" = "yes"])
 
 AC_MSG_CHECKING([whether to build test_bitcoin])
 if test "$use_tests" = "yes"; then
@@ -1719,7 +1686,6 @@ echo "  with gui / qt   = $bitcoin_enable_qt"
 if test $bitcoin_enable_qt != "no"; then
     echo "    with qr       = $use_qr"
 fi
-echo "  with zmq        = $use_zmq"
 if test $enable_fuzz = "no"; then
     echo "  with test       = $use_tests"
 else
