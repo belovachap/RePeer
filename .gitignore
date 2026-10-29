@@ -1,38 +1,9 @@
-*.tar.gz
-
-bench_schnorrsig
-valgrind_ctime_test
-ecdh_example
-ecdsa_example
-schnorr_example
-*.pdb
-
-src/bench/bench_repeer
 src/qt/repeer-qt
-src/qt/test/test_repeer-qt
 src/repeer-cli
-src/repeer-tx
-src/repeer-util
-src/repeer-wallet
 src/repeerd
-src/test/fuzz/fuzz_repeer
-src/test/test_repeer
-
-# autoreconf
 Makefile.in
 aclocal.m4
 autom4te.cache/
-conftest*
-*.log
-*.trs
-
-coverage/
-coverage.html
-coverage.*.html
-*.gcda
-*.gcno
-*.gcov
-
 build-aux/config.guess
 build-aux/config.sub
 build-aux/depcomp
@@ -46,8 +17,6 @@ build-aux/m4/ltversion.m4
 build-aux/missing
 build-aux/compile
 build-aux/test-driver
-config.cache
-config.log
 config.status
 configure
 libtool
@@ -55,98 +24,17 @@ src/config/bitcoin-config.h
 src/config/bitcoin-config.h.in
 src/config/stamp-h1
 src/obj
-src/obj/build.h
-src/univalue/gen
-
 src/qt/*.moc
 src/qt/moc_*.cpp
 src/qt/forms/ui_*.h
-
-src/qt/test/moc*.cpp
-
-src/qt/bitcoin-qt.config
-src/qt/bitcoin-qt.creator
-src/qt/bitcoin-qt.creator.user
-src/qt/bitcoin-qt.files
-src/qt/bitcoin-qt.includes
-
 .deps
 .dirstamp
 .libs
-.*.swp
 *~
-*.bak
-*.rej
-*.orig
-*.pyc
 *.o
-*.o-*
-.ppcoin
-.peercoin
 *.a
-*.pb.cc
-*.pb.h
-*.dat
-
 *.log
-*.trs
-*.dmg
-
-*.json.h
-*.raw.h
-
-# Only ignore unexpected patches
-*.patch
-!contrib/guix/patches/*.patch
-!depends/patches/**/*.patch
-
-#libtool object files
 *.lo
 *.la
-
-# Compilation and Qt preprocessor part
-*.qm
 Makefile
-!depends/Makefile
-
-# Qt Creator
-Makefile.am.user
-
-# Unit-tests
-Makefile.test
-
-# Resources cpp
 qrc_*.cpp
-
-# Mac specific
-.DS_Store
-build
-
-# Previous releases
-releases
-
-#lcov
-*.gcno
-*.gcda
-/*.info
-test_bitcoin.coverage/
-total.coverage/
-fuzz.coverage/
-coverage_percent.txt
-/cov_tool_wrapper.sh
-qa-assets/
-
-libbitcoinconsensus.pc
-contrib/devtools/split-debug.sh
-
-#python stuff
-.mypy_cache
-# Output from running db4 installation
-db4/
-
-# clang-check
-*.plist
-
-/guix-build-*
-
-/ci/scratch/

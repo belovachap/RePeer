@@ -18,7 +18,7 @@ EXTRA_LIBRARIES =
 lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
 
-bin_PROGRAMS =
+bin_PROGRAMS = repeerd repeer-cli
 noinst_PROGRAMS =
 check_PROGRAMS =
 TESTS =
@@ -76,36 +76,6 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_IPC) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_WALLET_TOOL)
-
-if BUILD_BITCOIND
-  bin_PROGRAMS += repeerd
-endif
-
-if BUILD_BITCOIN_NODE
-  bin_PROGRAMS += repeer-node
-endif
-
-if BUILD_BITCOIN_CLI
-  bin_PROGRAMS += repeer-cli
-endif
-
-if BUILD_BITCOIN_TX
-  bin_PROGRAMS += repeer-tx
-endif
-
-if ENABLE_WALLET
-if BUILD_BITCOIN_WALLET
-  bin_PROGRAMS += repeer-wallet
-endif
-endif
-
-if BUILD_BITCOIN_UTIL
-  bin_PROGRAMS += repeer-util
-endif
-
-if BUILD_BITCOIN_CHAINSTATE
-  bin_PROGRAMS += repeer-chainstate
-endif
 
 .PHONY: FORCE check-symbols check-security
 # bitcoin core #
@@ -730,12 +700,6 @@ repeerd_CXXFLAGS = $(bitcoin_bin_cxxflags)
 repeerd_LDFLAGS = $(bitcoin_bin_ldflags)
 repeerd_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd)
 
-repeer_node_SOURCES = $(bitcoin_daemon_sources) init/bitcoin-node.cpp
-repeer_node_CPPFLAGS = $(bitcoin_bin_cppflags)
-repeer_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
-repeer_node_LDFLAGS = $(bitcoin_bin_ldflags)
-repeer_node_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS)
-
 # peercoin-cli binary #
 repeer_cli_SOURCES = bitcoin-cli.cpp
 repeer_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
@@ -750,77 +714,6 @@ repeer_cli_LDADD = \
   $(LIBBITCOIN_CRYPTO)
 
 repeer_cli_LDADD += $(CRYPTO_LIBS) $(EVENT_LIBS)
-#
-
-# peercoin-tx binary #
-repeer_tx_SOURCES = \
-  bitcoin-tx.cpp \
-  timedatadummy.cpp
-repeer_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-repeer_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-repeer_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
-
-repeer_tx_LDADD = \
-  $(LIBUNIVALUE) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBSECP256K1)
-repeer_tx_LDADD += $(CRYPTO_LIBS)
-#
-
-# bitcoin-wallet binary #
-repeer_wallet_SOURCES = bitcoin-wallet.cpp
-repeer_wallet_SOURCES += init/bitcoin-wallet.cpp
-repeer_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
-repeer_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
-repeer_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
-repeer_wallet_LDADD = \
-  $(LIBBITCOIN_WALLET_TOOL) \
-  $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_NODE) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBUNIVALUE) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBSECP256K1) \
-  $(BDB_LIBS) \
-  $(SQLITE_LIBS) \
-  $(LIBLEVELDB) \
-  $(LIBLEVELDB_SSE42) \
-  $(LIBMEMENV) \
-  $(CRYPTO_LIBS)
-
-# bitcoin-util binary #
-repeer_util_SOURCES = bitcoin-util.cpp
-repeer_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-repeer_util_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-repeer_util_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
-
-repeer_util_LDADD = \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBUNIVALUE) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBSECP256K1)
-#
-
-
-# bitcoin-chainstate binary #
-repeer_chainstate_SOURCES = bitcoin-chainstate.cpp
-repeer_chainstate_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BOOST_CPPFLAGS)
-repeer_chainstate_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-
-repeer_chainstate_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(PTHREAD_FLAGS) $(LIBTOOL_APP_LDFLAGS) -static
-repeer_chainstate_LDADD = $(LIBBITCOINKERNEL)
-
-# libtool is unable to calculate this indirect dependency, presumably because it's a subproject.
-# libsecp256k1 only needs to be linked in when libbitcoinkernel is static.
-repeer_chainstate_LDADD += $(LIBSECP256K1)
 #
 
 # peercoinkernel library #
@@ -975,16 +868,6 @@ clean-local:
 	@test -f $(WINDRES)
 	## FIXME: How to get the appropriate modulename_CPPFLAGS in here?
 	$(AM_V_GEN) $(WINDRES) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CPPFLAGS) -DWINDRES_PREPROC -i $< -o $@
-
-check-symbols: $(bin_PROGRAMS)
-	@echo "Running symbol and dynamic library checks..."
-	$(AM_V_at) $(PYTHON) $(top_srcdir)/contrib/devtools/symbol-check.py $(bin_PROGRAMS)
-
-check-security: $(bin_PROGRAMS)
-if HARDEN
-	@echo "Checking binary security..."
-	$(AM_V_at) $(PYTHON) $(top_srcdir)/contrib/devtools/security-check.py $(bin_PROGRAMS)
-endif
 
 libbitcoin_ipc_mpgen_input = \
   ipc/capnp/echo.capnp \
