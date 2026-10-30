@@ -140,7 +140,6 @@ public:
 
     UnlockContext requestUnlock();
 
-    bool displayAddress(std::string sAddress);
     static bool isWalletEnabled();
     bool privateKeysDisabled() const;
     bool canGetAddresses() const;

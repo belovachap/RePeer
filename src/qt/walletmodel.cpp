@@ -503,35 +503,11 @@ WalletModel::UnlockContext::~UnlockContext()
 
     wallet::fWalletUnlockMintOnly = minter;
 }
-/*
-void WalletModel::UnlockContext::CopyFrom(UnlockContext&& rhs)
-{
-    // Transfer context; old object no longer relocks wallet
-    *this = rhs;
-    rhs.relock = false;
-}
-*/
+
 bool WalletModel::isWalletEnabled()
 {
    return !gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET);
 
-}
-/*
-bool WalletModel::privateKeysDisabled() const
-{
-    return m_wallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS);
-}
-*/
-bool WalletModel::displayAddress(std::string sAddress)
-{
-    CTxDestination dest = DecodeDestination(sAddress);
-    bool res = false;
-    try {
-        res = m_wallet->displayAddress(dest);
-    } catch (const std::runtime_error& e) {
-        QMessageBox::critical(nullptr, tr("Can't display address"), e.what());
-    }
-    return res;
 }
 
 QString WalletModel::getWalletName() const

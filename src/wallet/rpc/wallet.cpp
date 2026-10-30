@@ -76,7 +76,6 @@ static RPCHelpMan getwalletinfo()
                             {RPCResult::Type::NUM, "progress", "scanning progress percentage [0.0, 1.0]"},
                         }, /*skip_type_check=*/true},
                         {RPCResult::Type::BOOL, "descriptors", "whether this wallet uses descriptors for scriptPubKey management"},
-                        {RPCResult::Type::BOOL, "external_signer", "whether this wallet is configured to use an external signer such as a hardware wallet"},
                     }},
                 },
                 RPCExamples{
@@ -137,7 +136,6 @@ static RPCHelpMan getwalletinfo()
         obj.pushKV("scanning", false);
     }
     obj.pushKV("descriptors", pwallet->IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS));
-    obj.pushKV("external_signer", pwallet->IsWalletFlagSet(WALLET_FLAG_EXTERNAL_SIGNER));
     return obj;
 },
     };
@@ -354,7 +352,6 @@ static RPCHelpMan createwallet()
                                                                        " Setting to \"false\" will create a legacy wallet; however, the legacy wallet type is being deprecated and"
                                                                        " support for creating and opening legacy wallets will be removed in the future."},
             {"load_on_startup", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."},
-            {"external_signer", RPCArg::Type::BOOL, RPCArg::Default{false}, "Use an external signer such as a hardware wallet. Requires -signer to be configured. Wallet creation will fail if keys cannot be fetched. Requires disable_private_keys and descriptors set to true."},
         },
         RPCResult{
             RPCResult::Type::OBJ, "", "",
@@ -403,13 +400,6 @@ static RPCHelpMan createwallet()
         throw JSONRPCError(RPC_WALLET_ERROR, "Compiled without sqlite support (required for descriptor wallets)");
 #endif
         flags |= WALLET_FLAG_DESCRIPTORS;
-    }
-    if (!request.params[7].isNull() && request.params[7].get_bool()) {
-#ifdef ENABLE_EXTERNAL_SIGNER
-        flags |= WALLET_FLAG_EXTERNAL_SIGNER;
-#else
-        throw JSONRPCError(RPC_WALLET_ERROR, "Compiled without external signing support (required for external signing)");
-#endif
     }
 
 #ifndef USE_BDB
@@ -1076,9 +1066,6 @@ RPCHelpMan keypoolrefill();
 RPCHelpMan newkeypool();
 RPCHelpMan getaddressesbylabel();
 RPCHelpMan listlabels();
-#ifdef ENABLE_EXTERNAL_SIGNER
-RPCHelpMan walletdisplayaddress();
-#endif // ENABLE_EXTERNAL_SIGNER
 
 // backup
 RPCHelpMan dumpprivkey();
@@ -1198,9 +1185,6 @@ static const CRPCCommand commands[] =
     { "wallet",             &unloadwallet,                   },
     { "wallet",             &upgradewallet,                  },
     { "wallet",             &walletcreatefundedpsbt,         },
-#ifdef ENABLE_EXTERNAL_SIGNER
-    { "wallet",             &walletdisplayaddress,           },
-#endif // ENABLE_EXTERNAL_SIGNER
     { "wallet",             &walletlock,                     },
     { "wallet",             &walletpassphrase,               },
     { "wallet",             &walletpassphrasechange,         },

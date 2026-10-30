@@ -77,13 +77,6 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
         ui->thirdPartyTxUrls->setVisible(false);
     }
 
-#ifdef ENABLE_EXTERNAL_SIGNER
-    ui->externalSignerPath->setToolTip(ui->externalSignerPath->toolTip().arg(PACKAGE_NAME));
-#else
-    //: "External signing" means using devices such as hardware wallets.
-    ui->externalSignerPath->setToolTip(tr("Compiled without external signing support (required for external signing)"));
-    ui->externalSignerPath->setEnabled(false);
-#endif
     /* Display elements init */
     ui->bitcoinAtStartup->setToolTip(ui->bitcoinAtStartup->toolTip().arg(PACKAGE_NAME));
     ui->bitcoinAtStartup->setText(ui->bitcoinAtStartup->text().arg(PACKAGE_NAME));
@@ -169,7 +162,6 @@ void OptionsDialog::setModel(OptionsModel *_model)
 
     /* Main */
     connect(ui->databaseCache, qOverload<int>(&QSpinBox::valueChanged), this, &OptionsDialog::showRestartWarning);
-    connect(ui->externalSignerPath, &QLineEdit::textChanged, [this]{ showRestartWarning(); });
     connect(ui->threadsScriptVerif, qOverload<int>(&QSpinBox::valueChanged), this, &OptionsDialog::showRestartWarning);
     /* Wallet */
     connect(ui->spendZeroConfChange, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
@@ -210,7 +202,6 @@ void OptionsDialog::setMapper()
     mapper->addMapping(ui->maxMintingUtxos, OptionsModel::MaxMintingUtxos);
     mapper->addMapping(ui->coinControlFeatures, OptionsModel::CoinControlFeatures);
     mapper->addMapping(ui->subFeeFromAmount, OptionsModel::SubFeeFromAmount);
-    mapper->addMapping(ui->externalSignerPath, OptionsModel::ExternalSignerPath);
     mapper->addMapping(ui->m_enable_psbt_controls, OptionsModel::EnablePSBTControls);
 
     /* Network */

@@ -53,7 +53,6 @@ public:
         CheckpointEnforce,      // bool
         ThreadsScriptVerif,     // int
         DatabaseCache,          // int
-        ExternalSignerPath,     // QString
         SpendZeroConfChange,    // bool
         SplitCoins,             // bool
         CombineCoins,           // bool

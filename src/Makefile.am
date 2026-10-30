@@ -99,7 +99,6 @@ BITCOIN_CORE_H = \
   coins.h \
   common/bloom.h \
   common/init.h \
-  common/run_command.h \
   common/url.h \
   compat/assumptions.h \
   compat/byteswap.h \
@@ -115,7 +114,6 @@ BITCOIN_CORE_H = \
   cuckoocache.h \
   dbwrapper.h \
   deploymentinfo.h \
-  external_signer.h \
   flatfile.h \
   headerssync.h \
   httprpc.h \
@@ -281,7 +279,6 @@ BITCOIN_CORE_H = \
   wallet/crypter.h \
   wallet/db.h \
   wallet/dump.h \
-  wallet/external_signer_scriptpubkeyman.h \
   wallet/load.h \
   wallet/receive.h \
   wallet/rpc/util.h \
@@ -412,7 +409,6 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/crypter.cpp \
   wallet/db.cpp \
   wallet/dump.cpp \
-  wallet/external_signer_scriptpubkeyman.cpp \
   wallet/interfaces.cpp \
   wallet/load.cpp \
   wallet/receive.cpp \
@@ -583,12 +579,10 @@ libbitcoin_common_a_SOURCES = \
   common/bloom.cpp \
   common/init.cpp \
   common/interfaces.cpp \
-  common/run_command.cpp \
   compressor.cpp \
   core_read.cpp \
   core_write.cpp \
   deploymentinfo.cpp \
-  external_signer.cpp \
   init/common.cpp \
   kernel/chainparams.cpp \
   key.cpp \
@@ -602,7 +596,6 @@ libbitcoin_common_a_SOURCES = \
   policy/policy.cpp \
   protocol.cpp \
   psbt.cpp \
-  rpc/external_signer.cpp \
   rpc/rawtransaction_util.cpp \
   rpc/request.cpp \
   rpc/util.cpp \

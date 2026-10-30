@@ -11,7 +11,6 @@
 #include <qt/guiutil.h>
 #include <qt/walletmodel.h>
 
-#include <external_signer.h>
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
 #include <node/miner.h>
@@ -34,7 +33,6 @@
 using wallet::WALLET_FLAG_BLANK_WALLET;
 using wallet::WALLET_FLAG_DESCRIPTORS;
 using wallet::WALLET_FLAG_DISABLE_PRIVATE_KEYS;
-using wallet::WALLET_FLAG_EXTERNAL_SIGNER;
 
 WalletController::WalletController(ClientModel& client_model, const PlatformStyle* platform_style, QObject* parent)
     : QObject(parent)
@@ -267,9 +265,6 @@ void CreateWalletActivity::createWallet()
     if (m_create_wallet_dialog->isDescriptorWalletChecked()) {
         flags |= WALLET_FLAG_DESCRIPTORS;
     }
-    if (m_create_wallet_dialog->isExternalSignerChecked()) {
-        flags |= WALLET_FLAG_EXTERNAL_SIGNER;
-    }
 
     QTimer::singleShot(500ms, worker(), [this, name, flags] {
         auto wallet{node().walletLoader().createWallet(name, m_passphrase, flags, m_warning_message)};
@@ -300,19 +295,6 @@ void CreateWalletActivity::finish()
 void CreateWalletActivity::create()
 {
     m_create_wallet_dialog = new CreateWalletDialog(m_parent_widget);
-
-    std::vector<std::unique_ptr<interfaces::ExternalSigner>> signers;
-    try {
-        signers = node().listExternalSigners();
-    } catch (const std::runtime_error& e) {
-        QMessageBox::critical(nullptr, tr("Can't list signers"), e.what());
-    }
-    if (signers.size() > 1) {
-        QMessageBox::critical(nullptr, tr("Too many external signers found"), QString::fromStdString("More than one external signer found. Please connect only one at a time."));
-        signers.clear();
-    }
-    m_create_wallet_dialog->setSigners(signers);
-
     m_create_wallet_dialog->setWindowModality(Qt::ApplicationModal);
     m_create_wallet_dialog->show();
 

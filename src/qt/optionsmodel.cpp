@@ -40,7 +40,6 @@ static const char* SettingName(OptionsModel::OptionID option)
     case OptionsModel::DatabaseCache: return "dbcache";
     case OptionsModel::ThreadsScriptVerif: return "par";
     case OptionsModel::SpendZeroConfChange: return "spendzeroconfchange";
-    case OptionsModel::ExternalSignerPath: return "signer";
     case OptionsModel::Listen: return "listen";
     case OptionsModel::Server: return "server";
     case OptionsModel::ProxyIP: return "proxy";
@@ -178,7 +177,7 @@ bool OptionsModel::Init(bilingual_str& error)
 
     // These are shared with the core or have a command-line parameter
     // and we want command-line parameters to overwrite the GUI settings.
-    for (OptionID option : {DatabaseCache, ThreadsScriptVerif, SpendZeroConfChange, ExternalSignerPath,
+    for (OptionID option : {DatabaseCache, ThreadsScriptVerif, SpendZeroConfChange,
                             SplitCoins, CombineCoins, MaxMintingUtxos, Listen, Server,
                             ProxyUse, ProxyUseTor}) {
         std::string setting = SettingName(option);
@@ -380,8 +379,6 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
 #ifdef ENABLE_WALLET
     case SpendZeroConfChange:
         return SettingToBool(setting(), wallet::DEFAULT_SPEND_ZEROCONF_CHANGE);
-    case ExternalSignerPath:
-        return QString::fromStdString(SettingToString(setting(), ""));
     case SubFeeFromAmount:
         return m_sub_fee_from_amount;
     case SplitCoins:
@@ -506,12 +503,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
     case SpendZeroConfChange:
         if (changed()) {
             update(value.toBool());
-            setRestartRequired(true);
-        }
-        break;
-    case ExternalSignerPath:
-        if (changed()) {
-            update(value.toString().toStdString());
             setRestartRequired(true);
         }
         break;
@@ -672,7 +663,6 @@ void OptionsModel::checkAndMigrate()
     migrate_setting(ThreadsScriptVerif, "nThreadsScriptVerif");
 #ifdef ENABLE_WALLET
     migrate_setting(SpendZeroConfChange, "bSpendZeroConfChange");
-    migrate_setting(ExternalSignerPath, "external_signer_path");
     migrate_setting(SplitCoins, "bSplitCoins");
     migrate_setting(CombineCoins, "bCombineCoins");
 #endif

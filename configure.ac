@@ -298,11 +298,6 @@ AC_ARG_ENABLE([werror],
     [enable_werror=$enableval],
     [enable_werror=no])
 
-AC_ARG_ENABLE([external-signer],
-    [AS_HELP_STRING([--enable-external-signer],[compile external signer support (default is auto, requires Boost::Process)])],
-    [use_external_signer=$enableval],
-    [use_external_signer=auto])
-
 AC_ARG_ENABLE([lto],
     [AS_HELP_STRING([--enable-lto],[build using LTO (default is no)])],
     [enable_lto=$enableval],
@@ -1195,49 +1190,6 @@ if test "$use_boost" = "yes"; then
   fi
 fi
 
-if test "$use_external_signer" != "no"; then
-  AC_MSG_CHECKING([whether Boost.Process can be used])
-  TEMP_CXXFLAGS="$CXXFLAGS"
-  dnl Boost 1.78 requires the following workaround.
-  dnl See: https://github.com/boostorg/process/issues/235
-  CXXFLAGS="$CXXFLAGS -Wno-error=narrowing"
-  TEMP_CPPFLAGS="$CPPFLAGS"
-  CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
-  TEMP_LDFLAGS="$LDFLAGS"
-  dnl Boost 1.73 and older require the following workaround.
-  LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-    #define BOOST_PROCESS_USE_STD_FS
-    #include <boost/process.hpp>
-  ]],[[
-    namespace bp = boost::process;
-    bp::opstream stdin_stream;
-    bp::ipstream stdout_stream;
-    bp::child c("dummy", bp::std_out > stdout_stream, bp::std_err > stdout_stream, bp::std_in < stdin_stream);
-    stdin_stream << std::string{"test"} << std::endl;
-    if (c.running()) c.terminate();
-    c.wait();
-    c.exit_code();
-  ]])],
-    [have_boost_process="yes"],
-    [have_boost_process="no"])
-  LDFLAGS="$TEMP_LDFLAGS"
-  CPPFLAGS="$TEMP_CPPFLAGS"
-  CXXFLAGS="$TEMP_CXXFLAGS"
-  AC_MSG_RESULT([$have_boost_process])
-  if test "$have_boost_process" = "yes"; then
-    use_external_signer="yes"
-    AC_DEFINE([ENABLE_EXTERNAL_SIGNER], [1], [Define if external signer support is enabled])
-    AC_DEFINE([BOOST_PROCESS_USE_STD_FS], [1], [Defined to avoid Boost::Process trying to use Boost Filesystem])
-  else
-    if test "$use_external_signer" = "yes"; then
-      AC_MSG_ERROR([External signing is not supported for this Boost version])
-    fi
-    use_external_signer="no";
-  fi
-fi
-AM_CONDITIONAL([ENABLE_EXTERNAL_SIGNER], [test "$use_external_signer" = "yes"])
-
 dnl Do not compile with syscall sandbox support when compiling under the sanitizers.
 dnl The sanitizers introduce use of syscalls that are not typically used in bitcoind
 dnl (such as execve when the sanitizers execute llvm-symbolizer).
@@ -1569,7 +1521,6 @@ AC_SUBST(ARM_SHANI_CXXFLAGS)
 AC_SUBST(LIBTOOL_APP_LDFLAGS)
 AC_SUBST(USE_SQLITE)
 AC_SUBST(USE_BDB)
-AC_SUBST(ENABLE_EXTERNAL_SIGNER)
 AC_SUBST(USE_QRCODE)
 AC_SUBST(TESTDEFS)
 AC_SUBST(HAVE_GMTIME_R)
@@ -1602,7 +1553,6 @@ AC_OUTPUT
 
 echo
 echo "Options used to compile and link:"
-echo "  external signer = $use_external_signer"
 echo "  multiprocess    = $build_multiprocess"
 echo "  with experimental syscall sandbox support = $use_syscall_sandbox"
 echo "  with wallet     = $enable_wallet"

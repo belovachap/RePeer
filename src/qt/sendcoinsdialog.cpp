@@ -176,63 +176,6 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         connect(_model->getOptionsModel(), &OptionsModel::coinControlFeaturesChanged, this, &SendCoinsDialog::coinControlFeatureChanged);
         ui->frameCoinControl->setVisible(_model->getOptionsModel()->getCoinControlFeatures());
         coinControlUpdateLabels();
-
-        /*
-        // fee section
-        for (const int n : confTargets) {
-            ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPowTargetSpacing)).arg(n));
-        }
-        connect(ui->confTargetSelector, qOverload<int>(&QComboBox::currentIndexChanged), this, &SendCoinsDialog::updateSmartFeeLabel);
-        connect(ui->confTargetSelector, qOverload<int>(&QComboBox::currentIndexChanged), this, &SendCoinsDialog::coinControlUpdateLabels);
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-        connect(ui->groupFee, &QButtonGroup::idClicked, this, &SendCoinsDialog::updateFeeSectionControls);
-        connect(ui->groupFee, &QButtonGroup::idClicked, this, &SendCoinsDialog::coinControlUpdateLabels);
-#else
-        connect(ui->groupFee, qOverload<int>(&QButtonGroup::buttonClicked), this, &SendCoinsDialog::updateFeeSectionControls);
-        connect(ui->groupFee, qOverload<int>(&QButtonGroup::buttonClicked), this, &SendCoinsDialog::coinControlUpdateLabels);
-#endif
-
-        }
-        ui->customFee->setSingleStep(requiredFee);
-        updateFeeSectionControls();
-        updateSmartFeeLabel();
-
-        if (model->wallet().privateKeysDisabled()) {
-            ui->sendButton->setText(tr("Cr&eate Unsigned"));
-            ui->sendButton->setToolTip(tr("Creates a Partially Signed Bitcoin Transaction (PSBT) for use with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.").arg(PACKAGE_NAME));
-        }
-
-        if (model->wallet().hasExternalSigner()) {
-            //: "device" usually means a hardware wallet.
-            ui->sendButton->setText(tr("Sign on device"));
-            if (model->getOptionsModel()->hasSigner()) {
-                ui->sendButton->setEnabled(true);
-                ui->sendButton->setToolTip(tr("Connect your hardware wallet first."));
-            } else {
-                ui->sendButton->setEnabled(false);
-                //: "External signer" means using devices such as hardware wallets.
-                ui->sendButton->setToolTip(tr("Set external signer script path in Options -> Wallet"));
-            }
-        } else if (model->wallet().privateKeysDisabled()) {
-            ui->sendButton->setText(tr("Cr&eate Unsigned"));
-            ui->sendButton->setToolTip(tr("Creates a Partially Signed Bitcoin Transaction (PSBT) for use with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.").arg(PACKAGE_NAME));
-        }
-
-        // set the smartfee-sliders default value (wallets default conf.target or last stored value)
-        QSettings settings;
-        if (settings.value("nSmartFeeSliderPosition").toInt() != 0) {
-            // migrate nSmartFeeSliderPosition to nConfTarget
-            // nConfTarget is available since 0.15 (replaced nSmartFeeSliderPosition)
-            int nConfirmTarget = 25 - settings.value("nSmartFeeSliderPosition").toInt(); // 25 == old slider range
-            settings.setValue("nConfTarget", nConfirmTarget);
-            settings.remove("nSmartFeeSliderPosition");
-        }
-        if (settings.value("nConfTarget").toInt() == 0)
-            ui->confTargetSelector->setCurrentIndex(getIndexForConfTarget(model->wallet().getConfirmTarget()));
-        else
-            ui->confTargetSelector->setCurrentIndex(getIndexForConfTarget(settings.value("nConfTarget").toInt()));
-        */
     }
 }
 
@@ -335,7 +278,7 @@ bool SendCoinsDialog::PrepareSendText(QString& question_string, QString& informa
         that the displayed transaction details represent the transaction the user intends to create. */
     question_string.append(tr("Do you want to create this transaction?"));
     question_string.append("<br /><span style='font-size:10pt;'>");
-    if (model->wallet().privateKeysDisabled() && !model->wallet().hasExternalSigner()) {
+    if (model->wallet().privateKeysDisabled()) {
         /*: Text to inform a user attempting to create a transaction of their current options. At this stage,
             a user can only create a PSBT. This string is displayed when private keys are disabled and an external
             signer is not available. */
@@ -440,36 +383,6 @@ void SendCoinsDialog::presentPSBT(PartiallySignedTransaction& psbtx)
     } // msgBox.exec()
 }
 
-bool SendCoinsDialog::signWithExternalSigner(PartiallySignedTransaction& psbtx, CMutableTransaction& mtx, bool& complete) {
-    TransactionError err;
-    try {
-        err = model->wallet().fillPSBT(SIGHASH_ALL, /*sign=*/true, /*bip32derivs=*/true, /*n_signed=*/nullptr, psbtx, complete);
-    } catch (const std::runtime_error& e) {
-        QMessageBox::critical(nullptr, tr("Sign failed"), e.what());
-        return false;
-    }
-    if (err == TransactionError::EXTERNAL_SIGNER_NOT_FOUND) {
-        //: "External signer" means using devices such as hardware wallets.
-        const QString msg = tr("External signer not found");
-        QMessageBox::critical(nullptr, msg, msg);
-        return false;
-    }
-    if (err == TransactionError::EXTERNAL_SIGNER_FAILED) {
-        //: "External signer" means using devices such as hardware wallets.
-        const QString msg = tr("External signer failure");
-        QMessageBox::critical(nullptr, msg, msg);
-        return false;
-    }
-    if (err != TransactionError::OK) {
-        tfm::format(std::cerr, "Failed to sign PSBT");
-        processSendCoinsReturn(WalletModel::TransactionCreationFailed);
-        return false;
-    }
-    // fillPSBT does not always properly finalize
-    complete = FinalizeAndExtractPSBT(psbtx, mtx);
-    return true;
-}
-
 void SendCoinsDialog::sendButtonClicked([[maybe_unused]] bool checked)
 {
     if(!model || !model->getOptionsModel())
@@ -480,7 +393,7 @@ void SendCoinsDialog::sendButtonClicked([[maybe_unused]] bool checked)
     assert(m_current_transaction);
 
     const QString confirmation = tr("Confirm send coins");
-    const bool enable_send{!model->wallet().privateKeysDisabled() || model->wallet().hasExternalSigner()};
+    const bool enable_send{!model->wallet().privateKeysDisabled()};
     const bool always_show_unsigned{model->getOptionsModel()->getEnablePSBTControls()};
     auto confirmationDialog = new SendConfirmationDialog(confirmation, question_string, informative_text, detailed_text, SEND_CONFIRM_DELAY, enable_send, always_show_unsigned, this);
     confirmationDialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -508,40 +421,9 @@ void SendCoinsDialog::sendButtonClicked([[maybe_unused]] bool checked)
         presentPSBT(psbtx);
     } else {
         // "Send" clicked
-        assert(!model->wallet().privateKeysDisabled() || model->wallet().hasExternalSigner());
-        bool broadcast = true;
-        if (model->wallet().hasExternalSigner()) {
-            CMutableTransaction mtx = CMutableTransaction{*(m_current_transaction->getWtx())};
-            PartiallySignedTransaction psbtx(mtx);
-            bool complete = false;
-            // Always fill without signing first. This prevents an external signer
-            // from being called prematurely and is not expensive.
-            TransactionError err = model->wallet().fillPSBT(SIGHASH_ALL, /*sign=*/false, /*bip32derivs=*/true, /*n_signed=*/nullptr, psbtx, complete);
-            assert(!complete);
-            assert(err == TransactionError::OK);
-            send_failure = !signWithExternalSigner(psbtx, mtx, complete);
-            // Don't broadcast when user rejects it on the device or there's a failure:
-            broadcast = complete && !send_failure;
-            if (!send_failure) {
-                // A transaction signed with an external signer is not always complete,
-                // e.g. in a multisig wallet.
-                if (complete) {
-                    // Prepare transaction for broadcast transaction if complete
-                    const CTransactionRef tx = MakeTransactionRef(mtx);
-                    m_current_transaction->setWtx(tx);
-                } else {
-                    presentPSBT(psbtx);
-                }
-            }
-        }
-
-        // Broadcast the transaction, unless an external signer was used and it
-        // failed, or more signatures are needed.
-        if (broadcast) {
-            // now send the prepared transaction
-            model->sendCoins(*m_current_transaction);
-            Q_EMIT coinsSent(m_current_transaction->getWtx()->GetHash());
-        }
+        assert(!model->wallet().privateKeysDisabled());
+        model->sendCoins(*m_current_transaction);
+        Q_EMIT coinsSent(m_current_transaction->getWtx()->GetHash());
     }
     if (!send_failure) {
         accept();
@@ -702,9 +584,7 @@ void SendCoinsDialog::setBalance(const interfaces::WalletBalances& balances)
     if(model && model->getOptionsModel())
     {
         CAmount balance = balances.balance;
-        if (model->wallet().hasExternalSigner()) {
-            ui->labelBalanceName->setText(tr("External balance:"));
-        } else if (model->wallet().isLegacy() && model->wallet().privateKeysDisabled()) {
+        if (model->wallet().isLegacy() && model->wallet().privateKeysDisabled()) {
             balance = balances.watch_only_balance;
             ui->labelBalanceName->setText(tr("Watch-only balance:"));
         }
@@ -787,7 +667,7 @@ void SendCoinsDialog::on_buttonMinimizeFee_clicked()
 void SendCoinsDialog::useAvailableBalance(SendCoinsEntry* entry)
 {
     // Include watch-only for wallets without private key
-    m_coin_control->fAllowWatchOnly = model->wallet().privateKeysDisabled() && !model->wallet().hasExternalSigner();
+    m_coin_control->fAllowWatchOnly = model->wallet().privateKeysDisabled();
 
     // Same behavior as send: if we have selected coins, only obtain their available balance.
     // Copy to avoid modifying the member's data.
@@ -839,7 +719,7 @@ void SendCoinsDialog::updateFeeMinimizedLabel()
 void SendCoinsDialog::updateCoinControlState()
 {
     // Include watch-only for wallets without private key
-    m_coin_control->fAllowWatchOnly = model->wallet().privateKeysDisabled() && !model->wallet().hasExternalSigner();
+    m_coin_control->fAllowWatchOnly = model->wallet().privateKeysDisabled();
 }
 
 void SendCoinsDialog::updateNumberOfBlocks(int count, const QDateTime& blockDate, double nVerificationProgress, bool headers, SynchronizationState sync_state) {
