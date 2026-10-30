@@ -1535,8 +1535,6 @@ AC_SUBST(HAVE_EVHTTP_CONNECTION_GET_PEER_CONST_CHAR)
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_CONFIG_LINKS([contrib/filter-lcov.py:contrib/filter-lcov.py])
 AC_CONFIG_LINKS([contrib/macdeploy/background.tiff:contrib/macdeploy/background.tiff])
-AC_CONFIG_LINKS([src/.bear-tidy-config:src/.bear-tidy-config])
-AC_CONFIG_LINKS([src/.clang-tidy:src/.clang-tidy])
 AC_CONFIG_LINKS([src/qt/Makefile:src/qt/Makefile])
 
 dnl boost's m4 checks do something really nasty: they export these vars. As a
