@@ -135,21 +135,6 @@ bool OptionsModel::Init(bilingual_str& error)
 
     // These are Qt-only settings:
 
-    // Window
-    if (!settings.contains("fHideTrayIcon")) {
-        settings.setValue("fHideTrayIcon", false);
-    }
-    m_show_tray_icon = !settings.value("fHideTrayIcon").toBool();
-    Q_EMIT showTrayIconChanged(m_show_tray_icon);
-
-    if (!settings.contains("fMinimizeToTray"))
-        settings.setValue("fMinimizeToTray", false);
-    fMinimizeToTray = settings.value("fMinimizeToTray").toBool() && m_show_tray_icon;
-
-    if (!settings.contains("fMinimizeOnClose"))
-        settings.setValue("fMinimizeOnClose", false);
-    fMinimizeOnClose = settings.value("fMinimizeOnClose").toBool();
-
     // Display
     if (!settings.contains("DisplayBitcoinUnit")) {
         settings.setValue("DisplayBitcoinUnit", QVariant::fromValue(BitcoinUnit::BTC));
@@ -268,10 +253,6 @@ void OptionsModel::Reset()
 
     // Set that this was reset
     settings.setValue("fReset", true);
-
-    // default setting for OptionsModel::StartAtStartup - disabled
-    if (GUIUtil::GetStartOnSystemStartup())
-        GUIUtil::SetStartOnSystemStartup(false);
 }
 
 int OptionsModel::rowCount(const QModelIndex & parent) const
@@ -340,15 +321,6 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
 
     QSettings settings;
     switch (option) {
-    case StartAtStartup:
-        return GUIUtil::GetStartOnSystemStartup();
-    case ShowTrayIcon:
-        return m_show_tray_icon;
-    case MinimizeToTray:
-        return fMinimizeToTray;
-    case MinimizeOnClose:
-        return fMinimizeOnClose;
-
     // default proxy
     case ProxyUse:
     case ProxyUseTor:
@@ -422,22 +394,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
     QSettings settings;
 
     switch (option) {
-    case StartAtStartup:
-        successful = GUIUtil::SetStartOnSystemStartup(value.toBool());
-        break;
-    case ShowTrayIcon:
-        m_show_tray_icon = value.toBool();
-        settings.setValue("fHideTrayIcon", !m_show_tray_icon);
-        Q_EMIT showTrayIconChanged(m_show_tray_icon);
-        break;
-    case MinimizeToTray:
-        fMinimizeToTray = value.toBool();
-        settings.setValue("fMinimizeToTray", fMinimizeToTray);
-        break;
-    case MinimizeOnClose:
-        fMinimizeOnClose = value.toBool();
-        settings.setValue("fMinimizeOnClose", fMinimizeOnClose);
-        break;
 
     // default proxy
     case ProxyUse:

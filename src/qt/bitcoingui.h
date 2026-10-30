@@ -25,7 +25,6 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QPoint>
-#include <QSystemTrayIcon>
 
 #ifdef Q_OS_MACOS
 #include <qt/macos_appnap.h>
@@ -101,11 +100,6 @@ public:
 #endif // ENABLE_WALLET
     bool enableWallet = false;
 
-    /** Get the tray icon status.
-        Some systems have not "system tray" or "notification area" available.
-    */
-    bool hasTrayIcon() const { return trayIcon; }
-
     /** Disconnect core signals from GUI client */
     void unsubscribeFromCoreSignals();
 
@@ -172,8 +166,6 @@ private:
     QLabel *m_wallet_selector_label = nullptr;
     QComboBox* m_wallet_selector = nullptr;
 
-    QSystemTrayIcon* trayIcon = nullptr;
-    const std::unique_ptr<QMenu> trayIconMenu;
     Notificator* notificator = nullptr;
     MintingView* mintingView = nullptr;
     RPCConsole* rpcConsole = nullptr;
@@ -198,10 +190,6 @@ private:
     void createMenuBar();
     /** Create the toolbars */
     void createToolBars();
-    /** Create system tray icon and notification */
-    void createTrayIcon();
-    /** Create system tray menu (or setup the dock menu) */
-    void createTrayIconMenu();
 
     /** Enable or disable all wallet-related actions */
     void setWalletActionsEnabled(bool enabled);

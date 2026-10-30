@@ -26,10 +26,6 @@
 #include <qt/walletview.h>
 #endif // ENABLE_WALLET
 
-#ifdef Q_OS_MACOS
-#include <qt/macdockiconhandler.h>
-#endif
-
 #include <functional>
 #include <chain.h>
 #include <chainparams.h>
@@ -67,7 +63,6 @@
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QStyle>
-#include <QSystemTrayIcon>
 #include <QTimer>
 #include <QToolBar>
 #include <QFontDatabase>
@@ -93,7 +88,6 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
     QMainWindow(parent),
     m_node(node),
     decryptForMintingAction(0),
-    trayIconMenu{new QMenu()},
     platformStyle(_platformStyle),
     m_network_style(networkStyle)
 {
@@ -108,8 +102,6 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
 #ifdef ENABLE_WALLET
     enableWallet = WalletModel::isWalletEnabled();
 #endif // ENABLE_WALLET
-    QApplication::setWindowIcon(m_network_style->getTrayAndWindowIcon());
-    setWindowIcon(m_network_style->getTrayAndWindowIcon());
     updateWindowTitle();
     QFontDatabase::addApplicationFont(":/fonts/notosans-regular");
     QFile styleFile(":/themes/default");
@@ -158,11 +150,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
     // Create the toolbars
     createToolBars();
 
-    // Create system tray icon and notification
-    if (QSystemTrayIcon::isSystemTrayAvailable()) {
-        createTrayIcon();
-    }
-    notificator = new Notificator(QApplication::applicationName(), trayIcon, this);
+    notificator = new Notificator(QApplication::applicationName(), this);
 
     // Create status bar
     statusBar();
@@ -241,12 +229,6 @@ BitcoinGUI::~BitcoinGUI()
 
     QSettings settings;
     settings.setValue("MainWindowGeometry", saveGeometry());
-    if(trayIcon) // Hide tray icon, as deleting will let it linger until quit (on Ubuntu)
-        trayIcon->hide();
-#ifdef Q_OS_MACOS
-    delete m_app_nap_inhibitor;
-    MacDockIconHandler::cleanup();
-#endif
 
     delete rpcConsole;
 }
@@ -615,10 +597,6 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel, interfaces::BlockAndH
     this->clientModel = _clientModel;
     if(_clientModel)
     {
-        // Create system tray menu (or setup the dock menu) that late to prevent users from calling actions,
-        // while the client has not yet fully loaded
-        createTrayIconMenu();
-
         // Keep up to date with client
         setNetworkActive(m_node.getNetworkActive());
         connect(connectionsControl, &GUIUtil::ClickableLabel::clicked, [this] {
@@ -649,24 +627,9 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel, interfaces::BlockAndH
             walletFrame->setClientModel(_clientModel);
         }
 #endif // ENABLE_WALLET
-        //unitDisplayControl->setOptionsModel(_clientModel->getOptionsModel());
-
-        OptionsModel* optionsModel = _clientModel->getOptionsModel();
-        if (optionsModel && trayIcon) {
-            // be aware of the tray icon disable state change reported by the OptionsModel object.
-            connect(optionsModel, &OptionsModel::showTrayIconChanged, trayIcon, &QSystemTrayIcon::setVisible);
-
-            // initialize the disable state of the tray icon with the current value in the model.
-            trayIcon->setVisible(optionsModel->getShowTrayIcon());
-        }
 
         m_mask_values_action->setChecked(_clientModel->getOptionsModel()->getOption(OptionsModel::OptionID::MaskValues).toBool());
     } else {
-        if(trayIconMenu)
-        {
-            // Disable context menu on tray icon
-            trayIconMenu->clear();
-        }
         // Propagate cleared model to child objects
         rpcConsole->setClientModel(nullptr);
 #ifdef ENABLE_WALLET
@@ -675,7 +638,6 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel, interfaces::BlockAndH
             walletFrame->setClientModel(nullptr);
         }
 #endif // ENABLE_WALLET
-        //unitDisplayControl->setOptionsModel(nullptr);
     }
 }
 
@@ -811,103 +773,6 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     openAction->setEnabled(enabled);
     m_close_wallet_action->setEnabled(enabled);
     m_close_all_wallets_action->setEnabled(enabled);
-}
-
-void BitcoinGUI::createTrayIcon()
-{
-    assert(QSystemTrayIcon::isSystemTrayAvailable());
-
-#ifndef Q_OS_MACOS
-    if (QSystemTrayIcon::isSystemTrayAvailable()) {
-        trayIcon = new QSystemTrayIcon(m_network_style->getTrayAndWindowIcon(), this);
-        QString toolTip = tr("%1 client").arg(PACKAGE_NAME) + " " + m_network_style->getTitleAddText();
-        trayIcon->setToolTip(toolTip);
-    }
-#endif
-}
-
-void BitcoinGUI::createTrayIconMenu()
-{
-#ifndef Q_OS_MACOS
-    if (!trayIcon) return;
-#endif // Q_OS_MACOS
-
-    // Configuration of the tray icon (or Dock icon) menu.
-    QAction* show_hide_action{nullptr};
-#ifndef Q_OS_MACOS
-    // Note: On macOS, the Dock icon's menu already has Show / Hide action.
-    show_hide_action = trayIconMenu->addAction(QString(), this, &BitcoinGUI::toggleHidden);
-    trayIconMenu->addSeparator();
-#endif // Q_OS_MACOS
-
-    QAction* send_action{nullptr};
-    QAction* receive_action{nullptr};
-    QAction* sign_action{nullptr};
-    QAction* verify_action{nullptr};
-    if (enableWallet) {
-        send_action = trayIconMenu->addAction(sendCoinsAction->text(), sendCoinsAction, &QAction::trigger);
-        receive_action = trayIconMenu->addAction(receiveCoinsAction->text(), receiveCoinsAction, &QAction::trigger);
-        trayIconMenu->addSeparator();
-        sign_action = trayIconMenu->addAction(signMessageAction->text(), signMessageAction, &QAction::trigger);
-        verify_action = trayIconMenu->addAction(verifyMessageAction->text(), verifyMessageAction, &QAction::trigger);
-    //trayIconMenu->addAction(multisigAction);
-        trayIconMenu->addSeparator();
-    }
-    QAction* options_action = trayIconMenu->addAction(optionsAction->text(), optionsAction, &QAction::trigger);
-    options_action->setMenuRole(QAction::PreferencesRole);
-    QAction* node_window_action = trayIconMenu->addAction(openRPCConsoleAction->text(), openRPCConsoleAction, &QAction::trigger);
-    QAction* quit_action{nullptr};
-#ifndef Q_OS_MACOS
-    // Note: On macOS, the Dock icon's menu already has Quit action.
-    trayIconMenu->addSeparator();
-    quit_action = trayIconMenu->addAction(quitAction->text(), quitAction, &QAction::trigger);
-
-    trayIcon->setContextMenu(trayIconMenu.get());
-    connect(trayIcon, &QSystemTrayIcon::activated, [this](QSystemTrayIcon::ActivationReason reason) {
-        if (reason == QSystemTrayIcon::Trigger) {
-            // Click on system tray icon triggers show/hide of the main window
-            toggleHidden();
-        }
-    });
-#else
-    // Note: On macOS, the Dock icon is used to provide the tray's functionality.
-    MacDockIconHandler* dockIconHandler = MacDockIconHandler::instance();
-    connect(dockIconHandler, &MacDockIconHandler::dockIconClicked, [this] {
-        if (m_node.shutdownRequested()) return; // nothing to show, node is shutting down.
-        show();
-        activateWindow();
-    });
-    trayIconMenu->setAsDockMenu();
-#endif // Q_OS_MACOS
-
-    connect(
-        // Using QSystemTrayIcon::Context is not reliable.
-        // See https://bugreports.qt.io/browse/QTBUG-91697
-        trayIconMenu.get(), &QMenu::aboutToShow,
-        [this, show_hide_action, send_action, receive_action, sign_action, verify_action, options_action, node_window_action, quit_action] {
-            if (m_node.shutdownRequested()) return; // nothing to do, node is shutting down.
-
-            if (show_hide_action) show_hide_action->setText(
-                (!isHidden() && !isMinimized() && !GUIUtil::isObscured(this)) ?
-                    tr("&Hide") :
-                    tr("S&how"));
-            if (QApplication::activeModalWidget()) {
-                for (QAction* a : trayIconMenu.get()->actions()) {
-                    a->setEnabled(false);
-                }
-            } else {
-                if (show_hide_action) show_hide_action->setEnabled(true);
-                if (enableWallet) {
-                    send_action->setEnabled(sendCoinsAction->isEnabled());
-                    receive_action->setEnabled(receiveCoinsAction->isEnabled());
-                    sign_action->setEnabled(signMessageAction->isEnabled());
-                    verify_action->setEnabled(verifyMessageAction->isEnabled());
-                }
-                options_action->setEnabled(optionsAction->isEnabled());
-                node_window_action->setEnabled(openRPCConsoleAction->isEnabled());
-                if (quit_action) quit_action->setEnabled(true);
-            }
-        });
 }
 
 void BitcoinGUI::optionsClicked()
@@ -1257,49 +1122,13 @@ void BitcoinGUI::changeEvent(QEvent *e)
     }
 
     QMainWindow::changeEvent(e);
-
-#ifndef Q_OS_MACOS // Ignored on Mac
-    if(e->type() == QEvent::WindowStateChange)
-    {
-        if(clientModel && clientModel->getOptionsModel() && clientModel->getOptionsModel()->getMinimizeToTray())
-        {
-            QWindowStateChangeEvent *wsevt = static_cast<QWindowStateChangeEvent*>(e);
-            if(!(wsevt->oldState() & Qt::WindowMinimized) && isMinimized())
-            {
-                QTimer::singleShot(0, this, &BitcoinGUI::hide);
-                e->ignore();
-            }
-            else if((wsevt->oldState() & Qt::WindowMinimized) && !isMinimized())
-            {
-                QTimer::singleShot(0, this, &BitcoinGUI::show);
-                e->ignore();
-            }
-        }
-    }
-#endif
 }
 
 void BitcoinGUI::closeEvent(QCloseEvent *event)
 {
-#ifndef Q_OS_MACOS // Ignored on Mac
-    if(clientModel && clientModel->getOptionsModel())
-    {
-        if(!clientModel->getOptionsModel()->getMinimizeOnClose())
-        {
-            // close rpcConsole in case it was open to make some space for the shutdown window
-            rpcConsole->close();
-
-            Q_EMIT quitRequested();
-        }
-        else
-        {
-            QMainWindow::showMinimized();
-            event->ignore();
-        }
-    }
-#else
-    QMainWindow::closeEvent(event);
-#endif
+    // close rpcConsole in case it was open to make some space for the shutdown window
+    rpcConsole->close();
+    Q_EMIT quitRequested();
 }
 
 void BitcoinGUI::showEvent(QShowEvent *event)

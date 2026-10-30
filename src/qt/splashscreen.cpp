@@ -65,17 +65,6 @@ SplashScreen::SplashScreen(const NetworkStyle* networkStyle)
     QRect rGradient(QPoint(0,0), splashSize);
     pixPaint.fillRect(rGradient, gradient);
 
-    // draw the bitcoin icon, expected size of PNG: 1024x1024
-    const QSize requiredSize(100,100);
-    QPixmap icon(networkStyle->getAppIcon().pixmap(requiredSize));
-
-    QRect rectIcon(QPoint(40,30), requiredSize);
-    pixPaint.drawPixmap(rectIcon, icon);
-
-    QRect rectAvatar(QPoint(15,55), QSize(1323/3,1391/3));
-
-    pixPaint.drawPixmap(rectAvatar, QPixmap(":/images/dragonfly"));
-
     // check font size and drawing with
     pixPaint.setFont(QFont(font, 33*fontFactor));
     QFontMetrics fm = pixPaint.fontMetrics();
@@ -99,15 +88,6 @@ SplashScreen::SplashScreen(const NetworkStyle* networkStyle)
         titleVersionVSpace -= 5;
     }
     pixPaint.drawText(pixmap.width()/devicePixelRatio-titleTextWidth-paddingRight+2,paddingTop+titleVersionVSpace,versionText);
-
-    // draw copyright stuff
-    {
-        pixPaint.setFont(QFont(font, 10*fontFactor));
-        const int x = pixmap.width()/devicePixelRatio-titleTextWidth-paddingRight;
-        const int y = paddingTop+titleCopyrightVSpace;
-        QRect copyrightRect(x, y, pixmap.width() - x - paddingRight, pixmap.height() - y);
-        pixPaint.drawText(copyrightRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, copyrightText);
-    }
 
     // draw additional text if special network
     if(!titleAddText.isEmpty()) {

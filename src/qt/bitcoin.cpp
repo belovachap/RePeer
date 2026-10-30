@@ -348,14 +348,7 @@ void BitcoinApplication::initializeResult(bool success, interfaces::BlockAndHead
         }
 #endif // ENABLE_WALLET
 
-        // If -min option passed, start window minimized (iconified) or minimized to tray
-        if (!gArgs.GetBoolArg("-min", false)) {
-            window->show();
-        } else if (clientModel->getOptionsModel()->getMinimizeToTray() && window->hasTrayIcon()) {
-            // do nothing as the window is managed by the tray icon
-        } else {
-            window->showMinimized();
-        }
+        window->show();
         Q_EMIT windowShown(window);
 
 #ifdef ENABLE_WALLET
@@ -413,16 +406,6 @@ bool BitcoinApplication::event(QEvent* e)
     return QApplication::event(e);
 }
 
-static void SetupUIArgs(ArgsManager& argsman)
-{
-    argsman.AddArg("-choosedatadir", strprintf("Choose data directory on startup (default: %u)", DEFAULT_CHOOSE_DATADIR), ArgsManager::ALLOW_ANY, OptionsCategory::GUI);
-    argsman.AddArg("-lang=<lang>", "Set language, for example \"de_DE\" (default: system locale)", ArgsManager::ALLOW_ANY, OptionsCategory::GUI);
-    argsman.AddArg("-min", "Start minimized", ArgsManager::ALLOW_ANY, OptionsCategory::GUI);
-    argsman.AddArg("-resetguisettings", "Reset all settings changed in the GUI", ArgsManager::ALLOW_ANY, OptionsCategory::GUI);
-    argsman.AddArg("-splash", strprintf("Show splash screen on startup (default: %u)", DEFAULT_SPLASHSCREEN), ArgsManager::ALLOW_ANY, OptionsCategory::GUI);
-    argsman.AddArg("-uiplatform", strprintf("Select platform to customize UI for (one of windows, macosx, other; default: %s)", BitcoinGUI::DEFAULT_UIPLATFORM), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::GUI);
-}
-
 int GuiMain(int argc, char* argv[])
 {
     std::unique_ptr<interfaces::Init> init = interfaces::MakeGuiInit(argc, argv);
@@ -454,22 +437,6 @@ int GuiMain(int argc, char* argv[])
 
     BitcoinApplication app;
     GUIUtil::LoadFont(QStringLiteral(":/fonts/monospace"));
-
-    /// 2. Parse command-line options. We do this after qt in order to show an error if there are problems parsing these
-    // Command-line options take precedence:
-    SetupServerArgs(gArgs);
-    SetupUIArgs(gArgs);
-    std::string error;
-    if (!gArgs.ParseParameters(argc, argv, error)) {
-        InitError(strprintf(Untranslated("Error parsing command line arguments: %s"), error));
-        // Create a message box, because the gui has neither been created nor has subscribed to core signals
-        QMessageBox::critical(nullptr, PACKAGE_NAME,
-            // message cannot be translated because translations have not been initialized
-            QString::fromStdString("Error parsing command line arguments: %1.").arg(QString::fromStdString(error)));
-        return EXIT_FAILURE;
-    }
-
-    // Now that the QApplication is setup and we have parsed our parameters, we can set the platform style
     app.setupPlatformStyle();
 
     /// 3. Application identification
@@ -482,10 +449,7 @@ int GuiMain(int argc, char* argv[])
     // Install global event filter that makes sure that long tooltips can be word-wrapped
     app.installEventFilter(new GUIUtil::ToolTipToRichTextFilter(TOOLTIP_WRAP_THRESHOLD, &app));
 
-    /// 5. Now that settings and translations are available, ask user for data directory
-    // User language is set up: pick a data directory
     bool did_show_intro = false;
-    // Gracefully exit if the user cancels
     if (!Intro::showIfNeeded(did_show_intro)) return EXIT_SUCCESS;
 
     /// 6-7. Parse bitcoin.conf, determine network, switch to network specific
@@ -548,8 +512,7 @@ int GuiMain(int argc, char* argv[])
     app.parameterSetup();
     GUIUtil::LogQtInfo();
 
-    if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))
-        app.createSplashScreen(networkStyle.data());
+    app.createSplashScreen(networkStyle.data());
 
     app.createNode(*init);
 

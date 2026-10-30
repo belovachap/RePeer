@@ -35,10 +35,6 @@ public:
     explicit OptionsModel(interfaces::Node& node, QObject *parent = nullptr);
 
     enum OptionID {
-        StartAtStartup,         // bool
-        ShowTrayIcon,           // bool
-        MinimizeToTray,         // bool
-        MinimizeOnClose,        // bool
         ProxyUse,               // bool
         ProxyIP,                // QString
         ProxyPort,              // int
@@ -76,9 +72,6 @@ public:
     void setDisplayUnit(const QVariant& new_unit);
 
     /* Explicit getters */
-    bool getShowTrayIcon() const { return m_show_tray_icon; }
-    bool getMinimizeToTray() const { return fMinimizeToTray; }
-    bool getMinimizeOnClose() const { return fMinimizeOnClose; }
     BitcoinUnit getDisplayUnit() const { return m_display_bitcoin_unit; }
     QString getThirdPartyTxUrls() const { return strThirdPartyTxUrls; }
     bool getUseEmbeddedMonospacedFont() const { return m_use_embedded_monospaced_font; }
@@ -99,9 +92,6 @@ public:
 private:
     interfaces::Node& m_node;
     /* Qt-only settings */
-    bool m_show_tray_icon;
-    bool fMinimizeToTray;
-    bool fMinimizeOnClose;
     BitcoinUnit m_display_bitcoin_unit;
     QString strThirdPartyTxUrls;
     bool m_use_embedded_monospaced_font;
@@ -122,7 +112,6 @@ private:
 Q_SIGNALS:
     void displayUnitChanged(BitcoinUnit unit);
     void coinControlFeaturesChanged(bool);
-    void showTrayIconChanged(bool);
     void useEmbeddedMonospacedFontChanged(bool);
 };
 

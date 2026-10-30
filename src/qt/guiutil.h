@@ -210,9 +210,6 @@ namespace GUIUtil
         bool eventFilter(QObject* watched, QEvent* event) override;
     };
 
-    bool GetStartOnSystemStartup();
-    bool SetStartOnSystemStartup(bool fAutoStart);
-
     /** Convert QString to OS specific boost path through UTF-8 */
     fs::path QStringToPath(const QString &path);
 

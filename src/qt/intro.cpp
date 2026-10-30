@@ -188,7 +188,6 @@ bool Intro::showIfNeeded(bool& did_show_intro)
         /* If current default data directory does not exist, let the user choose one */
         Intro intro(0, Params().AssumedBlockchainSize());
         intro.setDataDirectory(dataDir);
-        intro.setWindowIcon(QIcon(":icons/bitcoin"));
         did_show_intro = true;
 
         while(true)

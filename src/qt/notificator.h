@@ -13,8 +13,6 @@
 #include <QObject>
 
 QT_BEGIN_NAMESPACE
-class QSystemTrayIcon;
-
 #ifdef USE_DBUS
 class QDBusInterface;
 #endif
@@ -29,7 +27,7 @@ public:
     /** Create a new notificator.
        @note Ownership of trayIcon is not transferred to this object.
     */
-    Notificator(const QString &programName, QSystemTrayIcon *trayIcon, QWidget *parent);
+    Notificator(const QString &programName, QWidget *parent);
     ~Notificator();
 
     // Message class
@@ -57,20 +55,13 @@ private:
     enum Mode {
         None,                       /**< Ignore informational notifications, and show a modal pop-up dialog for Critical notifications. */
         Freedesktop,                /**< Use DBus org.freedesktop.Notifications */
-        QSystemTray,                /**< Use QSystemTrayIcon::showMessage() */
-        UserNotificationCenter      /**< Use the 10.8+ User Notification Center (Mac only) */
     };
     QString programName;
     Mode mode{None};
-    QSystemTrayIcon *trayIcon;
 #ifdef USE_DBUS
     QDBusInterface* interface{nullptr};
 
     void notifyDBus(Class cls, const QString &title, const QString &text, const QIcon &icon, int millisTimeout);
-#endif
-    void notifySystray(Class cls, const QString &title, const QString &text, int millisTimeout);
-#ifdef Q_OS_MACOS
-    void notifyMacUserNotificationCenter(const QString &title, const QString &text);
 #endif
 };
 

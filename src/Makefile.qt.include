@@ -49,8 +49,6 @@ QT_MOC_CPP = \
   qt/moc_guiutil.cpp \
   qt/moc_initexecutor.cpp \
   qt/moc_intro.cpp \
-  qt/moc_macdockiconhandler.cpp \
-  qt/moc_macnotificationhandler.cpp \
   qt/moc_modaloverlay.cpp \
   qt/moc_notificator.cpp \
   qt/moc_openuridialog.cpp \
@@ -88,11 +86,6 @@ QT_MOC_CPP = \
   qt/moc_mintingtablemodel.cpp \
   qt/moc_mintingview.cpp
 
-BITCOIN_MM = \
-  qt/macdockiconhandler.mm \
-  qt/macnotificationhandler.mm \
-  qt/macos_appnap.mm
-
 QT_MOC = \
   qt/bitcoinamountfield.moc \
   qt/intro.moc \
@@ -122,9 +115,6 @@ BITCOIN_QT_H = \
   qt/guiutil.h \
   qt/initexecutor.h \
   qt/intro.h \
-  qt/macdockiconhandler.h \
-  qt/macnotificationhandler.h \
-  qt/macos_appnap.h \
   qt/modaloverlay.h \
   qt/networkstyle.h \
   qt/notificator.h \

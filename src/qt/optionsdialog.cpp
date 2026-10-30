@@ -28,7 +28,6 @@
 #include <QIntValidator>
 #include <QLocale>
 #include <QMessageBox>
-#include <QSystemTrayIcon>
 #include <QTimer>
 
 OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
@@ -61,14 +60,6 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     connect(ui->connectSocksTor, &QPushButton::toggled, this, &OptionsDialog::updateProxyValidationState);
 
     /* Window elements init */
-#ifdef Q_OS_MACOS
-    /* remove Window tab on Mac */
-    ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->tabWindow));
-    /* hide launch at startup option on macOS */
-    ui->bitcoinAtStartup->setVisible(false);
-    ui->verticalLayout_Main->removeWidget(ui->bitcoinAtStartup);
-    //ui->verticalLayout_Main->removeItem(ui->horizontalSpacer_0_Main);
-#endif
 
     /* remove Wallet tab and 3rd party-URL textbox in case of -disablewallet */
     if (!enableWallet) {
@@ -78,9 +69,6 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     }
 
     /* Display elements init */
-    ui->bitcoinAtStartup->setToolTip(ui->bitcoinAtStartup->toolTip().arg(PACKAGE_NAME));
-    ui->bitcoinAtStartup->setText(ui->bitcoinAtStartup->text().arg(PACKAGE_NAME));
-
     ui->openBitcoinConfButton->setToolTip(ui->openBitcoinConfButton->toolTip().arg(PACKAGE_NAME));
 
     ui->unit->setModel(new BitcoinUnits(this));
@@ -101,13 +89,6 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     connect(ui->proxyIpTor, &QValidatedLineEdit::validationDidChange, this, &OptionsDialog::updateProxyValidationState);
     connect(ui->proxyPort, &QLineEdit::textChanged, this, &OptionsDialog::updateProxyValidationState);
     connect(ui->proxyPortTor, &QLineEdit::textChanged, this, &OptionsDialog::updateProxyValidationState);
-
-    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-        ui->showTrayIcon->setChecked(false);
-        ui->showTrayIcon->setEnabled(false);
-        ui->minimizeToTray->setChecked(false);
-        ui->minimizeToTray->setEnabled(false);
-    }
 
     QFont embedded_font{GUIUtil::fixedPitchFont(true)};
     ui->embeddedFont_radioButton->setText(ui->embeddedFont_radioButton->text().arg(QFontInfo(embedded_font).family()));
@@ -191,7 +172,6 @@ void OptionsDialog::setCurrentTab(OptionsDialog::Tab tab)
 void OptionsDialog::setMapper()
 {
     /* Main */
-    mapper->addMapping(ui->bitcoinAtStartup, OptionsModel::StartAtStartup);
     mapper->addMapping(ui->threadsScriptVerif, OptionsModel::ThreadsScriptVerif);
     mapper->addMapping(ui->databaseCache, OptionsModel::DatabaseCache);
 
@@ -215,15 +195,6 @@ void OptionsDialog::setMapper()
     mapper->addMapping(ui->connectSocksTor, OptionsModel::ProxyUseTor);
     mapper->addMapping(ui->proxyIpTor, OptionsModel::ProxyIPTor);
     mapper->addMapping(ui->proxyPortTor, OptionsModel::ProxyPortTor);
-
-    /* Window */
-#ifndef Q_OS_MACOS
-    if (QSystemTrayIcon::isSystemTrayAvailable()) {
-        mapper->addMapping(ui->showTrayIcon, OptionsModel::ShowTrayIcon);
-        mapper->addMapping(ui->minimizeToTray, OptionsModel::MinimizeToTray);
-    }
-    mapper->addMapping(ui->minimizeOnClose, OptionsModel::MinimizeOnClose);
-#endif
 
     /* Display */
     mapper->addMapping(ui->unit, OptionsModel::DisplayUnit);
@@ -298,16 +269,6 @@ void OptionsDialog::on_okButton_clicked()
 void OptionsDialog::on_cancelButton_clicked()
 {
     reject();
-}
-
-void OptionsDialog::on_showTrayIcon_stateChanged(int state)
-{
-    if (state == Qt::Checked) {
-        ui->minimizeToTray->setEnabled(true);
-    } else {
-        ui->minimizeToTray->setChecked(false);
-        ui->minimizeToTray->setEnabled(false);
-    }
 }
 
 void OptionsDialog::showRestartWarning(bool fPersistent)
