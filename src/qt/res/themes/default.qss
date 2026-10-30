@@ -154,8 +154,7 @@ QToolTip {
 
 /* Toolbar */
 QToolBar {
-    border: 1px solid #3cb054;
-    background-color: #3cb054;
+    background-color: #000000;
 }
 
 QToolBar > QLabel {
