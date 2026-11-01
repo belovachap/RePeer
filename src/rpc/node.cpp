@@ -9,9 +9,7 @@
 #include <index/coinstatsindex.h>
 #include <index/txindex.h>
 #include <interfaces/chain.h>
-#include <interfaces/echo.h>
 #include <interfaces/init.h>
-#include <interfaces/ipc.h>
 #include <kernel/cs_main.h>
 #include <node/context.h>
 #include <rpc/server.h>
@@ -286,79 +284,6 @@ static RPCHelpMan logging()
     };
 }
 
-static RPCHelpMan echo(const std::string& name)
-{
-    return RPCHelpMan{name,
-                "\nSimply echo back the input arguments. This command is for testing.\n"
-                "\nIt will return an internal bug report when arg9='trigger_internal_bug' is passed.\n"
-                "\nThe difference between echo and echojson is that echojson has argument conversion enabled in the client-side table in "
-                "peercoin-cli and the GUI. There is no server-side difference.",
-       {
-            {"arg0", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg1", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg2", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg3", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg4", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg5", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg6", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg7", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg8", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-            {"arg9", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "", RPCArgOptions{.skip_type_check = true}},
-        },
-                RPCResult{RPCResult::Type::ANY, "", "Returns whatever was passed in"},
-                RPCExamples{""},
-        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
-{
-    if (request.params[9].isStr()) {
-        CHECK_NONFATAL(request.params[9].get_str() != "trigger_internal_bug");
-    }
-
-    return request.params;
-},
-    };
-}
-
-static RPCHelpMan echo() { return echo("echo"); }
-static RPCHelpMan echojson() { return echo("echojson"); }
-
-static RPCHelpMan echoipc()
-{
-    return RPCHelpMan{
-        "echoipc",
-        "\nEcho back the input argument, passing it through a spawned process in a multiprocess build.\n"
-        "This command is for testing.\n",
-        {{"arg", RPCArg::Type::STR, RPCArg::Optional::NO, "The string to echo",}},
-        RPCResult{RPCResult::Type::STR, "echo", "The echoed string."},
-        RPCExamples{HelpExampleCli("echo", "\"Hello world\"") +
-                    HelpExampleRpc("echo", "\"Hello world\"")},
-        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
-            interfaces::Init& local_init = *EnsureAnyNodeContext(request.context).init;
-            std::unique_ptr<interfaces::Echo> echo;
-            if (interfaces::Ipc* ipc = local_init.ipc()) {
-                // Spawn a new bitcoin-node process and call makeEcho to get a
-                // client pointer to a interfaces::Echo instance running in
-                // that process. This is just for testing. A slightly more
-                // realistic test spawning a different executable instead of
-                // the same executable would add a new bitcoin-echo executable,
-                // and spawn bitcoin-echo below instead of bitcoin-node. But
-                // using bitcoin-node avoids the need to build and install a
-                // new executable just for this one test.
-                auto init = ipc->spawnProcess("bitcoin-node");
-                echo = init->makeEcho();
-                ipc->addCleanup(*echo, [init = init.release()] { delete init; });
-            } else {
-                // IPC support is not available because this is a bitcoind
-                // process not a bitcoind-node process, so just create a local
-                // interfaces::Echo object and return it so the `echoipc` RPC
-                // method will work, and the python test calling `echoipc`
-                // can expect the same result.
-                echo = local_init.makeEcho();
-            }
-            return echo->echo(request.params[0].get_str());
-        },
-    };
-}
-
 static UniValue SummaryToJSON(const IndexSummary&& summary, std::string index_name)
 {
     UniValue ret_summary(UniValue::VOBJ);
@@ -425,9 +350,6 @@ void RegisterNodeRPCCommands(CRPCTable& t)
         {"util", &getindexinfo},
         {"hidden", &setmocktime},
         {"hidden", &mockscheduler},
-        {"hidden", &echo},
-        {"hidden", &echojson},
-        {"hidden", &echoipc},
 #if defined(USE_SYSCALL_SANDBOX)
         {"hidden", &invokedisallowedsyscall},
 #endif // USE_SYSCALL_SANDBOX

@@ -128,10 +128,8 @@ BITCOIN_CORE_H = \
   init.h \
   init/common.h \
   interfaces/chain.h \
-  interfaces/echo.h \
   interfaces/handler.h \
   interfaces/init.h \
-  interfaces/ipc.h \
   interfaces/node.h \
   interfaces/wallet.h \
   kernel/blockmanager_opts.h \

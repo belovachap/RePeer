@@ -120,11 +120,17 @@ bool WalletInit::ParameterInteraction() const
 
 void WalletInit::Construct(NodeContext& node) const
 {
+    if (!node.init->has_wallet)
+    {
+        return;
+    }
+
     ArgsManager& args = *Assert(node.args);
     if (args.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
         LogPrintf("Wallet disabled!\n");
         return;
     }
+
     auto wallet_loader = node.init->makeWalletLoader(*node.chain);
     node.wallet_loader = wallet_loader.get();
     node.chain_clients.emplace_back(std::move(wallet_loader));

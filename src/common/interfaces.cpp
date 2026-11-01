@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <interfaces/echo.h>
 #include <interfaces/handler.h>
 
 #include <boost/signals2/connection.hpp>
@@ -29,12 +28,6 @@ public:
 
     boost::signals2::scoped_connection m_connection;
 };
-
-class EchoImpl : public interfaces::Echo
-{
-public:
-    std::string echo(const std::string& echo) override { return echo; }
-};
 } // namespace
 } // namespace common
 
@@ -48,6 +41,4 @@ std::unique_ptr<Handler> MakeSignalHandler(boost::signals2::connection connectio
 {
     return std::make_unique<common::SignalHandler>(std::move(connection));
 }
-
-std::unique_ptr<Echo> MakeEcho() { return std::make_unique<common::EchoImpl>(); }
 } // namespace interfaces
