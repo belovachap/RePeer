@@ -117,17 +117,12 @@ dnl Check/return PATH for base programs.
 AC_PATH_TOOL([AR], [ar])
 AC_PATH_TOOL([GCOV], [gcov])
 AC_PATH_TOOL([LLVM_COV], [llvm-cov])
-AC_PATH_PROG([LCOV], [lcov])
-dnl Python 3.7 is specified in .python-version and should be used if available, see doc/dependencies.md
-AC_PATH_PROGS([PYTHON], [python3.7 python3.8 python3.9 python3.10 python3.11 python3.12 python3 python])
 AC_PATH_PROG([GENHTML], [genhtml])
 AC_PATH_PROG([GIT], [git])
 AC_PATH_PROG([CCACHE], [ccache])
 AC_PATH_PROG([XGETTEXT], [xgettext])
 AC_PATH_PROG([HEXDUMP], [hexdump])
 AC_PATH_TOOL([OBJCOPY], [objcopy])
-
-AC_ARG_VAR([PYTHONPATH], [Augments the default search path for python module files])
 
 AC_ARG_ENABLE([wallet],
   [AS_HELP_STRING([--disable-wallet],
@@ -158,32 +153,6 @@ AC_ARG_WITH([sqlite],
   [enable sqlite wallet support (default: auto, i.e., enabled if wallet is enabled and sqlite is found)])],
   [use_sqlite=$withval],
   [use_sqlite=auto])
-
-AC_ARG_ENABLE(tests,
-    AS_HELP_STRING([--disable-tests],[do not compile tests (default is to compile)]),
-    [use_tests=$enableval],
-    [use_tests=yes])
-
-AC_ARG_ENABLE(gui-tests,
-    AS_HELP_STRING([--disable-gui-tests],[do not compile GUI tests (default is to compile if GUI and tests enabled)]),
-    [use_gui_tests=$enableval],
-    [use_gui_tests=$use_tests])
-
-AC_ARG_ENABLE(bench,
-    AS_HELP_STRING([--disable-bench],[do not compile benchmarks (default is to compile)]),
-    [use_bench=$enableval],
-    [use_bench=yes])
-
-AC_ARG_ENABLE([extended-functional-tests],
-    AS_HELP_STRING([--enable-extended-functional-tests],[enable expensive functional tests when using lcov (default no)]),
-    [use_extended_functional_tests=$enableval],
-    [use_extended_functional_tests=no])
-
-AC_ARG_ENABLE([fuzz],
-    AS_HELP_STRING([--enable-fuzz],
-    [build for fuzzing (default no). enabling this will disable all other targets and override --{enable,disable}-fuzz-binary]),
-    [enable_fuzz=$enableval],
-    [enable_fuzz=no])
 
 AC_ARG_ENABLE([fuzz-binary],
     AS_HELP_STRING([--enable-fuzz-binary],
@@ -224,18 +193,6 @@ AC_ARG_ENABLE([suppress-external-warnings],
                   [Suppress warnings from external headers (default is no)])],
   [suppress_external_warnings=$enableval],
   [suppress_external_warnings=no])
-
-AC_ARG_ENABLE([lcov],
-  [AS_HELP_STRING([--enable-lcov],
-  [enable lcov testing (default is no)])],
-  [use_lcov=$enableval],
-  [use_lcov=no])
-
-AC_ARG_ENABLE([lcov-branch-coverage],
-  [AS_HELP_STRING([--enable-lcov-branch-coverage],
-  [enable lcov testing branch coverage (default is no)])],
-  [use_lcov_branch=yes],
-  [use_lcov_branch=no])
 
 AC_ARG_ENABLE([threadlocal],
   [AS_HELP_STRING([--enable-threadlocal],
@@ -602,62 +559,6 @@ AC_ARG_WITH([experimental-kernel-lib],
 
 dnl Require C++17 compiler (no GNU extensions)
 AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory], [nodefault])
-
-if test "$use_extended_functional_tests" != "no"; then
-  AC_SUBST(EXTENDED_FUNCTIONAL_TESTS, --extended)
-fi
-
-if test "$use_lcov" = "yes"; then
-  if test "$LCOV" = ""; then
-    AC_MSG_ERROR([lcov testing requested but lcov not found])
-  fi
-  if test "$PYTHON" = ""; then
-    AC_MSG_ERROR([lcov testing requested but python not found])
-  fi
-  if test "$GENHTML" = ""; then
-    AC_MSG_ERROR([lcov testing requested but genhtml not found])
-  fi
-
-  AC_MSG_CHECKING([whether compiler is Clang])
-  AC_PREPROC_IFELSE([AC_LANG_SOURCE([[
-      #if defined(__clang__) && defined(__llvm__)
-      // Compiler is Clang
-      #else
-      #  error Compiler is not Clang
-      #endif
-    ]])],[
-      AC_MSG_RESULT([yes])
-      if test "$LLVM_COV" = ""; then
-        AC_MSG_ERROR([lcov testing requested but llvm-cov not found])
-      fi
-      COV_TOOL="$LLVM_COV gcov"
-    ],[
-      AC_MSG_RESULT([no])
-      if test "$GCOV" = "x"; then
-        AC_MSG_ERROR([lcov testing requested but gcov not found])
-      fi
-      COV_TOOL="$GCOV"
-  ])
-  AC_SUBST(COV_TOOL)
-  AC_SUBST(COV_TOOL_WRAPPER, "cov_tool_wrapper.sh")
-  LCOV="$LCOV --gcov-tool $(pwd)/$COV_TOOL_WRAPPER"
-
-  AX_CHECK_LINK_FLAG([--coverage], [CORE_LDFLAGS="$CORE_LDFLAGS --coverage"],
-    [AC_MSG_ERROR([lcov testing requested but --coverage linker flag does not work])])
-  AX_CHECK_COMPILE_FLAG([--coverage],[CORE_CXXFLAGS="$CORE_CXXFLAGS --coverage"],
-    [AC_MSG_ERROR([lcov testing requested but --coverage flag does not work])])
-  dnl If coverage is enabled, and the user hasn't overridden CXXFLAGS, clear
-  dnl them, to prevent autoconfs "-g -O2" being added. Otherwise we'd end up
-  dnl with "--coverage -Og -O0 -g -O2".
-  if test "$CXXFLAGS_overridden" = "no"; then
-  CXXFLAGS=""
-  fi
-  CORE_CXXFLAGS="$CORE_CXXFLAGS -Og -O0"
-fi
-
-if test "$use_lcov_branch" != "no"; then
-  AC_SUBST(LCOV_OPTS, "$LCOV_OPTS --rc lcov_branch_coverage=1")
-fi
 
 dnl Check for endianness
 AC_C_BIGENDIAN
@@ -1451,7 +1352,6 @@ AM_CONDITIONAL([USE_SQLITE], [test "$use_sqlite" = "yes"])
 AM_CONDITIONAL([USE_BDB], [test "$use_bdb" = "yes"])
 AM_CONDITIONAL([ENABLE_QT], [test "$bitcoin_enable_qt" = "yes"])
 AM_CONDITIONAL([USE_QRCODE], [test "$use_qr" = "yes"])
-AM_CONDITIONAL([USE_LCOV], [test "$use_lcov" = "yes"])
 AM_CONDITIONAL([USE_LIBEVENT], [test "$use_libevent" = "yes"])
 AM_CONDITIONAL([HARDEN], [test "$use_hardening" = "yes"])
 AM_CONDITIONAL([ENABLE_SSE42], [test "$enable_sse42" = "yes"])
@@ -1533,8 +1433,6 @@ AC_SUBST(HAVE_STRONG_GETAUXVAL)
 AC_SUBST(ANDROID_ARCH)
 AC_SUBST(HAVE_EVHTTP_CONNECTION_GET_PEER_CONST_CHAR)
 AC_CONFIG_FILES([Makefile src/Makefile])
-AC_CONFIG_LINKS([contrib/filter-lcov.py:contrib/filter-lcov.py])
-AC_CONFIG_LINKS([contrib/macdeploy/background.tiff:contrib/macdeploy/background.tiff])
 AC_CONFIG_LINKS([src/qt/Makefile:src/qt/Makefile])
 
 dnl boost's m4 checks do something really nasty: they export these vars. As a

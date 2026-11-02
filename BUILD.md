@@ -4,7 +4,7 @@
 
 ```bash
 sudo apt install git
-sudo apt install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3
+sudo apt install build-essential libtool autotools-dev automake pkg-config bsdmainutils
 sudo apt install libevent-dev libboost-dev libssl-dev
 sudo apt install libsqlite3-dev
 sudo apt install systemtap-sdt-dev
