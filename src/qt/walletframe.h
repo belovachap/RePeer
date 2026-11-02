@@ -40,8 +40,6 @@ public:
     void removeWallet(WalletModel* wallet_model);
     void removeAllWallets();
 
-    bool handlePaymentRequest(const SendCoinsRecipient& recipient);
-
     void showOutOfSyncWarning(bool fShow);
 
     QSize sizeHint() const override { return m_size_hint; }

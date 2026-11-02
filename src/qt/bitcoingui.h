@@ -232,7 +232,6 @@ public Q_SLOTS:
     */
     void message(const QString& title, QString message, unsigned int style, bool* ret = nullptr, const QString& detailed_message = QString());
 
-#ifdef ENABLE_WALLET
     void setCurrentWallet(WalletModel* wallet_model);
     void setCurrentWalletBySelectorIndex(int index);
     /** Set the UI status indicators based on the currently selected wallet.
@@ -253,11 +252,8 @@ private:
     void setHDStatus(bool privkeyDisabled, int hdEnabled);
 
 public Q_SLOTS:
-    bool handlePaymentRequest(const SendCoinsRecipient& recipient);
-
     /** Show incoming transaction notification for new transactions. */
     void incomingTransaction(const QString& date, BitcoinUnit unit, const CAmount& amount, const QString& type, const QString& address, const QString& label, const QString& walletName);
-#endif // ENABLE_WALLET
 
 private:
     /** Set the proxy-enabled icon as shown in the UI. */

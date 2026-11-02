@@ -46,8 +46,6 @@ public:
     void setClientModel(ClientModel *clientModel);
     WalletModel* getWalletModel() const noexcept { return walletModel; }
 
-    bool handlePaymentRequest(const SendCoinsRecipient& recipient);
-
     void showOutOfSyncWarning(bool fShow);
 
 private:

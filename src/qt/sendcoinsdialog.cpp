@@ -123,12 +123,6 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
 void SendCoinsDialog::setClientModel(ClientModel *_clientModel)
 {
     this->clientModel = _clientModel;
-
-/*
-    if (_clientModel) {
-        connect(_clientModel, &ClientModel::numBlocksChanged, this, &SendCoinsDialog::updateNumberOfBlocks);
-    }
-*/
 }
 
 void SendCoinsDialog::setModel(WalletModel *_model)
@@ -520,38 +514,6 @@ void SendCoinsDialog::setAddress(const QString &address)
     }
 
     entry->setAddress(address);
-}
-
-void SendCoinsDialog::pasteEntry(const SendCoinsRecipient &rv)
-{
-    if(!fNewRecipientAllowed)
-        return;
-
-    SendCoinsEntry *entry = nullptr;
-    // Replace the first entry if it is still unused
-    if(ui->entries->count() == 1)
-    {
-        SendCoinsEntry *first = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget());
-        if(first->isClear())
-        {
-            entry = first;
-        }
-    }
-    if(!entry)
-    {
-        entry = addEntry();
-    }
-
-    entry->setValue(rv);
-    updateTabsAndLabels();
-}
-
-bool SendCoinsDialog::handlePaymentRequest(const SendCoinsRecipient &rv)
-{
-    // Just paste the entry, all pre-checks
-    // are done in paymentserver.cpp.
-    pasteEntry(rv);
-    return true;
 }
 
 void SendCoinsDialog::setBalance(const interfaces::WalletBalances& balances)

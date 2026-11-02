@@ -35,12 +35,9 @@
 #include <util/translation.h>
 #include <validation.h>
 
-#ifdef ENABLE_WALLET
-#include <qt/paymentserver.h>
 #include <qt/walletcontroller.h>
 #include <qt/walletmodel.h>
 #include <wallet/types.h>
-#endif // ENABLE_WALLET
 
 #include <boost/signals2/connection.hpp>
 #include <chrono>
@@ -185,13 +182,6 @@ BitcoinApplication::~BitcoinApplication()
     delete platformStyle;
     platformStyle = nullptr;
 }
-
-#ifdef ENABLE_WALLET
-void BitcoinApplication::createPaymentServer()
-{
-    paymentServer = new PaymentServer(this);
-}
-#endif
 
 bool BitcoinApplication::createOptionsModel(bool resetSettings)
 {
@@ -338,31 +328,14 @@ void BitcoinApplication::initializeResult(bool success, interfaces::BlockAndHead
         qInfo() << "Platform customization:" << platformStyle->getName();
         clientModel = new ClientModel(node(), optionsModel);
         window->setClientModel(clientModel, &tip_info);
-#ifdef ENABLE_WALLET
         if (WalletModel::isWalletEnabled()) {
             m_wallet_controller = new WalletController(*clientModel, platformStyle, this);
             window->setWalletController(m_wallet_controller);
-            if (paymentServer) {
-                paymentServer->setOptionsModel(optionsModel);
-            }
         }
-#endif // ENABLE_WALLET
 
         window->show();
         Q_EMIT windowShown(window);
 
-#ifdef ENABLE_WALLET
-        // Now that initialization/startup is done, process any command-line
-        // bitcoin: URIs or payment requests:
-        if (paymentServer) {
-            connect(paymentServer, &PaymentServer::receivedPaymentRequest, window, &BitcoinGUI::handlePaymentRequest);
-            connect(window, &BitcoinGUI::receivedURI, paymentServer, &PaymentServer::handleURIOrFile);
-            connect(paymentServer, &PaymentServer::message, [this](const QString& title, const QString& message, unsigned int style) {
-                window->message(title, message, style);
-            });
-            QTimer::singleShot(100ms, paymentServer, &PaymentServer::uiReady);
-        }
-#endif
         pollShutdownTimer->start(SHUTDOWN_POLLING_DELAY);
     } else {
         requestShutdown();
@@ -471,41 +444,16 @@ int GuiMain(int argc, char* argv[])
         }
         return EXIT_FAILURE;
     }
-#ifdef ENABLE_WALLET
-    // Parse URIs on command line
-    PaymentServer::ipcParseCommandLine(argc, argv);
-#endif
 
     QScopedPointer<const NetworkStyle> networkStyle(NetworkStyle::instantiate(Params().NetworkIDString()));
     assert(!networkStyle.isNull());
     // Allow for separate UI settings for testnets
     QApplication::setApplicationName(networkStyle->getAppName());
 
-
-#ifdef ENABLE_WALLET
-    /// 8. URI IPC sending
-    // - Do this early as we don't want to bother initializing if we are just calling IPC
-    // - Do this *after* setting up the data directory, as the data directory hash is used in the name
-    // of the server.
-    // - Do this after creating app and setting up translations, so errors are
-    // translated properly.
-    if (PaymentServer::ipcSendCommandLine())
-        exit(EXIT_SUCCESS);
-
-    // Start up the payment server early, too, so impatient users that click on
-    // bitcoin: links repeatedly have their payment requests routed to this process:
-    if (WalletModel::isWalletEnabled()) {
-        app.createPaymentServer();
-    }
-#endif // ENABLE_WALLET
-
     /// 9. Main GUI initialization
     // Install global event filter that makes sure that out-of-focus labels do not contain text cursor.
     app.installEventFilter(new GUIUtil::LabelOutOfFocusEventFilter(&app));
-#if defined(Q_OS_WIN)
-    // Install global event filter for processing Windows session related Windows messages (WM_QUERYENDSESSION and WM_ENDSESSION)
-    qApp->installNativeEventFilter(new WinShutdownMonitor());
-#endif
+
     // Install qDebug() message handler to route to debug.log
     qInstallMessageHandler(DebugMessageHandler);
     // Allow parameter interaction before we create the options model

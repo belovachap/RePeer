@@ -22,7 +22,6 @@ class BitcoinGUI;
 class ClientModel;
 class NetworkStyle;
 class OptionsModel;
-class PaymentServer;
 class PlatformStyle;
 class SplashScreen;
 class WalletController;
@@ -40,10 +39,6 @@ public:
     explicit BitcoinApplication();
     ~BitcoinApplication();
 
-#ifdef ENABLE_WALLET
-    /// Create payment server
-    void createPaymentServer();
-#endif
     /// parameter interaction/setup based on rules
     void parameterSetup();
     /// Create options model
@@ -98,10 +93,7 @@ private:
     ClientModel* clientModel{nullptr};
     BitcoinGUI* window{nullptr};
     QTimer* pollShutdownTimer{nullptr};
-#ifdef ENABLE_WALLET
-    PaymentServer* paymentServer{nullptr};
     WalletController* m_wallet_controller{nullptr};
-#endif
     int returnValue{0};
     const PlatformStyle* platformStyle{nullptr};
     std::unique_ptr<QWidget> shutdownWindow;
