@@ -109,8 +109,6 @@ protected:
     void changeEvent(QEvent *e) override;
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
-    void dragEnterEvent(QDragEnterEvent *event) override;
-    void dropEvent(QDropEvent *event) override;
     bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
@@ -208,8 +206,6 @@ private:
 
 Q_SIGNALS:
     void quitRequested();
-    /** Signal raised when a URI was entered or dragged to the GUI */
-    void receivedURI(const QString &uri);
     /** Signal raised when RPC console shown */
     void consoleShown(RPCConsole* console);
     void setPrivacy(bool privacy);
@@ -261,7 +257,6 @@ private:
     void updateWindowTitle();
 
 public Q_SLOTS:
-#ifdef ENABLE_WALLET
     /** Switch to overview (home) page */
     void gotoOverviewPage();
     /** Switch to history (transactions) page */
@@ -282,9 +277,6 @@ public Q_SLOTS:
     /** Enable history action when privacy is changed */
     void enableHistoryAction(bool privacy);
 
-    /** Show open dialog */
-    void openClicked();
-#endif // ENABLE_WALLET
     /** Show configuration dialog */
     void optionsClicked();
     /** Show debug window */
