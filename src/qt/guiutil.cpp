@@ -68,13 +68,6 @@
 #include <string>
 #include <vector>
 
-#if defined(Q_OS_MACOS)
-
-#include <QProcess>
-
-void ForceActivation();
-#endif
-
 using namespace std::chrono_literals;
 
 namespace GUIUtil {
@@ -384,10 +377,6 @@ bool isObscured(QWidget *w)
 
 void bringToFront(QWidget* w)
 {
-#ifdef Q_OS_MACOS
-    ForceActivation();
-#endif
-
     if (w) {
         // activateWindow() (sometimes) helps with keyboard focus on Windows
         if (w->isMinimized()) {

@@ -70,7 +70,6 @@ private:
     std::unique_ptr<wallet::CCoinControl> m_coin_control;
     std::unique_ptr<WalletModelTransaction> m_current_transaction;
     bool fNewRecipientAllowed{true};
-    bool fFeeMinimized{true};
     const PlatformStyle *platformStyle;
 
     // Copy PSBT to clipboard and offer to save it.
@@ -79,16 +78,12 @@ private:
     // of a message and message flags for use in Q_EMIT message().
     // Additional parameter msgArg can be used via .arg(msgArg).
     void processSendCoinsReturn(const WalletModel::SendCoinsReturn &sendCoinsReturn, const QString &msgArg = QString());
-    void minimizeFeeSection(bool fMinimize);
     // Format confirmation message
     bool PrepareSendText(QString& question_string, QString& informative_text, QString& detailed_text);
-    void updateFeeMinimizedLabel();
     void updateCoinControlState();
 
 private Q_SLOTS:
     void sendButtonClicked(bool checked);
-    //void on_buttonChooseFee_clicked();
-    //void on_buttonMinimizeFee_clicked();
     void removeEntry(SendCoinsEntry* entry);
     void useAvailableBalance(SendCoinsEntry* entry);
     void refreshBalance();
@@ -104,8 +99,6 @@ private Q_SLOTS:
     void coinControlClipboardBytes();
     void coinControlClipboardLowOutput();
     void coinControlClipboardChange();
-    //void updateFeeSectionControls();
-    //void updateSmartFeeLabel();
     void updateNumberOfBlocks(int count, const QDateTime& blockDate, double nVerificationProgress, bool headers, SynchronizationState sync_state);
 
 Q_SIGNALS:
