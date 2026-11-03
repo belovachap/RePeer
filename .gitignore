@@ -38,3 +38,4 @@ src/qt/forms/ui_*.h
 *.la
 Makefile
 qrc_*.cpp
+.aider*
