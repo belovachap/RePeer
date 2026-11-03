@@ -56,7 +56,6 @@ public:
         Listen,                 // bool
         Server,                 // bool
         EnablePSBTControls,     // bool
-        MaskValues,             // bool
         OptionIDRowCount,
     };
 
@@ -98,7 +97,6 @@ private:
     bool fCoinControlFeatures;
     bool m_sub_fee_from_amount;
     bool m_enable_psbt_controls;
-    bool m_mask_values;
 
     /* settings that were overridden by command-line */
     QString strOverriddenByCommandLine;

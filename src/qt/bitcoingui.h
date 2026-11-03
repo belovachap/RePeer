@@ -103,8 +103,6 @@ public:
     /** Disconnect core signals from GUI client */
     void unsubscribeFromCoreSignals();
 
-    bool isPrivacyModeActivated() const;
-
 protected:
     void changeEvent(QEvent *e) override;
     void closeEvent(QCloseEvent *event) override;
@@ -159,7 +157,6 @@ private:
     QAction* m_close_all_wallets_action{nullptr};
     QAction* m_wallet_selector_label_action = nullptr;
     QAction* m_wallet_selector_action = nullptr;
-    QAction* m_mask_values_action{nullptr};
 
     QLabel *m_wallet_selector_label = nullptr;
     QComboBox* m_wallet_selector = nullptr;
@@ -208,7 +205,6 @@ Q_SIGNALS:
     void quitRequested();
     /** Signal raised when RPC console shown */
     void consoleShown(RPCConsole* console);
-    void setPrivacy(bool privacy);
 
 public Q_SLOTS:
     /** Set number of connections shown in the UI */
@@ -274,8 +270,6 @@ public Q_SLOTS:
     void gotoVerifyMessageTab(QString addr = "");
     /** Load Partially Signed Bitcoin Transaction from file or clipboard */
     void gotoLoadPSBT(bool from_clipboard = false);
-    /** Enable history action when privacy is changed */
-    void enableHistoryAction(bool privacy);
 
     /** Show configuration dialog */
     void optionsClicked();

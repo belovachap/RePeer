@@ -40,7 +40,6 @@ public:
 public Q_SLOTS:
     void setBalance(const interfaces::WalletBalances& balances);
     void updateLockStatus(const int status);
-    void setPrivacy(bool privacy);
 
 Q_SIGNALS:
     void transactionClicked(const QModelIndex &index);
@@ -53,7 +52,6 @@ private:
     Ui::OverviewPage *ui;
     ClientModel* clientModel{nullptr};
     WalletModel* walletModel{nullptr};
-    bool m_privacy{false};
 
     const PlatformStyle* m_platform_style;
 
