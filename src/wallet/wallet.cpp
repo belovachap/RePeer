@@ -20,7 +20,6 @@
 #include <policy/policy.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
-#include <psbt.h>
 #include <random.h>
 #include <rpc/blockchain.h>
 #include <script/descriptor.h>
@@ -2170,87 +2169,6 @@ bool CWallet::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint,
 
     // At this point, one input was not fully signed otherwise we would have exited already
     return false;
-}
-
-TransactionError CWallet::FillPSBT(PartiallySignedTransaction& psbtx, bool& complete, int sighash_type, bool sign, bool bip32derivs, size_t * n_signed, bool finalize) const
-{
-    if (n_signed) {
-        *n_signed = 0;
-    }
-    LOCK(cs_wallet);
-    // Get all of the previous transactions
-    for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
-        const CTxIn& txin = psbtx.tx->vin[i];
-        PSBTInput& input = psbtx.inputs.at(i);
-
-        if (PSBTInputSigned(input)) {
-            continue;
-        }
-
-        // If we have no utxo, grab it from the wallet.
-        if (!input.non_witness_utxo) {
-            const uint256& txhash = txin.prevout.hash;
-            const auto it = mapWallet.find(txhash);
-            if (it != mapWallet.end()) {
-                const CWalletTx& wtx = it->second;
-                // We only need the non_witness_utxo, which is a superset of the witness_utxo.
-                //   The signing code will switch to the smaller witness_utxo if this is ok.
-                input.non_witness_utxo = wtx.tx;
-            }
-        }
-    }
-
-    const PrecomputedTransactionData txdata = PrecomputePSBTData(psbtx);
-
-    // Fill in information from ScriptPubKeyMans
-    for (ScriptPubKeyMan* spk_man : GetAllScriptPubKeyMans()) {
-        int n_signed_this_spkm = 0;
-        TransactionError res = spk_man->FillPSBT(psbtx, txdata, sighash_type, sign, bip32derivs, &n_signed_this_spkm, finalize);
-        if (res != TransactionError::OK) {
-            return res;
-        }
-
-        if (n_signed) {
-            (*n_signed) += n_signed_this_spkm;
-        }
-    }
-
-    // Only drop non_witness_utxos if sighash_type != SIGHASH_ANYONECANPAY
-    if ((sighash_type & 0x80) != SIGHASH_ANYONECANPAY) {
-        // Figure out if any non_witness_utxos should be dropped
-        std::vector<unsigned int> to_drop;
-        for (unsigned int i = 0; i < psbtx.inputs.size(); ++i) {
-            const auto& input = psbtx.inputs.at(i);
-            int wit_ver;
-            std::vector<unsigned char> wit_prog;
-            if (input.witness_utxo.IsNull() || !input.witness_utxo.scriptPubKey.IsWitnessProgram(wit_ver, wit_prog)) {
-                // There's a non-segwit input or Segwit v0, so we cannot drop any witness_utxos
-                to_drop.clear();
-                break;
-            }
-            if (wit_ver == 0) {
-                // Segwit v0, so we cannot drop any non_witness_utxos
-                to_drop.clear();
-                break;
-            }
-            if (input.non_witness_utxo) {
-                to_drop.push_back(i);
-            }
-        }
-
-        // Drop the non_witness_utxos that we can drop
-        for (unsigned int i : to_drop) {
-            psbtx.inputs.at(i).non_witness_utxo = nullptr;
-        }
-    }
-
-    // Complete if every input is now signed
-    complete = true;
-    for (const auto& input : psbtx.inputs) {
-        complete &= PSBTInputSigned(input);
-    }
-
-    return TransactionError::OK;
 }
 
 SigningResult CWallet::SignMessage(const std::string& message, const PKHash& pkhash, std::string& str_sig) const

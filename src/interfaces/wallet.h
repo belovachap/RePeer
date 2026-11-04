@@ -29,7 +29,6 @@ class CKey;
 enum class FeeReason;
 enum class OutputType;
 enum class TransactionError;
-struct PartiallySignedTransaction;
 struct bilingual_str;
 namespace wallet {
 class CCoinControl;
@@ -174,14 +173,6 @@ public:
         WalletOrderForm& order_form,
         bool& in_mempool,
         int& num_blocks) = 0;
-
-    //! Fill PSBT.
-    virtual TransactionError fillPSBT(int sighash_type,
-        bool sign,
-        bool bip32derivs,
-        size_t* n_signed,
-        PartiallySignedTransaction& psbtx,
-        bool& complete) = 0;
 
     //! Get balances.
     virtual WalletBalances getBalances() = 0;

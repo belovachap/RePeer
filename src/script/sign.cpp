@@ -331,8 +331,7 @@ static bool SignStep(const SigningProvider& provider, const BaseSignatureCreator
         for (size_t i = 1; i < vSolutions.size() - 1; ++i) {
             CPubKey pubkey = CPubKey(vSolutions[i]);
             // We need to always call CreateSig in order to fill sigdata with all
-            // possible signatures that we can create. This will allow further PSBT
-            // processing to work as it needs all possible signature and pubkey pairs
+            // possible signatures that we can create.
             if (CreateSig(creator, sigdata, provider, sig, pubkey, scriptPubKey, sigversion)) {
                 if (ret.size() < required + 1) {
                     ret.push_back(std::move(sig));
@@ -574,7 +573,7 @@ struct Stacks
 };
 }
 
-// Extracts signatures and scripts from incomplete scriptSigs. Please do not extend this, use PSBT instead
+// Extracts signatures and scripts from incomplete scriptSigs.
 SignatureData DataFromTransaction(const CMutableTransaction& tx, unsigned int nIn, const CTxOut& txout)
 {
     SignatureData data;

@@ -1102,8 +1102,6 @@ RPCHelpMan sendmany();
 RPCHelpMan fundrawtransaction();
 RPCHelpMan send();
 RPCHelpMan sendall();
-RPCHelpMan walletprocesspsbt();
-RPCHelpMan walletcreatefundedpsbt();
 RPCHelpMan signrawtransactionwithwallet();
 RPCHelpMan settxfee();
 RPCHelpMan optimizeutxoset();
@@ -1184,11 +1182,9 @@ static const CRPCCommand commands[] =
     { "wallet",             &sendall,                        },
     { "wallet",             &unloadwallet,                   },
     { "wallet",             &upgradewallet,                  },
-    { "wallet",             &walletcreatefundedpsbt,         },
     { "wallet",             &walletlock,                     },
     { "wallet",             &walletpassphrase,               },
     { "wallet",             &walletpassphrasechange,         },
-    { "wallet",             &walletprocesspsbt,              },
     // peercoin commands
     { "wallet",             &importcoinstake,                },
     { "wallet",             &listminting,                    },

@@ -175,7 +175,6 @@ BITCOIN_CORE_H = \
   node/mempool_persist_args.h \
   node/miner.h \
   node/minisketchwrapper.h \
-  node/psbt.h \
   node/transaction.h \
   node/txreconciliation.h \
   node/utxo_snapshot.h \
@@ -187,7 +186,6 @@ BITCOIN_CORE_H = \
   policy/settings.h \
   pow.h \
   protocol.h \
-  psbt.h \
   random.h \
   randomenv.h \
   rest.h \
@@ -352,7 +350,6 @@ libbitcoin_node_a_SOURCES = \
   node/mempool_persist_args.cpp \
   node/miner.cpp \
   node/minisketchwrapper.cpp \
-  node/psbt.cpp \
   node/transaction.cpp \
   node/txreconciliation.cpp \
   node/utxo_snapshot.cpp \
@@ -593,7 +590,6 @@ libbitcoin_common_a_SOURCES = \
   outputtype.cpp \
   policy/policy.cpp \
   protocol.cpp \
-  psbt.cpp \
   rpc/rawtransaction_util.cpp \
   rpc/request.cpp \
   rpc/util.cpp \
