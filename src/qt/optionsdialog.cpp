@@ -182,7 +182,6 @@ void OptionsDialog::setMapper()
     mapper->addMapping(ui->maxMintingUtxos, OptionsModel::MaxMintingUtxos);
     mapper->addMapping(ui->coinControlFeatures, OptionsModel::CoinControlFeatures);
     mapper->addMapping(ui->subFeeFromAmount, OptionsModel::SubFeeFromAmount);
-    mapper->addMapping(ui->m_enable_psbt_controls, OptionsModel::EnablePSBTControls);
 
     /* Network */
     mapper->addMapping(ui->allowIncoming, OptionsModel::Listen);
