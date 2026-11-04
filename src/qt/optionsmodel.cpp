@@ -155,11 +155,6 @@ bool OptionsModel::Init(bilingual_str& error)
         settings.setValue("fCoinControlFeatures", false);
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
 
-    if (!settings.contains("enable_psbt_controls")) {
-        settings.setValue("enable_psbt_controls", false);
-    }
-    m_enable_psbt_controls = settings.value("enable_psbt_controls", false).toBool();
-
     // These are shared with the core or have a command-line parameter
     // and we want command-line parameters to overwrite the GUI settings.
     for (OptionID option : {DatabaseCache, ThreadsScriptVerif, SpendZeroConfChange,
@@ -366,8 +361,6 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
         return m_use_embedded_monospaced_font;
     case CoinControlFeatures:
         return fCoinControlFeatures;
-    case EnablePSBTControls:
-        return settings.value("enable_psbt_controls");
     case DatabaseCache:
         return qlonglong(SettingToInt(setting(), nDefaultDbCache));
     case ThreadsScriptVerif:
@@ -500,10 +493,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
         fCoinControlFeatures = value.toBool();
         settings.setValue("fCoinControlFeatures", fCoinControlFeatures);
         Q_EMIT coinControlFeaturesChanged(fCoinControlFeatures);
-        break;
-    case EnablePSBTControls:
-        m_enable_psbt_controls = value.toBool();
-        settings.setValue("enable_psbt_controls", m_enable_psbt_controls);
         break;
     case DatabaseCache:
         if (changed()) {
