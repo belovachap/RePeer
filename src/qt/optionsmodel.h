@@ -55,7 +55,6 @@ public:
         MaxMintingUtxos,        // int
         Listen,                 // bool
         Server,                 // bool
-        EnablePSBTControls,     // bool
         OptionIDRowCount,
     };
 
@@ -76,7 +75,6 @@ public:
     bool getUseEmbeddedMonospacedFont() const { return m_use_embedded_monospaced_font; }
     bool getCoinControlFeatures() const { return fCoinControlFeatures; }
     bool getSubFeeFromAmount() const { return m_sub_fee_from_amount; }
-    bool getEnablePSBTControls() const { return m_enable_psbt_controls; }
     const QString& getOverriddenByCommandLine() { return strOverriddenByCommandLine; }
 
     /** Whether -signer was set or not */
@@ -96,7 +94,6 @@ private:
     bool m_use_embedded_monospaced_font;
     bool fCoinControlFeatures;
     bool m_sub_fee_from_amount;
-    bool m_enable_psbt_controls;
 
     /* settings that were overridden by command-line */
     QString strOverriddenByCommandLine;
