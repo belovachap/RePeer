@@ -70,8 +70,6 @@ private:
     bool fNewRecipientAllowed{true};
     const PlatformStyle *platformStyle;
 
-    // Copy PSBT to clipboard and offer to save it.
-    void presentPSBT(PartiallySignedTransaction& psbt);
     // Process WalletModel::SendCoinsReturn and generate a pair consisting
     // of a message and message flags for use in Q_EMIT message().
     // Additional parameter msgArg can be used via .arg(msgArg).
@@ -112,9 +110,8 @@ class SendConfirmationDialog : public QMessageBox
     Q_OBJECT
 
 public:
-    SendConfirmationDialog(const QString& title, const QString& text, const QString& informative_text = "", const QString& detailed_text = "", int secDelay = SEND_CONFIRM_DELAY, bool enable_send = true, bool always_show_unsigned = true, QWidget* parent = nullptr);
-    /* Returns QMessageBox::Cancel, QMessageBox::Yes when "Send" is
-       clicked and QMessageBox::Save when "Create Unsigned" is clicked. */
+    SendConfirmationDialog(const QString& title, const QString& text, const QString& informative_text = "", const QString& detailed_text = "", int secDelay = SEND_CONFIRM_DELAY, bool enable_send = true, QWidget* parent = nullptr);
+    /* Returns QMessageBox::Cancel or QMessageBox::Yes when "Send" is clicked. */
     int exec() override;
 
 private Q_SLOTS:
@@ -123,12 +120,10 @@ private Q_SLOTS:
 
 private:
     QAbstractButton *yesButton;
-    QAbstractButton *m_psbt_button;
     QTimer countDownTimer;
     int secDelay;
     QString confirmButtonText{tr("Send")};
     bool m_enable_send;
-    QString m_psbt_button_text{tr("Create Unsigned")};
 };
 
 #endif // BITCOIN_QT_SENDCOINSDIALOG_H
