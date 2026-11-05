@@ -9,6 +9,7 @@
 #include <qt/createwalletdialog.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
+#include <qt/informationwindow.h>
 #include <qt/modaloverlay.h>
 #include <qt/networkstyle.h>
 #include <qt/notificator.h>
@@ -448,6 +449,14 @@ void BitcoinGUI::createMenuBar()
             showDebugWindow();
         });
     }
+
+    QMenu* new_windows_menu = appMenuBar->addMenu(tr("New Windows"));
+    QAction* tab_action = new_windows_menu->addAction(tr("New Information"));
+    connect(tab_action, &QAction::triggered, [this] {
+        InformationWindow* win = new InformationWindow(nullptr);
+        win->setAttribute(Qt::WA_DeleteOnClose);
+        win->show();
+    });
 }
 
 void BitcoinGUI::createToolBars()
