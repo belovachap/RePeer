@@ -1,18 +1,209 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>Information</class>
- <widget class="QWidget" name="Information">
+ <widget class="QMainWindow" name="Information">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>500</width>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Information</string>
   </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLabel" name="clientVersionLabel">
+      <property name="text">
+       <string>Client Version:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="clientVersion">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="clientUserAgentLabel">
+      <property name="text">
+       <string>User Agent:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="clientUserAgent">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="dataDirLabel">
+      <property name="text">
+       <string>Data Directory:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="dataDir">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="blocksDirLabel">
+      <property name="text">
+       <string>Blocks Directory:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="blocksDir">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="startupTimeLabel">
+      <property name="text">
+       <string>Startup Time:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="startupTime">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="networkNameLabel">
+      <property name="text">
+       <string>Network:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="networkName">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="numberOfConnectionsLabel">
+      <property name="text">
+       <string>Connections:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="numberOfConnections">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="numberOfBlocksLabel">
+      <property name="text">
+       <string>Blocks:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="numberOfBlocks">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="lastBlockTimeLabel">
+      <property name="text">
+       <string>Last Block Time:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="lastBlockTime">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="mempoolNumberTxsLabel">
+      <property name="text">
+       <string>Mempool Tx Count:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="mempoolNumberTxs">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="mempoolSizeLabel">
+      <property name="text">
+       <string>Mempool Size:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="mempoolSize">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextSelectableByMouse</set>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
  </widget>
  <resources/>
  <connections/>
