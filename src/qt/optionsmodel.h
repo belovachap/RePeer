@@ -54,7 +54,6 @@ public:
         CombineCoins,           // bool
         MaxMintingUtxos,        // int
         Listen,                 // bool
-        Server,                 // bool
         OptionIDRowCount,
     };
 

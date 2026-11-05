@@ -41,7 +41,6 @@ static const char* SettingName(OptionsModel::OptionID option)
     case OptionsModel::ThreadsScriptVerif: return "par";
     case OptionsModel::SpendZeroConfChange: return "spendzeroconfchange";
     case OptionsModel::Listen: return "listen";
-    case OptionsModel::Server: return "server";
     case OptionsModel::ProxyIP: return "proxy";
     case OptionsModel::ProxyPort: return "proxy";
     case OptionsModel::ProxyUse: return "proxy";
@@ -158,7 +157,7 @@ bool OptionsModel::Init(bilingual_str& error)
     // These are shared with the core or have a command-line parameter
     // and we want command-line parameters to overwrite the GUI settings.
     for (OptionID option : {DatabaseCache, ThreadsScriptVerif, SpendZeroConfChange,
-                            SplitCoins, CombineCoins, MaxMintingUtxos, Listen, Server,
+                            SplitCoins, CombineCoins, MaxMintingUtxos, Listen,
                             ProxyUse, ProxyUseTor}) {
         std::string setting = SettingName(option);
         if (node().isSettingIgnored(setting)) addOverriddenOption("-" + setting);
@@ -367,8 +366,6 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
         return qlonglong(SettingToInt(setting(), DEFAULT_SCRIPTCHECK_THREADS));
     case Listen:
         return SettingToBool(setting(), DEFAULT_LISTEN);
-    case Server:
-        return SettingToBool(setting(), false);
     default:
         return QVariant();
     }
@@ -507,7 +504,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
         }
         break;
     case Listen:
-    case Server:
         if (changed()) {
             update(value.toBool());
             setRestartRequired(true);
@@ -604,7 +600,6 @@ void OptionsModel::checkAndMigrate()
     migrate_setting(CombineCoins, "bCombineCoins");
 #endif
     migrate_setting(Listen, "fListen");
-    migrate_setting(Server, "server");
     migrate_setting(ProxyIP, "addrProxy");
     migrate_setting(ProxyUse, "fUseProxy");
     migrate_setting(ProxyIPTor, "addrSeparateProxyTor");

@@ -151,7 +151,6 @@ void OptionsDialog::setModel(OptionsModel *_model)
     connect(ui->maxMintingUtxos, &QLineEdit::textChanged, [this]{ showRestartWarning(); });
     /* Network */
     connect(ui->allowIncoming, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
-    connect(ui->enableServer, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->connectSocks, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->connectSocksTor, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     /* Display */
@@ -185,7 +184,6 @@ void OptionsDialog::setMapper()
 
     /* Network */
     mapper->addMapping(ui->allowIncoming, OptionsModel::Listen);
-    mapper->addMapping(ui->enableServer, OptionsModel::Server);
 
     mapper->addMapping(ui->connectSocks, OptionsModel::ProxyUse);
     mapper->addMapping(ui->proxyIp, OptionsModel::ProxyIP);
