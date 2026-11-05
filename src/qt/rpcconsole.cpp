@@ -505,8 +505,8 @@ RPCConsole::RPCConsole(interfaces::Node& node, const PlatformStyle *_platformSty
             manual connections. */
         tr("Outbound Manual: added using RPC %1 or %2/%3 configuration options")
             .arg("addnode")
-            .arg(QString(nonbreaking_hyphen) + "-addnode")
-            .arg(QString(nonbreaking_hyphen) + "-connect"),
+            .arg(QString(nonbreaking_hyphen) + "addnode")
+            .arg(QString(nonbreaking_hyphen) + "connect"),
         /*: Explanatory text for a short-lived outbound peer connection that
             is used to test the aliveness of known addresses. */
         tr("Outbound Feeler: short-lived, for testing addresses"),
