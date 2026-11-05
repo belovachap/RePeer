@@ -453,9 +453,14 @@ void BitcoinGUI::createMenuBar()
     QMenu* new_windows_menu = appMenuBar->addMenu(tr("New Windows"));
     QAction* tab_action = new_windows_menu->addAction(tr("New Information"));
     connect(tab_action, &QAction::triggered, [this] {
-        InformationWindow* win = new InformationWindow(clientModel);
-        win->setAttribute(Qt::WA_DeleteOnClose);
-        win->show();
+        if (informationWindow) {
+            GUIUtil::bringToFront(informationWindow);
+            return;
+        }
+        informationWindow = new InformationWindow(clientModel);
+        informationWindow->setAttribute(Qt::WA_DeleteOnClose);
+        connect(informationWindow, &QObject::destroyed, [this] { informationWindow = nullptr; });
+        informationWindow->show();
     });
 }
 

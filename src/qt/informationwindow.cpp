@@ -24,9 +24,14 @@ InformationWindow::InformationWindow(ClientModel* _clientModel, QWidget *parent)
     ui.networkName->setText(QString::fromStdString(Params().NetworkIDString()));
 
     // Dynamic info
-    ui.numberOfBlocks->setText(QString::number(clientModel->node().getNumBlocks()));
-    ui.lastBlockTime->setText(QDateTime::fromSecsSinceEpoch(clientModel->node().getLastBlockTime()).toLocalTime().toString());
-    updateNetworkState();
+    setNumConnections();
+    setNumBlocks(
+        clientModel->node().getNumBlocks(),
+        QDateTime::fromSecsSinceEpoch(clientModel->node().getLastBlockTime()).toLocalTime(),
+        0.0, // unused progress percentage, set to whatever
+        SyncType::BLOCK_SYNC
+    );
+    setMempoolSize(clientModel->node().getMempoolSize(), clientModel->node().getMempoolDynamicUsage());
 
     // Connect signals for live updates
     connect(clientModel, &ClientModel::numConnectionsChanged, this, &InformationWindow::setNumConnections);
@@ -34,7 +39,7 @@ InformationWindow::InformationWindow(ClientModel* _clientModel, QWidget *parent)
     connect(clientModel, &ClientModel::mempoolSizeChanged, this, &InformationWindow::setMempoolSize);
 }
 
-void InformationWindow::updateNetworkState()
+void InformationWindow::setNumConnections()
 {
     if (!clientModel) return;
 
@@ -49,12 +54,7 @@ void InformationWindow::updateNetworkState()
     ui.numberOfConnections->setText(connections);
 }
 
-void InformationWindow::setNumConnections(int count)
-{
-    updateNetworkState();
-}
-
-void InformationWindow::setNumBlocks(int count, const QDateTime& blockDate, double nVerificationProgress, SyncType synctype)
+void InformationWindow::setNumBlocks(int count, const QDateTime& blockDate, double _verificationProgress, SyncType synctype)
 {
     if (synctype == SyncType::BLOCK_SYNC) {
         ui.numberOfBlocks->setText(QString::number(count));

@@ -43,6 +43,7 @@ class WalletController;
 class WalletFrame;
 class WalletModel;
 class ModalOverlay;
+class InformationWindow;
 enum class SynchronizationState;
 
 class MintingView;
@@ -161,6 +162,7 @@ private:
     MintingView* mintingView = nullptr;
     RPCConsole* rpcConsole = nullptr;
     ModalOverlay* modalOverlay = nullptr;
+    InformationWindow* informationWindow = nullptr;
 
     QMenu* m_network_context_menu = new QMenu(this);
 

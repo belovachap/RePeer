@@ -7,10 +7,6 @@
 #include "forms/ui_information.h"
 #include <qt/clientmodel.h>
 
-namespace interfaces {
-struct BlockAndHeaderTipInfo;
-}
-
 class InformationWindow : public QMainWindow
 {
     Q_OBJECT
@@ -20,11 +16,9 @@ private:
     Ui::Information ui;
     ClientModel* clientModel{nullptr};
 
-    void updateNetworkState();
-
 private Q_SLOTS:
-    void setNumConnections(int count);
-    void setNumBlocks(int count, const QDateTime& blockDate, double nVerificationProgress, SyncType synctype);
+    void setNumConnections();
+    void setNumBlocks(int count, const QDateTime& blockDate, double _verificationProgress, SyncType synctype);
     void setMempoolSize(long numberOfTxs, size_t dynUsage);
 };
 
