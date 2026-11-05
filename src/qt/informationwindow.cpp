@@ -12,7 +12,6 @@ InformationWindow::InformationWindow(ClientModel* _clientModel, QWidget *parent)
 {
     ui.setupUi(this);
     setWindowTitle(tr("Information"));
-    resize(500, 400);
 
     if (!clientModel) return;
 
