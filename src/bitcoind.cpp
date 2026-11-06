@@ -126,9 +126,8 @@ static void WriteInformationFile(interfaces::Node& node, const fs::path& data_di
 
     // Static info
     file << "Version: " << FormatFullVersion() << "\n";
-    file << "User Agent: " << FormatSubVersion() << "\n";
-    file << "Data Dir: " << data_dir.string() << "\n";
-    file << "Blocks Dir: " << blocks_dir.string() << "\n";
+    file << "Data Dir: " << fs::PathToString(data_dir) << "\n";
+    file << "Blocks Dir: " << fs::PathToString(blocks_dir) << "\n";
     file << "Network: " << Params().NetworkIDString() << "\n";
     file << "\n";
 
@@ -302,7 +301,7 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
     if (fRet) {
         // Start the information writer thread
         auto node_iface = interfaces::MakeNode(node);
-        fs::path data_dir = args.GetDataDir();
+        fs::path data_dir = args.GetDataDir(false);
         fs::path blocks_dir = args.GetBlocksDirPath();
         std::atomic<bool> stop{false};
         std::thread writer_thread(InformationWriterThread, std::ref(*node_iface), std::cref(data_dir), std::cref(blocks_dir), std::ref(stop));
