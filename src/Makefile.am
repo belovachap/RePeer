@@ -29,7 +29,6 @@ BITCOIN_INCLUDES=-I$(builddir) -I$(srcdir)/$(MINISKETCH_INCLUDE_DIR_INT) -I$(src
 LIBBITCOIN_NODE=libbitcoin_node.a
 LIBBITCOIN_COMMON=libbitcoin_common.a
 LIBBITCOIN_CONSENSUS=libbitcoin_consensus.a
-LIBBITCOIN_CLI=libbitcoin_cli.a
 LIBBITCOIN_UTIL=libbitcoin_util.a
 LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.la
 LIBBITCOINQT=qt/libbitcoinqt.a
@@ -345,7 +344,6 @@ libbitcoin_node_a_SOURCES = \
   policy/packages.cpp \
   policy/settings.cpp \
   pow.cpp \
-  rest.cpp \
   script/sigcache.cpp \
   shutdown.cpp \
   signet.cpp \

@@ -115,6 +115,7 @@ static constexpr bool DEFAULT_I2P_ACCEPT_INCOMING{true};
 #define MIN_CORE_FILEDESCRIPTORS 150
 
 static const char* DEFAULT_ASMAP_FILENAME="ip_asn.map";
+static const std::string UNIX_EPOCH_TIME = "1970-01-01T00:00:00Z";
 
 /**
  * The PID file facilities.

@@ -59,6 +59,35 @@
 
 using interfaces::FoundBlock;
 
+double GetDifficulty(const CBlockIndex* blockindex, const CBlockIndex* tip)
+{
+    LOCK(cs_main);
+
+    // minimum difficulty = 1.0.
+    if (blockindex == nullptr) {
+        if (tip == nullptr)
+            return 1.0;
+        else
+            blockindex = GetLastBlockIndex(tip, false);
+    }
+
+    int nShift = (blockindex->nBits >> 24) & 0xff;
+
+    double dDiff =
+        (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
+
+    while (nShift < 29) {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29) {
+        dDiff /= 256.0;
+        nShift--;
+    }
+
+    return dDiff;
+}
+
 namespace wallet {
 
 bool AddWalletSetting(interfaces::Chain& chain, const std::string& wallet_name)

@@ -717,10 +717,8 @@ static bool GetConfigOptions(std::istream& stream, const std::string& filepath, 
     std::string::size_type pos;
     int linenr = 1;
     while (std::getline(stream, str)) {
-        bool used_hash = false;
         if ((pos = str.find('#')) != std::string::npos) {
             str = str.substr(0, pos);
-            used_hash = true;
         }
         const static std::string pattern = " \t\r\n";
         str = TrimString(str, pattern);
