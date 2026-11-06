@@ -144,9 +144,18 @@ static void WriteInformationFile(interfaces::Node& node, const fs::path& data_di
 
     // Dynamic info - blocks
     int num_blocks = node.getNumBlocks();
-    int64_t last_block_time = node.getLastBlockTime();
     file << "Blocks: " << num_blocks << "\n";
-    file << "Last Block Time: " << last_block_time << "\n";
+
+    int64_t last_block_time = node.getLastBlockTime();
+    time_t t = static_cast<time_t>(last_block_time);
+    char time_buf[64];
+    std::tm tm_buf;
+    if (localtime_r(&t, &tm_buf)) {
+        std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S %Z", &tm_buf);
+        file << "Last Block Time: " << time_buf << "\n";
+    } else {
+        file << "Last Block Time: " << last_block_time << "\n";
+    }
 
     // Dynamic info - mempool
     size_t mempool_size = node.getMempoolSize();
@@ -168,10 +177,7 @@ static void InformationWriterThread(interfaces::Node& node, const fs::path& data
 {
     while (!stop.load(std::memory_order_relaxed)) {
         WriteInformationFile(node, data_dir, blocks_dir);
-        // Sleep in 1-second increments so we can respond to stop quickly
-        for (int i = 0; i < 60 && !stop.load(std::memory_order_relaxed); ++i) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
 
@@ -302,8 +308,7 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
     if (fRet) {
         // Start the information writer thread
         auto node_iface = interfaces::MakeNode(node);
-        const std::string datadir_str = args.GetArg("-datadir", "");
-        fs::path data_dir = datadir_str.c_str();
+        fs::path data_dir = args.GetDataDirBase();
         fs::path blocks_dir = args.GetBlocksDirPath();
         std::atomic<bool> stop{false};
         std::thread writer_thread(InformationWriterThread, std::ref(*node_iface), std::cref(data_dir), std::cref(blocks_dir), std::ref(stop));
