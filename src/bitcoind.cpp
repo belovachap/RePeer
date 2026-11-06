@@ -118,7 +118,7 @@ int fork_daemon(bool nochdir, bool noclose, TokenPipeEnd& endpoint)
 
 #endif
 
-static void WriteInformationFile(interfaces::Node& node, const fs::path& data_dir)
+static void WriteInformationFile(interfaces::Node& node, const fs::path& data_dir, const fs::path& blocks_dir)
 {
     fs::path info_path = data_dir / "information.txt";
     std::ofstream file(info_path);
@@ -128,6 +128,7 @@ static void WriteInformationFile(interfaces::Node& node, const fs::path& data_di
     file << "Version: " << FormatFullVersion() << "\n";
     file << "User Agent: " << FormatSubVersion() << "\n";
     file << "Data Dir: " << data_dir.string() << "\n";
+    file << "Blocks Dir: " << blocks_dir.string() << "\n";
     file << "Network: " << Params().NetworkIDString() << "\n";
     file << "\n";
 
@@ -163,10 +164,10 @@ static void WriteInformationFile(interfaces::Node& node, const fs::path& data_di
     file << "Loading Blocks: " << (node.isLoadingBlocks() ? "yes" : "no") << "\n";
 }
 
-static void InformationWriterThread(interfaces::Node& node, const fs::path& data_dir, std::atomic<bool>& stop)
+static void InformationWriterThread(interfaces::Node& node, const fs::path& data_dir, const fs::path& blocks_dir, std::atomic<bool>& stop)
 {
     while (!stop.load(std::memory_order_relaxed)) {
-        WriteInformationFile(node, data_dir);
+        WriteInformationFile(node, data_dir, blocks_dir);
         // Sleep in 1-second increments so we can respond to stop quickly
         for (int i = 0; i < 60 && !stop.load(std::memory_order_relaxed); ++i) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -302,8 +303,9 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
         // Start the information writer thread
         auto node_iface = interfaces::MakeNode(node);
         fs::path data_dir = args.GetDataDir();
+        fs::path blocks_dir = args.GetBlocksDirPath();
         std::atomic<bool> stop{false};
-        std::thread writer_thread(InformationWriterThread, std::ref(*node_iface), std::cref(data_dir), std::ref(stop));
+        std::thread writer_thread(InformationWriterThread, std::ref(*node_iface), std::cref(data_dir), std::cref(blocks_dir), std::ref(stop));
 
         WaitForShutdown();
 
