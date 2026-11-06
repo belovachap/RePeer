@@ -16,7 +16,6 @@
 #include <qt/optionsdialog.h>
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
-#include <qt/rpcconsole.h>
 #include <qt/utilitydialog.h>
 
 #include <qt/walletcontroller.h>
@@ -95,29 +94,17 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
     QString styleSheet = QLatin1String(styleFile.readAll());
     this->setStyleSheet(styleSheet);
 
-
-    rpcConsole = new RPCConsole(node, _platformStyle, nullptr);
-    if(enableWallet)
-    {
-        /** Create wallet frame and make it the central widget */
-        walletFrame = new WalletFrame(_platformStyle, this);
-        connect(walletFrame, &WalletFrame::createWalletButtonClicked, [this] {
-            auto activity = new CreateWalletActivity(getWalletController(), this);
-            activity->create();
-        });
-        connect(walletFrame, &WalletFrame::message, [this](const QString& title, const QString& message, unsigned int style) {
-            this->message(title, message, style);
-        });
-        connect(walletFrame, &WalletFrame::currentWalletSet, [this] { updateWalletStatus(); });
-        setCentralWidget(walletFrame);
-    } else
-    {
-        /* When compiled without wallet or -disablewallet is provided,
-         * the central widget is the rpc console.
-         */
-        setCentralWidget(rpcConsole);
-        Q_EMIT consoleShown(rpcConsole);
-    }
+    /** Create wallet frame and make it the central widget */
+    walletFrame = new WalletFrame(_platformStyle, this);
+    connect(walletFrame, &WalletFrame::createWalletButtonClicked, [this] {
+        auto activity = new CreateWalletActivity(getWalletController(), this);
+        activity->create();
+    });
+    connect(walletFrame, &WalletFrame::message, [this](const QString& title, const QString& message, unsigned int style) {
+        this->message(title, message, style);
+    });
+    connect(walletFrame, &WalletFrame::currentWalletSet, [this] { updateWalletStatus(); });
+    setCentralWidget(walletFrame);
 
     modalOverlay = new ModalOverlay(enableWallet, this->centralWidget());
 
@@ -213,8 +200,6 @@ BitcoinGUI::~BitcoinGUI()
 
     QSettings settings;
     settings.setValue("MainWindowGeometry", saveGeometry());
-
-    delete rpcConsole;
 }
 
 void BitcoinGUI::createActions()
@@ -286,12 +271,6 @@ void BitcoinGUI::createActions()
     changePassphraseAction = new QAction(tr("&Change Passphrase…"), this);
     changePassphraseAction->setStatusTip(tr("Change the passphrase used for wallet encryption"));
 
-    openRPCConsoleAction = new QAction(tr("Node window"), this);
-    openRPCConsoleAction->setStatusTip(tr("Open node debugging and diagnostic console"));
-    // initially disable the debug window menu item
-    openRPCConsoleAction->setEnabled(false);
-    openRPCConsoleAction->setObjectName("openRPCConsoleAction");
-
     usedSendingAddressesAction = new QAction(tr("&Sending Addresses"), this);
     usedSendingAddressesAction->setStatusTip(tr("Show the list of used sending addresses and labels"));
     usedReceivingAddressesAction = new QAction(tr("&Receiving Addresses"), this);
@@ -319,9 +298,6 @@ void BitcoinGUI::createActions()
 
     connect(quitAction, &QAction::triggered, this, &BitcoinGUI::quitRequested);
     connect(optionsAction, &QAction::triggered, this, &BitcoinGUI::optionsClicked);
-    connect(openRPCConsoleAction, &QAction::triggered, this, &BitcoinGUI::showDebugWindow);
-    // prevents an open debug window from becoming stuck/unusable on client shutdown
-    connect(quitAction, &QAction::triggered, rpcConsole, &QWidget::hide);
 
     if(walletFrame)
     {
@@ -397,9 +373,6 @@ void BitcoinGUI::createActions()
             m_wallet_controller->closeAllWallets(this);
         });
     }
-
-    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C), this), &QShortcut::activated, this, &BitcoinGUI::showDebugWindowActivateConsole);
-    connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_D), this), &QShortcut::activated, this, &BitcoinGUI::showDebugWindow);
 }
 
 void BitcoinGUI::createMenuBar()
@@ -438,16 +411,6 @@ void BitcoinGUI::createMenuBar()
         window_menu->addSeparator();
         window_menu->addAction(usedSendingAddressesAction);
         window_menu->addAction(usedReceivingAddressesAction);
-    }
-
-    window_menu->addSeparator();
-    for (RPCConsole::TabTypes tab_type : rpcConsole->tabs()) {
-        QAction* tab_action = window_menu->addAction(rpcConsole->tabTitle(tab_type));
-        tab_action->setShortcut(rpcConsole->tabShortcut(tab_type));
-        connect(tab_action, &QAction::triggered, [this, tab_type] {
-            rpcConsole->setTabFocus(tab_type);
-            showDebugWindow();
-        });
     }
 
     QMenu* new_windows_menu = appMenuBar->addMenu(tr("New Windows"));
@@ -525,8 +488,6 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel, interfaces::BlockAndH
         // Show progress dialog
         connect(_clientModel, &ClientModel::showProgress, this, &BitcoinGUI::showProgress);
 
-        rpcConsole->setClientModel(_clientModel, tip_info->block_height, tip_info->block_time, tip_info->verification_progress);
-
         updateProxyIcon();
 
         if(walletFrame)
@@ -535,7 +496,6 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel, interfaces::BlockAndH
         }
     } else {
         // Propagate cleared model to child objects
-        rpcConsole->setClientModel(nullptr);
         if (walletFrame)
         {
             walletFrame->setClientModel(nullptr);
@@ -578,7 +538,6 @@ void BitcoinGUI::addWallet(WalletModel* walletModel)
     WalletView* wallet_view = new WalletView(walletModel, platformStyle, walletFrame);
     if (!walletFrame->addView(wallet_view)) return;
 
-    rpcConsole->addWallet(walletModel);
     if (m_wallet_selector->count() == 0) {
         setWalletActionsEnabled(true);
     } else if (m_wallet_selector->count() == 1) {
@@ -615,7 +574,6 @@ void BitcoinGUI::removeWallet(WalletModel* walletModel)
         m_wallet_selector_label_action->setVisible(false);
         m_wallet_selector_action->setVisible(false);
     }
-    rpcConsole->removeWallet(walletModel);
     walletFrame->removeWallet(walletModel);
     updateWindowTitle();
 }
@@ -666,18 +624,6 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
 void BitcoinGUI::optionsClicked()
 {
     openOptionsDialogWithTab(OptionsDialog::TAB_MAIN);
-}
-
-void BitcoinGUI::showDebugWindow()
-{
-    GUIUtil::bringToFront(rpcConsole);
-    Q_EMIT consoleShown(rpcConsole);
-}
-
-void BitcoinGUI::showDebugWindowActivateConsole()
-{
-    rpcConsole->setTabFocus(RPCConsole::TabTypes::CONSOLE);
-    showDebugWindow();
 }
 
 void BitcoinGUI::gotoOverviewPage()
@@ -751,13 +697,6 @@ void BitcoinGUI::setNetworkActive(bool network_active)
 {
     updateNetworkState();
     m_network_context_menu->clear();
-    m_network_context_menu->addAction(
-        //: A context menu item. The "Peers tab" is an element of the "Node window".
-        tr("Show Peers tab"),
-        [this] {
-            rpcConsole->setTabFocus(RPCConsole::TabTypes::PEERS);
-            showDebugWindow();
-        });
     m_network_context_menu->addAction(
         network_active ?
             //: A context menu item.
@@ -985,15 +924,11 @@ void BitcoinGUI::changeEvent(QEvent *e)
 
 void BitcoinGUI::closeEvent(QCloseEvent *event)
 {
-    // close rpcConsole in case it was open to make some space for the shutdown window
-    rpcConsole->close();
     Q_EMIT quitRequested();
 }
 
 void BitcoinGUI::showEvent(QShowEvent *event)
 {
-    // enable the debug window when the main window shows up
-    openRPCConsoleAction->setEnabled(true);
     optionsAction->setEnabled(true);
 }
 
@@ -1147,8 +1082,6 @@ void BitcoinGUI::detectShutdown()
 {
     if (m_node.shutdownRequested())
     {
-        if(rpcConsole)
-            rpcConsole->hide();
         Q_EMIT quitRequested();
     }
 }

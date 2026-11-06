@@ -15,11 +15,8 @@
 #include <sync.h>
 #include <uint256.h>
 
-class BanTableModel;
 class CBlockIndex;
 class OptionsModel;
-class PeerTableModel;
-class PeerTableSortProxy;
 enum class SynchronizationState;
 
 namespace interfaces {
@@ -62,9 +59,6 @@ public:
 
     interfaces::Node& node() const { return m_node; }
     OptionsModel *getOptionsModel();
-    PeerTableModel *getPeerTableModel();
-    PeerTableSortProxy* peerTableSortProxy();
-    BanTableModel *getBanTableModel();
 
     //! Return number of connections, default is in- and outbound (total)
     int getNumConnections(unsigned int flags = CONNECTIONS_ALL) const;
@@ -101,13 +95,9 @@ private:
     std::unique_ptr<interfaces::Handler> m_handler_notify_num_connections_changed;
     std::unique_ptr<interfaces::Handler> m_handler_notify_network_active_changed;
     std::unique_ptr<interfaces::Handler> m_handler_notify_alert_changed;
-    std::unique_ptr<interfaces::Handler> m_handler_banned_list_changed;
     std::unique_ptr<interfaces::Handler> m_handler_notify_block_tip;
     std::unique_ptr<interfaces::Handler> m_handler_notify_header_tip;
     OptionsModel *optionsModel;
-    PeerTableModel* peerTableModel{nullptr};
-    PeerTableSortProxy* m_peer_table_sort_proxy{nullptr};
-    BanTableModel* banTableModel{nullptr};
 
     //! A thread to interact with m_node asynchronously
     QThread* const m_thread;

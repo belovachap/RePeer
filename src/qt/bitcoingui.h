@@ -36,7 +36,6 @@ class NetworkStyle;
 class Notificator;
 class OptionsModel;
 class PlatformStyle;
-class RPCConsole;
 class SendCoinsRecipient;
 class UnitDisplayStatusBarControl;
 class WalletController;
@@ -144,7 +143,6 @@ private:
     QAction* changePassphraseAction = nullptr;
     QAction* decryptForMintingAction = nullptr;
     QAction* decryptCompletelyAction = nullptr;
-    QAction* openRPCConsoleAction = nullptr;
     QAction* openAction = nullptr;
     QAction* m_create_wallet_action{nullptr};
     QAction* m_open_wallet_action{nullptr};
@@ -160,7 +158,6 @@ private:
 
     Notificator* notificator = nullptr;
     MintingView* mintingView = nullptr;
-    RPCConsole* rpcConsole = nullptr;
     ModalOverlay* modalOverlay = nullptr;
     InformationWindow* informationWindow = nullptr;
 
@@ -201,8 +198,6 @@ private:
 
 Q_SIGNALS:
     void quitRequested();
-    /** Signal raised when RPC console shown */
-    void consoleShown(RPCConsole* console);
 
 public Q_SLOTS:
     /** Set number of connections shown in the UI */
@@ -264,10 +259,6 @@ public Q_SLOTS:
 
     /** Show configuration dialog */
     void optionsClicked();
-    /** Show debug window */
-    void showDebugWindow();
-    /** Show debug window and set focus to the console */
-    void showDebugWindowActivateConsole();
 
     /** Show window if hidden, unminimize when minimized, rise when obscured or show if hidden and fToggleHidden is true */
     void showNormalIfMinimized() { showNormalIfMinimized(false); }

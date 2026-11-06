@@ -4,11 +4,8 @@
 
 #include <qt/clientmodel.h>
 
-#include <qt/bantablemodel.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
-#include <qt/peertablemodel.h>
-#include <qt/peertablesortproxy.h>
 
 #include <clientversion.h>
 #include <interfaces/handler.h>
@@ -47,12 +44,6 @@ ClientModel::ClientModel(interfaces::Node& node, OptionsModel *_optionsModel, QO
 {
     cachedBestHeaderHeight = -1;
     cachedBestHeaderTime = -1;
-
-    peerTableModel = new PeerTableModel(m_node, this);
-    m_peer_table_sort_proxy = new PeerTableSortProxy(this);
-    m_peer_table_sort_proxy->setSourceModel(peerTableModel);
-
-    banTableModel = new BanTableModel(m_node, this);
 
     QTimer* timer = new QTimer;
     timer->setInterval(MODEL_UPDATE_DELAY);
@@ -182,21 +173,6 @@ OptionsModel *ClientModel::getOptionsModel()
     return optionsModel;
 }
 
-PeerTableModel *ClientModel::getPeerTableModel()
-{
-    return peerTableModel;
-}
-
-PeerTableSortProxy* ClientModel::peerTableSortProxy()
-{
-    return m_peer_table_sort_proxy;
-}
-
-BanTableModel *ClientModel::getBanTableModel()
-{
-    return banTableModel;
-}
-
 QString ClientModel::formatFullVersion() const
 {
     return QString::fromStdString(FormatFullVersion());
@@ -269,11 +245,6 @@ void ClientModel::subscribeToCoreSignals()
            qDebug() << "ClientModel: NotifyAlertChanged";
             Q_EMIT alertsChanged(getStatusBarWarnings());
         });
-    m_handler_banned_list_changed = m_node.handleBannedListChanged(
-        [this]() {
-            qDebug() << "ClienModel: Requesting update for peer banlist";
-            QMetaObject::invokeMethod(banTableModel, [this] { banTableModel->refresh(); });
-        });
     m_handler_notify_block_tip = m_node.handleNotifyBlockTip(
         [this](SynchronizationState sync_state, interfaces::BlockTip tip, double verification_progress) {
             TipChanged(sync_state, tip, verification_progress, SyncType::BLOCK_SYNC);
@@ -290,7 +261,6 @@ void ClientModel::unsubscribeFromCoreSignals()
     m_handler_notify_num_connections_changed->disconnect();
     m_handler_notify_network_active_changed->disconnect();
     m_handler_notify_alert_changed->disconnect();
-    m_handler_banned_list_changed->disconnect();
     m_handler_notify_block_tip->disconnect();
     m_handler_notify_header_tip->disconnect();
 }

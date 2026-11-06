@@ -280,10 +280,6 @@ QLabel#logo {
   margin-right: 30px;
 }
 
-#RPCConsole {
-    background: #ffffff;
-}
-
 /* I think this is the top menu */
 QTabBar::tab {
     background: #3cb054;
