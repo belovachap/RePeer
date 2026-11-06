@@ -126,6 +126,7 @@ static void WriteInformationFile(interfaces::Node& node, const fs::path& data_di
 
     // Static info
     file << "Version: " << FormatFullVersion() << "\n";
+    file << "User Agent: " << FormatUseragent() << "\n";
     file << "Data Dir: " << fs::PathToString(data_dir) << "\n";
     file << "Blocks Dir: " << fs::PathToString(blocks_dir) << "\n";
     file << "Network: " << Params().NetworkIDString() << "\n";
