@@ -406,16 +406,11 @@ void BitcoinGUI::createMenuBar()
     settings->addAction(optionsAction);
 
     QMenu* window_menu = appMenuBar->addMenu(tr("&Window"));
+    window_menu->addAction(usedSendingAddressesAction);
+    window_menu->addAction(usedReceivingAddressesAction);
 
-    if (walletFrame) {
-        window_menu->addSeparator();
-        window_menu->addAction(usedSendingAddressesAction);
-        window_menu->addAction(usedReceivingAddressesAction);
-    }
-
-    QMenu* new_windows_menu = appMenuBar->addMenu(tr("New Windows"));
-    QAction* tab_action = new_windows_menu->addAction(tr("New Information"));
-    connect(tab_action, &QAction::triggered, [this] {
+    QAction* informationwindow_action = window_menu->addAction(tr("&Information"));
+    connect(informationwindow_action, &QAction::triggered, [this] {
         if (informationWindow) {
             GUIUtil::bringToFront(informationWindow);
             return;
@@ -424,7 +419,7 @@ void BitcoinGUI::createMenuBar()
         informationWindow->setAttribute(Qt::WA_DeleteOnClose);
         connect(informationWindow, &QObject::destroyed, [this] { informationWindow = nullptr; });
         informationWindow->show();
-    });
+    });    
 }
 
 void BitcoinGUI::createToolBars()
