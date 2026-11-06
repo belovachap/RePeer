@@ -15,12 +15,14 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
+#include <interfaces/node.h>
 #include <node/context.h>
 #include <node/interface_ui.h>
 #include <noui.h>
 #include <shutdown.h>
 #include <util/check.h>
 #include <util/exception.h>
+#include <util/fs.h>
 #include <util/strencodings.h>
 #include <util/syscall_sandbox.h>
 #include <util/syserror.h>
@@ -30,8 +32,13 @@
 #include <util/translation.h>
 
 #include <any>
+#include <atomic>
+#include <chrono>
+#include <fstream>
 #include <functional>
+#include <memory>
 #include <optional>
+#include <thread>
 
 using node::NodeContext;
 
@@ -110,6 +117,62 @@ int fork_daemon(bool nochdir, bool noclose, TokenPipeEnd& endpoint)
 }
 
 #endif
+
+static void WriteInformationFile(interfaces::Node& node, const fs::path& data_dir)
+{
+    fs::path info_path = data_dir / "information.txt";
+    std::ofstream file(info_path);
+    if (!file.is_open()) return;
+
+    // Static info
+    file << "Version: " << FormatFullVersion() << "\n";
+    file << "User Agent: " << FormatSubVersion() << "\n";
+    file << "Data Dir: " << data_dir.string() << "\n";
+    file << "Network: " << Params().NetworkIDString() << "\n";
+    file << "\n";
+
+    // Dynamic info - connections
+    size_t total_conns = node.getNodeCount(ConnectionDirection::Both);
+    size_t in_conns = node.getNodeCount(ConnectionDirection::In);
+    size_t out_conns = node.getNodeCount(ConnectionDirection::Out);
+    file << "Connections: " << total_conns << " (In: " << in_conns << " / Out: " << out_conns << ")";
+    if (!node.getNetworkActive()) {
+        file << " (Network activity disabled)";
+    }
+    file << "\n";
+
+    // Dynamic info - blocks
+    int num_blocks = node.getNumBlocks();
+    int64_t last_block_time = node.getLastBlockTime();
+    file << "Blocks: " << num_blocks << "\n";
+    file << "Last Block Time: " << last_block_time << "\n";
+
+    // Dynamic info - mempool
+    size_t mempool_size = node.getMempoolSize();
+    size_t mempool_usage = node.getMempoolDynamicUsage();
+    file << "Mempool Tx Count: " << mempool_size << "\n";
+    if (mempool_usage < 1000000) {
+        file << "Mempool Size: " << (mempool_usage / 1000.0) << " kB\n";
+    } else {
+        file << "Mempool Size: " << (mempool_usage / 1000000.0) << " MB\n";
+    }
+
+    // Sync status
+    file << "Verification Progress: " << node.getVerificationProgress() << "\n";
+    file << "Initial Block Download: " << (node.isInitialBlockDownload() ? "yes" : "no") << "\n";
+    file << "Loading Blocks: " << (node.isLoadingBlocks() ? "yes" : "no") << "\n";
+}
+
+static void InformationWriterThread(interfaces::Node& node, const fs::path& data_dir, std::atomic<bool>& stop)
+{
+    while (!stop.load(std::memory_order_relaxed)) {
+        WriteInformationFile(node, data_dir);
+        // Sleep in 1-second increments so we can respond to stop quickly
+        for (int i = 0; i < 60 && !stop.load(std::memory_order_relaxed); ++i) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }
+}
 
 static bool AppInit(NodeContext& node, int argc, char* argv[])
 {
@@ -236,7 +299,19 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
 #endif
     SetSyscallSandboxPolicy(SyscallSandboxPolicy::SHUTOFF);
     if (fRet) {
+        // Start the information writer thread
+        auto node_iface = interfaces::MakeNode(node);
+        fs::path data_dir = args.GetDataDir();
+        std::atomic<bool> stop{false};
+        std::thread writer_thread(InformationWriterThread, std::ref(*node_iface), std::cref(data_dir), std::ref(stop));
+
         WaitForShutdown();
+
+        // Stop the writer thread
+        stop.store(true, std::memory_order_relaxed);
+        if (writer_thread.joinable()) {
+            writer_thread.join();
+        }
     }
     Interrupt(node);
     Shutdown(node);
