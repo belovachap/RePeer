@@ -34,6 +34,7 @@
 #include <any>
 #include <atomic>
 #include <chrono>
+#include <ctime>
 #include <fstream>
 #include <functional>
 #include <memory>
@@ -124,6 +125,19 @@ static void WriteInformationFile(interfaces::Node& node, const fs::path& data_di
     std::ofstream file(info_path);
     if (!file.is_open()) return;
 
+    // Current time
+    {
+        time_t now = time(nullptr);
+        char time_buf[64];
+        std::tm tm_buf;
+        if (localtime_r(&now, &tm_buf)) {
+            std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S %Z", &tm_buf);
+            file << "Current Time: " << time_buf << "\n";
+        } else {
+            file << "Current Time: " << now << "\n";
+        }
+    }
+
     // Static info
     file << "Version: " << FormatFullVersion() << "\n";
     file << "User Agent: " << FormatUseragent() << "\n";
@@ -144,17 +158,18 @@ static void WriteInformationFile(interfaces::Node& node, const fs::path& data_di
 
     // Dynamic info - blocks
     int num_blocks = node.getNumBlocks();
-    file << "Blocks: " << num_blocks << "\n";
-
     int64_t last_block_time = node.getLastBlockTime();
-    time_t t = static_cast<time_t>(last_block_time);
-    char time_buf[64];
-    std::tm tm_buf;
-    if (localtime_r(&t, &tm_buf)) {
-        std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S %Z", &tm_buf);
-        file << "Last Block Time: " << time_buf << "\n";
-    } else {
-        file << "Last Block Time: " << last_block_time << "\n";
+    file << "Blocks: " << num_blocks << "\n";
+    {
+        time_t t = static_cast<time_t>(last_block_time);
+        char time_buf[64];
+        std::tm tm_buf;
+        if (localtime_r(&t, &tm_buf)) {
+            std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S %Z", &tm_buf);
+            file << "Last Block Time: " << time_buf << "\n";
+        } else {
+            file << "Last Block Time: " << last_block_time << "\n";
+        }
     }
 
     // Dynamic info - mempool
