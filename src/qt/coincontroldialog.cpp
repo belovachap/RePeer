@@ -423,7 +423,7 @@ void CoinControlDialog::updateLabels(CCoinControl& m_coin_control, WalletModel *
         if (out.depth_in_main_chain < 0) continue;
 
         // unselect already spent, very unlikely scenario, this could happen
-        // when selected are spent elsewhere, like rpc or another computer
+        // when selected are spent elsewhere, like another computer
         const COutPoint& outpt = vCoinControl[i++];
         if (out.is_spent)
         {

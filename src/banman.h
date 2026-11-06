@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <memory>
 
-// NOTE: When adjusting this, update rpcnet:setban's help ("24h")
 static constexpr unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 24; // Default 24-hour ban
 
 /// How often to dump banned addresses/subnets to disk.
@@ -24,36 +23,6 @@ static constexpr std::chrono::minutes DUMP_BANS_INTERVAL{15};
 class CClientUIInterface;
 class CNetAddr;
 class CSubNet;
-
-// Banman manages two related but distinct concepts:
-//
-// 1. Banning. This is configured manually by the user, through the setban RPC.
-// If an address or subnet is banned, we never accept incoming connections from
-// it and never create outgoing connections to it. We won't gossip its address
-// to other peers in addr messages. Banned addresses and subnets are stored to
-// disk on shutdown and reloaded on startup. Banning can be used to
-// prevent connections with spy nodes or other griefers.
-//
-// 2. Discouragement. If a peer misbehaves enough (see Misbehaving() in
-// net_processing.cpp), we'll mark that address as discouraged. We still allow
-// incoming connections from them, but they're preferred for eviction when
-// we receive new incoming connections. We never make outgoing connections to
-// them, and do not gossip their address to other peers. This is implemented as
-// a bloom filter. We can (probabilistically) test for membership, but can't
-// list all discouraged addresses or unmark them as discouraged. Discouragement
-// can prevent our limited connection slots being used up by incompatible
-// or broken peers.
-//
-// Neither banning nor discouragement are protections against denial-of-service
-// attacks, since if an attacker has a way to waste our resources and we
-// disconnect from them and ban that address, it's trivial for them to
-// reconnect from another IP address.
-//
-// Attempting to automatically disconnect or ban any class of peer carries the
-// risk of splitting the network. For example, if we banned/disconnected for a
-// transaction that fails a policy check and a future version changes the
-// policy check so the transaction is accepted, then that transaction could
-// cause the network to split between old nodes and new nodes.
 
 class BanMan
 {

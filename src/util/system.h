@@ -75,7 +75,6 @@ enum class OptionsCategory {
     CHAINPARAMS,
     NODE_RELAY,
     BLOCK_CREATION,
-    RPC,
     GUI,
     COMMANDS,
     REGISTER_COMMANDS,

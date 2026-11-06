@@ -8,7 +8,6 @@
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
 #include <primitives/transaction.h>
-#include <rpc/server.h>
 #include <script/standard.h>
 #include <support/allocators/secure.h>
 #include <sync.h>
@@ -22,7 +21,6 @@
 #include <wallet/types.h>
 #include <wallet/load.h>
 #include <wallet/receive.h>
-#include <wallet/rpc/wallet.h>
 #include <wallet/spend.h>
 #include <wallet/wallet.h>
 
@@ -520,13 +518,14 @@ public:
         // wallet before the following callback is called. If a valid shared pointer
         // is acquired in the callback then the wallet is still loaded.
         std::weak_ptr<CWallet> weak_wallet = m_wallet;
-        m_wallet->chain().rpcRunLater(strprintf("lockwallet(%s)", m_wallet->GetName()), [weak_wallet] {
+        std::thread([weak_wallet, nDuration]() {
+            std::this_thread::sleep_for(std::chrono::seconds(nDuration));
             if (auto shared_wallet = weak_wallet.lock()) {
                 LOCK(shared_wallet->cs_wallet);
                 shared_wallet->Lock();
                 shared_wallet->nRelockTime = 0;
             }
-        }, nDuration);
+        }).detach();
     }
 
     virtual std::shared_ptr<CWallet> getWallet() override {
@@ -548,17 +547,6 @@ public:
     ~WalletLoaderImpl() override { UnloadWallets(m_context); }
 
     //! ChainClient methods
-    void registerRpcs() override
-    {
-        for (const CRPCCommand& command : GetWalletRPCCommands()) {
-            m_rpc_commands.emplace_back(command.category, command.name, [this, &command](const JSONRPCRequest& request, UniValue& result, bool last_handler) {
-                JSONRPCRequest wallet_request = request;
-                wallet_request.context = &m_context;
-                return command.actor(wallet_request, result, last_handler);
-            }, command.argNames, command.unique_id);
-            m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
-        }
-    }
     bool verify() override { return VerifyWallets(m_context); }
     bool load() override { return LoadWallets(m_context); }
     void start(CScheduler& scheduler) override { return StartWallets(m_context, scheduler); }
@@ -636,8 +624,6 @@ public:
 
     WalletContext m_context;
     const std::vector<std::string> m_wallet_filenames;
-    std::vector<std::unique_ptr<Handler>> m_rpc_handlers;
-    std::list<CRPCCommand> m_rpc_commands;
 };
 } // namespace
 } // namespace wallet

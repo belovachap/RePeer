@@ -12,7 +12,7 @@
  *
  * Error types defined here can be used in different parts of the
  * codebase, to avoid the need to write boilerplate code catching and
- * translating errors passed across wallet/node/rpc/gui code boundaries.
+ * translating errors passed across wallet/node/gui code boundaries.
  */
 
 #include <string>

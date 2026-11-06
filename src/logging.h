@@ -43,7 +43,6 @@ namespace BCLog {
         HTTP        = (1 <<  3),
         BENCH       = (1 <<  4),
         WALLETDB    = (1 <<  6),
-        RPC         = (1 <<  7),
         ESTIMATEFEE = (1 <<  8),
         ADDRMAN     = (1 <<  9),
         SELECTCOINS = (1 << 10),

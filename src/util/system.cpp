@@ -623,9 +623,6 @@ std::string ArgsManager::GetHelpMessage() const
             case OptionsCategory::BLOCK_CREATION:
                 usage += HelpMessageGroup("Block creation options:");
                 break;
-            case OptionsCategory::RPC:
-                usage += HelpMessageGroup("RPC server options:");
-                break;
             case OptionsCategory::WALLET:
                 usage += HelpMessageGroup("Wallet options:");
                 break;
@@ -738,10 +735,6 @@ static bool GetConfigOptions(std::istream& stream, const std::string& filepath, 
             } else if ((pos = str.find('=')) != std::string::npos) {
                 std::string name = prefix + TrimString(std::string_view{str}.substr(0, pos), pattern);
                 std::string_view value = TrimStringView(std::string_view{str}.substr(pos + 1), pattern);
-                if (used_hash && name.find("rpcpassword") != std::string::npos) {
-                    error = strprintf("parse error on line %i, using # in rpcpassword can be ambiguous and should be avoided", linenr);
-                    return false;
-                }
                 options.emplace_back(name, value);
                 if ((pos = name.rfind('.')) != std::string::npos && prefix.length() <= pos) {
                     sections.emplace_back(SectionInfo{name.substr(0, pos), filepath, linenr});

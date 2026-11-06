@@ -41,7 +41,7 @@ void UninterruptibleSleep(const std::chrono::microseconds& n);
  * protect against a reliance on the exact type of t.
  *
  * This helper is used to convert durations/time_points before passing them over an
- * interface that doesn't support std::chrono (e.g. RPC, debug log, or the GUI)
+ * interface that doesn't support std::chrono (e.g. debug log, or the GUI)
  */
 template <typename Dur1, typename Dur2>
 constexpr auto Ticks(Dur2 d)
@@ -87,7 +87,7 @@ int64_t GetTimeMillis();
  */
 void SetMockTime(int64_t nMockTimeIn);
 
-/** For testing. Set e.g. with the setmocktime rpc, or -mocktime argument */
+/** For testing. Set e.g. with -mocktime argument */
 void SetMockTime(std::chrono::seconds mock_time_in);
 
 /** For testing */

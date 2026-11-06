@@ -29,8 +29,6 @@
 #include <policy/settings.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
-#include <rpc/protocol.h>
-#include <rpc/server.h>
 #include <shutdown.h>
 #include <support/allocators/secure.h>
 #include <sync.h>
@@ -102,11 +100,6 @@ public:
     void startShutdown() override
     {
         StartShutdown();
-        // Stop RPC for clean shutdown if any of waitfor* commands is executed.
-        if (args().GetBoolArg("-server", false)) {
-            InterruptRPC();
-            StopRPC();
-        }
     }
     bool shutdownRequested() override { return ShutdownRequested(); }
     bool isSettingIgnored(const std::string& name) override
@@ -267,18 +260,6 @@ public:
         }
     }
     bool getNetworkActive() override { return m_context->connman && m_context->connman->GetNetworkActive(); }
-    UniValue executeRpc(const std::string& command, const UniValue& params, const std::string& uri) override
-    {
-        JSONRPCRequest req;
-        req.context = m_context;
-        req.params = params;
-        req.strMethod = command;
-        req.URI = uri;
-        return ::tableRPC.execute(req);
-    }
-    std::vector<std::string> listRpcCommands() override { return ::tableRPC.listCommands(); }
-    void rpcSetTimerInterfaceIfUnset(RPCTimerInterface* iface) override { RPCSetTimerInterfaceIfUnset(iface); }
-    void rpcUnsetTimerInterface(RPCTimerInterface* iface) override { RPCUnsetTimerInterface(iface); }
     bool getUnspentOutput(const COutPoint& output, Coin& coin) override
     {
         LOCK(::cs_main);
@@ -418,45 +399,6 @@ public:
         }
     }
     std::shared_ptr<NotificationsProxy> m_proxy;
-};
-
-class RpcHandlerImpl : public Handler
-{
-public:
-    explicit RpcHandlerImpl(const CRPCCommand& command) : m_command(command), m_wrapped_command(&command)
-    {
-        m_command.actor = [this](const JSONRPCRequest& request, UniValue& result, bool last_handler) {
-            if (!m_wrapped_command) return false;
-            try {
-                return m_wrapped_command->actor(request, result, last_handler);
-            } catch (const UniValue& e) {
-                // If this is not the last handler and a wallet not found
-                // exception was thrown, return false so the next handler can
-                // try to handle the request. Otherwise, reraise the exception.
-                if (!last_handler) {
-                    const UniValue& code = e["code"];
-                    if (code.isNum() && code.getInt<int>() == RPC_WALLET_NOT_FOUND) {
-                        return false;
-                    }
-                }
-                throw;
-            }
-        };
-        ::tableRPC.appendCommand(m_command.name, &m_command);
-    }
-
-    void disconnect() final
-    {
-        if (m_wrapped_command) {
-            m_wrapped_command = nullptr;
-            ::tableRPC.removeCommand(m_command.name, &m_command);
-        }
-    }
-
-    ~RpcHandlerImpl() override { disconnect(); }
-
-    CRPCCommand m_command;
-    const CRPCCommand* m_wrapped_command;
 };
 
 class ChainImpl : public Chain
@@ -687,16 +629,6 @@ public:
         if (!old_tip.IsNull() && old_tip == WITH_LOCK(::cs_main, return chainman().ActiveChain().Tip()->GetBlockHash())) return;
         SyncWithValidationInterfaceQueue();
     }
-    std::unique_ptr<Handler> handleRpc(const CRPCCommand& command) override
-    {
-        return std::make_unique<RpcHandlerImpl>(command);
-    }
-    bool rpcEnableDeprecated(const std::string& method) override { return IsDeprecatedRPCEnabled(method); }
-    void rpcRunLater(const std::string& name, std::function<void()> fn, int64_t seconds) override
-    {
-        RPCRunLater(name, std::move(fn), seconds);
-    }
-    int rpcSerializationFlags() override { return RPCSerializationFlags(); }
     util::SettingsValue getSetting(const std::string& name) override
     {
         return args().GetSetting(name);

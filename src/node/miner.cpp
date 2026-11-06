@@ -16,9 +16,7 @@
 #include <policy/policy.h>
 #include <pow.h>
 #include <primitives/transaction.h>
-#include <rpc/blockchain.h>
 #include <timedata.h>
-#include <rpc/blockchain.h>
 #include <util/moneystr.h>
 #include <util/system.h>
 #include <util/threadnames.h>

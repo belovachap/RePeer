@@ -20,7 +20,6 @@
 
 class ArgsManager;
 class CBlock;
-class CRPCCommand;
 class CScheduler;
 class Coin;
 class uint256;
@@ -100,10 +99,6 @@ struct BlockInfo {
 //!   notifications to the GUI should go away when GUI and wallet can directly
 //!   communicate with each other without going through the node
 //!   (https://github.com/bitcoin/bitcoin/pull/15288#discussion_r253321096).
-//!
-//! * The handleRpc, registerRpcs, rpcEnableDeprecated methods and other RPC
-//!   methods can go away if wallets listen for HTTP requests on their own
-//!   ports instead of registering to handle requests on the node HTTP port.
 //!
 //! * Move fee estimation queries to an asynchronous interface and let the
 //!   wallet cache it, fee estimation being driven by node mempool, wallet
@@ -261,19 +256,6 @@ public:
     //! chain tip.
     virtual void waitForNotificationsIfTipChanged(const uint256& old_tip) = 0;
 
-    //! Register handler for RPC. Command is not copied, so reference
-    //! needs to remain valid until Handler is disconnected.
-    virtual std::unique_ptr<Handler> handleRpc(const CRPCCommand& command) = 0;
-
-    //! Check if deprecated RPC is enabled.
-    virtual bool rpcEnableDeprecated(const std::string& method) = 0;
-
-    //! Run function after given number of seconds. Cancel any previous calls with same name.
-    virtual void rpcRunLater(const std::string& name, std::function<void()> fn, int64_t seconds) = 0;
-
-    //! Current RPC serialization flags.
-    virtual int rpcSerializationFlags() = 0;
-
     //! Get settings value.
     virtual util::SettingsValue getSetting(const std::string& arg) = 0;
 
@@ -311,9 +293,6 @@ class ChainClient
 {
 public:
     virtual ~ChainClient() {}
-
-    //! Register rpcs.
-    virtual void registerRpcs() = 0;
 
     //! Check for errors before loading.
     virtual bool verify() = 0;

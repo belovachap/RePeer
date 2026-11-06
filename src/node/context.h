@@ -11,11 +11,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
-/*
-#include <interfaces/init.h>
-#include <interfaces/chain.h>
-#include <interfaces/wallet.h>
-*/
+
 class ArgsManager;
 class BanMan;
 class AddrMan;
@@ -64,7 +60,6 @@ struct NodeContext {
     //! opened by the gui.
     interfaces::WalletLoader* wallet_loader{nullptr};
     std::unique_ptr<CScheduler> scheduler;
-    std::function<void()> rpc_interruption_point = [] {};
 
     //! Declare default constructor and destructor that are not inline, so code
     //! instantiating the NodeContext struct doesn't need to #include class

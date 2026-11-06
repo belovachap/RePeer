@@ -18,7 +18,7 @@ EXTRA_LIBRARIES =
 lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
 
-bin_PROGRAMS = repeerd repeer-cli
+bin_PROGRAMS = repeerd
 noinst_PROGRAMS =
 check_PROGRAMS =
 TESTS =
@@ -72,7 +72,6 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_NODE) \
-  $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_IPC) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_WALLET_TOOL)
@@ -192,17 +191,6 @@ BITCOIN_CORE_H = \
   randomenv.h \
   rest.h \
   reverse_iterator.h \
-  rpc/blockchain.h \
-  rpc/client.h \
-  rpc/mempool.h \
-  rpc/mining.h \
-  rpc/protocol.h \
-  rpc/rawtransaction_util.h \
-  rpc/register.h \
-  rpc/request.h \
-  rpc/server.h \
-  rpc/server_util.h \
-  rpc/util.h \
   scheduler.h \
   script/descriptor.h \
   script/keyorigin.h \
@@ -279,8 +267,6 @@ BITCOIN_CORE_H = \
   wallet/dump.h \
   wallet/load.h \
   wallet/receive.h \
-  wallet/rpc/util.h \
-  wallet/rpc/wallet.h \
   wallet/salvage.h \
   wallet/scriptpubkeyman.h \
   wallet/spend.h \
@@ -318,8 +304,6 @@ libbitcoin_node_a_SOURCES = \
   deploymentstatus.cpp \
   flatfile.cpp \
   headerssync.cpp \
-  httprpc.cpp \
-  httpserver.cpp \
   i2p.cpp \
   index/base.cpp \
   index/blockfilterindex.cpp \
@@ -362,18 +346,6 @@ libbitcoin_node_a_SOURCES = \
   policy/settings.cpp \
   pow.cpp \
   rest.cpp \
-  rpc/blockchain.cpp \
-  rpc/fees.cpp \
-  rpc/mempool.cpp \
-  rpc/mining.cpp \
-  rpc/net.cpp \
-  rpc/node.cpp \
-  rpc/output_script.cpp \
-  rpc/rawtransaction.cpp \
-  rpc/server.cpp \
-  rpc/server_util.cpp \
-  rpc/signmessage.cpp \
-  rpc/txoutproof.cpp \
   script/sigcache.cpp \
   shutdown.cpp \
   signet.cpp \
@@ -410,15 +382,6 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/interfaces.cpp \
   wallet/load.cpp \
   wallet/receive.cpp \
-  wallet/rpc/addresses.cpp \
-  wallet/rpc/backup.cpp \
-  wallet/rpc/coins.cpp \
-  wallet/rpc/encrypt.cpp \
-  wallet/rpc/spend.cpp \
-  wallet/rpc/signmessage.cpp \
-  wallet/rpc/transactions.cpp \
-  wallet/rpc/util.cpp \
-  wallet/rpc/wallet.cpp \
   wallet/scriptpubkeyman.cpp \
   wallet/spend.cpp \
   wallet/transaction.cpp \
@@ -594,9 +557,6 @@ libbitcoin_common_a_SOURCES = \
   policy/policy.cpp \
   protocol.cpp \
   psbt.cpp \
-  rpc/rawtransaction_util.cpp \
-  rpc/request.cpp \
-  rpc/util.cpp \
   scheduler.cpp \
   script/descriptor.cpp \
   script/miniscript.cpp \
@@ -654,15 +614,6 @@ libbitcoin_util_a_SOURCES = \
   $(BITCOIN_CORE_H)
 #
 
-# cli: shared between peercoin-cli and peercoin-qt
-libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_cli_a_SOURCES = \
-  compat/stdin.h \
-  compat/stdin.cpp \
-  rpc/client.cpp \
-  $(BITCOIN_CORE_H)
-
 nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
@@ -690,22 +641,6 @@ repeerd_CPPFLAGS = $(bitcoin_bin_cppflags)
 repeerd_CXXFLAGS = $(bitcoin_bin_cxxflags)
 repeerd_LDFLAGS = $(bitcoin_bin_ldflags)
 repeerd_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd)
-
-# peercoin-cli binary #
-repeer_cli_SOURCES = bitcoin-cli.cpp
-repeer_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
-repeer_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-repeer_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
-
-repeer_cli_LDADD = \
-  $(LIBBITCOIN_CLI) \
-  $(LIBUNIVALUE) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_CRYPTO)
-
-repeer_cli_LDADD += $(CRYPTO_LIBS) $(EVENT_LIBS)
-#
 
 # peercoinkernel library #
 if BUILD_BITCOIN_KERNEL_LIB
@@ -831,7 +766,6 @@ CLEANFILES += interfaces/*.gcda interfaces/*.gcno
 CLEANFILES += node/*.gcda node/*.gcno
 CLEANFILES += policy/*.gcda policy/*.gcno
 CLEANFILES += primitives/*.gcda primitives/*.gcno
-CLEANFILES += rpc/*.gcda rpc/*.gcno
 CLEANFILES += script/*.gcda script/*.gcno
 CLEANFILES += support/*.gcda support/*.gcno
 CLEANFILES += univalue/*.gcda univalue/*.gcno

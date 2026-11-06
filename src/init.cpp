@@ -21,8 +21,6 @@
 #include <consensus/amount.h>
 #include <util/fs.h>
 #include <hash.h>
-#include <httprpc.h>
-#include <httpserver.h>
 #include <index/blockfilterindex.h>
 #include <index/coinstatsindex.h>
 #include <index/txindex.h>
@@ -50,10 +48,6 @@
 #include <policy/policy.h>
 #include <policy/settings.h>
 #include <protocol.h>
-#include <rpc/blockchain.h>
-#include <rpc/register.h>
-#include <rpc/server.h>
-#include <rpc/util.h>
 #include <scheduler.h>
 #include <script/sigcache.h>
 #include <script/standard.h>
@@ -186,10 +180,6 @@ void Interrupt(NodeContext& node)
 #if HAVE_SYSTEM
     ShutdownNotify(*node.args);
 #endif
-    InterruptHTTPServer();
-    InterruptHTTPRPC();
-    InterruptRPC();
-    InterruptREST();
     InterruptTorControl();
     if (node.connman)
         node.connman->Interrupt();
@@ -217,10 +207,6 @@ void Shutdown(NodeContext& node)
     util::ThreadRename("shutoff");
     if (node.mempool) node.mempool->AddTransactionsUpdated(1);
 
-    StopHTTPRPC();
-    StopREST();
-    StopRPC();
-    StopHTTPServer();
     for (const auto& client : node.chain_clients) {
         client->flush();
     }
@@ -344,20 +330,6 @@ static void registerSignalHandler(int signal, void(*handler)(int))
     sigaction(signal, &sa, nullptr);
 }
 
-static boost::signals2::connection rpc_notify_block_change_connection;
-static void OnRPCStarted()
-{
-    rpc_notify_block_change_connection = uiInterface.NotifyBlockTip_connect(std::bind(RPCNotifyBlockChange, std::placeholders::_2));
-}
-
-static void OnRPCStopped()
-{
-    rpc_notify_block_change_connection.disconnect();
-    RPCNotifyBlockChange(nullptr);
-    g_best_block_cv.notify_all();
-    LogPrint(BCLog::RPC, "RPC stopped.\n");
-}
-
 void SetupServerArgs(ArgsManager& argsman)
 {
     SetupHelpOptions(argsman);
@@ -414,7 +386,6 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-startupnotify=<cmd>", "Execute command on startup.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-shutdownnotify=<cmd>", "Execute command immediately before beginning shutdown. The need for shutdown may be urgent, so be careful not to delay it long (if the command doesn't require interaction with the server, consider having it fork into the background).", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
 #endif
-    argsman.AddArg("-txindex", strprintf("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)", DEFAULT_TXINDEX), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-blockfilterindex=<type>",
                  strprintf("Maintain an index of compact filters by block (default: %s, values: %s).", DEFAULT_BLOCKFILTERINDEX, ListBlockFilterTypes()) +
                  " If <type> is not supplied or if <type> = 1, indexes for all known types are enabled.",
@@ -473,7 +444,6 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-checkaddrman=<n>", strprintf("Run addrman consistency checks every <n> operations. Use 0 to disable. (default: %u)", DEFAULT_ADDRMAN_CONSISTENCY_CHECKS), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-checkmempool=<n>", strprintf("Run mempool consistency checks every <n> transactions. Use 0 to disable. (default: %u, regtest: %u)", defaultChainParams->DefaultConsistencyChecks(), regtestChainParams->DefaultConsistencyChecks()), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-checkpoints", strprintf("Enable rejection of any forks from the known historical chain until block %s (default: %u)", defaultChainParams->Checkpoints().GetHeight(), DEFAULT_CHECKPOINTS_ENABLED), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
-    argsman.AddArg("-deprecatedrpc=<method>", "Allows deprecated RPC method(s) to be used", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-stopafterblockimport", strprintf("Stop running after importing blocks from disk (default: %u)", DEFAULT_STOPAFTERBLOCKIMPORT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-stopatheight", strprintf("Stop running after reaching the given height in the main chain (default: %u)", DEFAULT_STOPATHEIGHT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-limitancestorcount=<n>", strprintf("Do not accept transactions if number of in-mempool ancestors is <n> or more (default: %u)", DEFAULT_ANCESTOR_LIMIT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
@@ -505,23 +475,6 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-blockmaxweight=<n>", strprintf("Set maximum BIP141 block weight (default: %d)", DEFAULT_BLOCK_MAX_WEIGHT), ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
     argsman.AddArg("-blockversion=<n>", "Override block version to test forking scenarios", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::BLOCK_CREATION);
 
-    argsman.AddArg("-corsdomain=<domain>", "Send access control allow origin http header with rest replies (default: not sent)", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
-    argsman.AddArg("-rest", strprintf("Accept public REST requests (default: %u)", DEFAULT_REST_ENABLE), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcallowip=<ip>", "Allow JSON-RPC connections from specified source. Valid for <ip> are a single IP (e.g. 1.2.3.4), a network/netmask (e.g. 1.2.3.4/255.255.255.0) or a network/CIDR (e.g. 1.2.3.4/24). This option can be specified multiple times", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcauth=<userpw>", "Username and HMAC-SHA-256 hashed password for JSON-RPC connections. The field <userpw> comes in the format: <USERNAME>:<SALT>$<HASH>. A canonical python script is included in share/rpcauth. The client then connects normally using the rpcuser=<USERNAME>/rpcpassword=<PASSWORD> pair of arguments. This option can be specified multiple times", ArgsManager::ALLOW_ANY | ArgsManager::SENSITIVE, OptionsCategory::RPC);
-    argsman.AddArg("-rpcbind=<addr>[:port]", "Bind to given address to listen for JSON-RPC connections. Do not expose the RPC server to untrusted networks such as the public internet! This option is ignored unless -rpcallowip is also passed. Port is optional and overrides -rpcport. Use [host]:port notation for IPv6. This option can be specified multiple times (default: 127.0.0.1 and ::1 i.e., localhost)", ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcdoccheck", strprintf("Throw a non-fatal error at runtime if the documentation for an RPC is incorrect (default: %u)", DEFAULT_RPC_DOC_CHECK), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::RPC);
-    argsman.AddArg("-rpccookiefile=<loc>", "Location of the auth cookie. Relative paths will be prefixed by a net-specific datadir location. (default: data dir)", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcpassword=<pw>", "Password for JSON-RPC connections", ArgsManager::ALLOW_ANY | ArgsManager::SENSITIVE, OptionsCategory::RPC);
-    argsman.AddArg("-rpcport=<port>", strprintf("Listen for JSON-RPC connections on <port> (default: %u, testnet: %u, signet: %u, regtest: %u)", defaultBaseParams->RPCPort(), testnetBaseParams->RPCPort(), signetBaseParams->RPCPort(), regtestBaseParams->RPCPort()), ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcserialversion", strprintf("Sets the serialization of raw transaction or block hex returned in non-verbose mode, non-segwit(0) or segwit(1) (default: %d)", DEFAULT_RPC_SERIALIZE_VERSION), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcservertimeout=<n>", strprintf("Timeout during HTTP requests (default: %d)", DEFAULT_HTTP_SERVER_TIMEOUT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcthreads=<n>", strprintf("Set the number of threads to service RPC calls (default: %d)", DEFAULT_HTTP_THREADS), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcuser=<user>", "Username for JSON-RPC connections", ArgsManager::ALLOW_ANY | ArgsManager::SENSITIVE, OptionsCategory::RPC);
-    argsman.AddArg("-rpcwhitelist=<whitelist>", "Set a whitelist to filter incoming RPC calls for a specific user. The field <whitelist> comes in the format: <USERNAME>:<rpc 1>,<rpc 2>,...,<rpc n>. If multiple whitelists are set for a given user, they are set-intersected. See -rpcwhitelistdefault documentation for information on default whitelist behavior.", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcwhitelistdefault", "Sets default behavior for rpc whitelisting. Unless rpcwhitelistdefault is set to 0, if any -rpcwhitelist is set, the rpc server acts as if all rpc users are subject to empty-unless-otherwise-specified whitelists. If rpcwhitelistdefault is set to 1 and no -rpcwhitelist is set, rpc server acts as if all rpc users are subject to empty whitelists.", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
-    argsman.AddArg("-rpcworkqueue=<n>", strprintf("Set the depth of the work queue to service RPC calls (default: %d)", DEFAULT_HTTP_WORKQUEUE), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::RPC);
-    argsman.AddArg("-server", "Accept command line and JSON-RPC commands", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     gArgs.AddArg("-nominting", "Disable minting of POS blocks", ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
 
 #if HAVE_DECL_FORK
@@ -574,22 +527,6 @@ static void StartupNotify(const ArgsManager& args)
     }
 }
 #endif
-
-static bool AppInitServers(NodeContext& node)
-{
-    const ArgsManager& args = *Assert(node.args);
-    RPCServer::OnStarted(&OnRPCStarted);
-    RPCServer::OnStopped(&OnRPCStopped);
-    if (!InitHTTPServer())
-        return false;
-    StartRPC();
-    node.rpc_interruption_point = RpcInterruptionPoint;
-    if (!StartHTTPRPC(&node))
-        return false;
-    if (args.GetBoolArg("-rest", DEFAULT_REST_ENABLE)) StartREST(&node);
-    StartHTTPServer();
-    return true;
-}
 
 // Parameter interaction based on rules
 void InitParameterInteraction(ArgsManager& args)
@@ -868,12 +805,6 @@ bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandb
     if (args.GetBoolArg("-peerbloomfilters", DEFAULT_PEERBLOOMFILTERS))
         nLocalServices = ServiceFlags(nLocalServices | NODE_BLOOM);
 
-    if (args.GetIntArg("-rpcserialversion", DEFAULT_RPC_SERIALIZE_VERSION) < 0)
-        return InitError(Untranslated("rpcserialversion must be non-negative."));
-
-    if (args.GetIntArg("-rpcserialversion", DEFAULT_RPC_SERIALIZE_VERSION) > 1)
-        return InitError(Untranslated("Unknown rpcserialversion requested."));
-
     if (args.GetBoolArg("-reindex-chainstate", false)) {
         // indexes that must be deactivated to prevent index corruption, see #24630
         if (args.GetBoolArg("-coinstatsindex", DEFAULT_COINSTATSINDEX)) {
@@ -1069,25 +1000,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     g_wallet_init_interface.Construct(node);
     uiInterface.InitWallet();
 
-    /* Register RPC commands regardless of -server setting so they will be
-     * available in the GUI RPC console even if external calls are disabled.
-     */
-    RegisterAllCoreRPCCommands(tableRPC);
-    for (const auto& client : node.chain_clients) {
-        client->registerRpcs();
-    }
-
-    /* Start the RPC server already.  It will be started in "warmup" mode
-     * and not really process calls already (but it will signify connections
-     * that the server is there and will be ready later).  Warmup mode will
-     * be disabled when initialisation is finished.
-     */
-    if (args.GetBoolArg("-server", false)) {
-        uiInterface.InitMessage_connect(SetRPCWarmupStatus);
-        if (!AppInitServers(node))
-            return InitError(_("Unable to start HTTP server. See debug log for details."));
-    }
-
     // ********************************************************* Step 5: verify wallet database integrity
     for (const auto& client : node.chain_clients) {
         if (!client->verify()) {
@@ -1166,7 +1078,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     // Check port numbers
     for (const std::string port_option : {
         "-port",
-        "-rpcport",
     }) {
         if (args.IsArgSet(port_option)) {
             const std::string port = args.GetArg(port_option, "");
@@ -1181,7 +1092,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         "-i2psam",
         "-onion",
         "-proxy",
-        "-rpcbind",
         "-torcontrol",
         "-whitebind",
     }) {
@@ -1732,18 +1642,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     }
 
     // ********************************************************* Step 13: finished
-
-    // At this point, the RPC is "started", but still in warmup, which means it
-    // cannot yet be called. Before we make it callable, we need to make sure
-    // that the RPC's view of the best block is valid and consistent with
-    // ChainstateManager's active tip.
-    //
-    // If we do not do this, RPC's view of the best block will be height=0 and
-    // hash=0x0. This will lead to erroroneous responses for things like
-    // waitforblockheight.
-    RPCNotifyBlockChange(WITH_LOCK(chainman.GetMutex(), return chainman.ActiveTip()));
-    SetRPCWarmupFinished();
-
     uiInterface.InitMessage(_("Done loading").translated);
 
     for (const auto& client : node.chain_clients) {

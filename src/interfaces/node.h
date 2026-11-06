@@ -28,7 +28,6 @@
 class BanMan;
 class CNodeStats;
 class Coin;
-class RPCTimerInterface;
 class UniValue;
 class Proxy;
 enum class SynchronizationState;
@@ -173,18 +172,6 @@ public:
 
     //! Get network active.
     virtual bool getNetworkActive() = 0;
-
-    //! Execute rpc command.
-    virtual UniValue executeRpc(const std::string& command, const UniValue& params, const std::string& uri) = 0;
-
-    //! List rpc commands.
-    virtual std::vector<std::string> listRpcCommands() = 0;
-
-    //! Set RPC timer interface if unset.
-    virtual void rpcSetTimerInterfaceIfUnset(RPCTimerInterface* iface) = 0;
-
-    //! Unset RPC timer interface.
-    virtual void rpcUnsetTimerInterface(RPCTimerInterface* iface) = 0;
 
     //! Get unspent outputs associated with a transaction.
     virtual bool getUnspentOutput(const COutPoint& output, Coin& coin) = 0;

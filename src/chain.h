@@ -28,7 +28,7 @@ static constexpr int64_t MAX_FUTURE_BLOCK_TIME = 15 * 60;
 
 /**
  * Timestamp window used as a grace period by code that compares external
- * timestamps (such as timestamps passed to RPCs, or wallet key creation times)
+ * timestamps (such as wallet key creation times)
  * to block timestamps. This should be set at least as high as
  * MAX_FUTURE_BLOCK_TIME.
  */
@@ -353,11 +353,6 @@ public:
         return (int64_t)nTimeMax;
     }
 
-    /**
-     * Duplicate from bitcoinrpc that originaly define this method.
-     * May require some cleanup since this method should be available both for rpc
-     * and qt clients.
-     */
     double GetBlockDifficulty() const
     {
         int nShift = (nBits >> 24) & 0xff;

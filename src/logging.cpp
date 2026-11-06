@@ -157,7 +157,6 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::HTTP, "http"},
     {BCLog::BENCH, "bench"},
     {BCLog::WALLETDB, "walletdb"},
-    {BCLog::RPC, "rpc"},
     {BCLog::ESTIMATEFEE, "estimatefee"},
     {BCLog::ADDRMAN, "addrman"},
     {BCLog::SELECTCOINS, "selectcoins"},
@@ -237,8 +236,6 @@ std::string LogCategoryToStr(BCLog::LogFlags category)
         return "bench";
     case BCLog::LogFlags::WALLETDB:
         return "walletdb";
-    case BCLog::LogFlags::RPC:
-        return "rpc";
     case BCLog::LogFlags::ESTIMATEFEE:
         return "estimatefee";
     case BCLog::LogFlags::ADDRMAN:

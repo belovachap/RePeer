@@ -22,7 +22,6 @@
 #include <primitives/transaction.h>
 #include <psbt.h>
 #include <random.h>
-#include <rpc/blockchain.h>
 #include <script/descriptor.h>
 #include <script/script.h>
 #include <script/signingprovider.h>
