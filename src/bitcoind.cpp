@@ -302,7 +302,8 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
     if (fRet) {
         // Start the information writer thread
         auto node_iface = interfaces::MakeNode(node);
-        fs::path data_dir = args.GetArg("-datadir", "");
+        const std::string datadir_str = args.GetArg("-datadir", "");
+        fs::path data_dir = datadir_str.c_str();
         fs::path blocks_dir = args.GetBlocksDirPath();
         std::atomic<bool> stop{false};
         std::thread writer_thread(InformationWriterThread, std::ref(*node_iface), std::cref(data_dir), std::cref(blocks_dir), std::ref(stop));
