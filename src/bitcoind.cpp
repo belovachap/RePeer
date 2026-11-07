@@ -186,6 +186,12 @@ static void WriteInformationFile(interfaces::Node& node, const fs::path& data_di
     file << "Verification Progress: " << node.getVerificationProgress() << "\n";
     file << "Initial Block Download: " << (node.isInitialBlockDownload() ? "yes" : "no") << "\n";
     file << "Loading Blocks: " << (node.isLoadingBlocks() ? "yes" : "no") << "\n";
+
+    // Warnings
+    bilingual_str warnings = node.getWarnings();
+    if (!warnings.original.empty()) {
+        file << "Warnings: " << warnings.original << "\n";
+    }
 }
 
 static void InformationWriterThread(interfaces::Node& node, const fs::path& data_dir, const fs::path& blocks_dir, std::atomic<bool>& stop)
