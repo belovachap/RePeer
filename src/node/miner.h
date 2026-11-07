@@ -18,8 +18,12 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
 
+#include <map>
+#include <string>
+#include <thread>
+
 extern int64_t nLastCoinStakeSearchInterval;
-extern std::vector<std::thread> m_minter_threads;
+extern std::map<std::string, std::thread> m_minter_threads;
 
 class ChainstateManager;
 
@@ -209,6 +213,8 @@ namespace boost {
 } // namespace boost
 
 void MintStake(NodeContext& m_node);
+void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet);
+void StopMintStake(const std::string& wallet_name);
 
 /** Update an old GenerateCoinbaseCommitment from CreateNewBlock after the block txs have changed */
 void RegenerateCommitments(CBlock& block, ChainstateManager& chainman);
