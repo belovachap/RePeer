@@ -47,7 +47,7 @@ using wallet::CCoinControl;
 using wallet::ReserveDestination;
 
 int64_t nLastCoinStakeSearchInterval = 0;
-std::vector<std::thread> m_minter_threads;
+std::map<std::string, std::thread> m_minter_threads;
 
 namespace node {
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev)
@@ -579,8 +579,9 @@ void PoSMiner(NodeContext& m_node, CWallet* pwallet)
 
     try {
         bool fNeedToClear = false;
-        while (true) {
+        while (!pwallet->m_should_stop_minting) {
             while (pwallet->IsLocked()) {
+                if (pwallet->m_should_stop_minting) return;
                 if (strMintWarning != strMintMessage) {
                     strMintWarning = strMintMessage;
                     uiInterface.NotifyAlertChanged();
@@ -594,6 +595,7 @@ void PoSMiner(NodeContext& m_node, CWallet* pwallet)
                 // Busy-wait for the network to come online so we don't waste time mining
                 // on an obsolete chain. In regtest mode we expect to fly solo.
                 while(connman == nullptr || connman->GetNodeCount(ConnectionDirection::Both) == 0 || m_node.chainman->ActiveChainstate().IsInitialBlockDownload()) {
+                    if (pwallet->m_should_stop_minting) return;
                     while(connman == nullptr) {UninterruptibleSleep(1s);}
                     if (!connman->interruptNet.sleep_for(std::chrono::seconds(10)))
                         return;
@@ -606,6 +608,7 @@ void PoSMiner(NodeContext& m_node, CWallet* pwallet)
 
                 while (GuessVerificationProgress(Params().TxData(), pindexPrev) < 0.996)
                 {
+                    if (pwallet->m_should_stop_minting) return;
                     LogPrintf("Minter thread sleeps while sync at %f\n", GuessVerificationProgress(Params().TxData(), pindexPrev));
                     if (strMintWarning != strMintSyncMessage) {
                         strMintWarning = strMintSyncMessage;
@@ -726,11 +729,33 @@ void MintStake(NodeContext& m_node)
 {
     auto wallets = wallet::GetWallets(*m_node.wallet_loader->context());
     for (auto& pwallet : wallets) {
-        m_minter_threads.emplace_back([&m_node, pwallet]() {
+        std::string name = pwallet->GetName();
+        m_minter_threads[name] = std::thread([&m_node, pwallet]() {
             util::TraceThread("minter", [&m_node, pwallet]() {
                 ThreadStakeMinter(m_node, pwallet.get());
             });
         });
+    }
+}
+
+void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet)
+{
+    std::string name = wallet->GetName();
+    m_minter_threads[name] = std::thread([&m_node, wallet]() {
+        util::TraceThread("minter", [&m_node, wallet]() {
+            ThreadStakeMinter(m_node, wallet.get());
+        });
+    });
+}
+
+void StopMintStake(const std::string& wallet_name)
+{
+    auto it = m_minter_threads.find(wallet_name);
+    if (it != m_minter_threads.end()) {
+        if (it->second.joinable()) {
+            it->second.join();
+        }
+        m_minter_threads.erase(it);
     }
 }
 } // namespace node
