@@ -42,7 +42,6 @@ public:
         ProxyIPTor,             // QString
         ProxyPortTor,           // int
         DisplayUnit,            // BitcoinUnit
-        ThirdPartyTxUrls,       // QString
         UseEmbeddedMonospacedFont, // bool
         CoinControlFeatures,    // bool
         SubFeeFromAmount,       // bool
@@ -70,7 +69,6 @@ public:
 
     /* Explicit getters */
     BitcoinUnit getDisplayUnit() const { return m_display_bitcoin_unit; }
-    QString getThirdPartyTxUrls() const { return strThirdPartyTxUrls; }
     bool getUseEmbeddedMonospacedFont() const { return m_use_embedded_monospaced_font; }
     bool getCoinControlFeatures() const { return fCoinControlFeatures; }
     bool getSubFeeFromAmount() const { return m_sub_fee_from_amount; }
@@ -89,7 +87,6 @@ private:
     interfaces::Node& m_node;
     /* Qt-only settings */
     BitcoinUnit m_display_bitcoin_unit;
-    QString strThirdPartyTxUrls;
     bool m_use_embedded_monospaced_font;
     bool fCoinControlFeatures;
     bool m_sub_fee_from_amount;
