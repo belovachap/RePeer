@@ -25,7 +25,6 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QDateTimeEdit>
-#include <QDesktopServices>
 #include <QDoubleValidator>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -218,30 +217,6 @@ void TransactionView::setModel(WalletModel *_model)
         transactionProxyModel->setSortRole(Qt::EditRole);
         transactionView->setModel(transactionProxyModel);
         transactionView->sortByColumn(TransactionTableModel::Date, Qt::DescendingOrder);
-
-
-        if (_model->getOptionsModel())
-        {
-            // Add third party transaction URLs to context menu
-            QStringList listUrls = GUIUtil::SplitSkipEmptyParts(_model->getOptionsModel()->getThirdPartyTxUrls(), "|");
-            bool actions_created = false;
-            for (int i = 0; i < listUrls.size(); ++i)
-            {
-                QString url = listUrls[i].trimmed();
-                QString host = QUrl(url, QUrl::StrictMode).host();
-                if (!host.isEmpty())
-                {
-                    if (!actions_created) {
-                        contextMenu->addSeparator();
-                        actions_created = true;
-                    }
-                    /*: Transactions table context menu action to show the
-                        selected transaction in a third-party block explorer.
-                        %1 is a stand-in argument for the URL of the explorer. */
-                    contextMenu->addAction(tr("Show in %1").arg(host), [this, url] { openThirdPartyTxUrl(url); });
-                }
-            }
-        }
 
         // show/hide column Watch-only
         updateWatchOnlyColumn(_model->wallet().haveWatchOnly());
@@ -514,15 +489,6 @@ void TransactionView::showDetails()
         });
         dlg->show();
     }
-}
-
-void TransactionView::openThirdPartyTxUrl(QString url)
-{
-    if(!transactionView || !transactionView->selectionModel())
-        return;
-    QModelIndexList selection = transactionView->selectionModel()->selectedRows(0);
-    if(!selection.isEmpty())
-         QDesktopServices::openUrl(QUrl::fromUserInput(url.replace("%s", selection.at(0).data(TransactionTableModel::TxHashRole).toString())));
 }
 
 QWidget *TransactionView::createDateRangeWidget()
