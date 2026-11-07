@@ -251,9 +251,9 @@ AC_ARG_ENABLE([gprof],
 dnl Turn warnings into errors
 AC_ARG_ENABLE([werror],
     [AS_HELP_STRING([--enable-werror],
-                    [Treat compiler warnings as errors (default is no)])],
+                    [Treat compiler warnings as errors (default is yes)])],
     [enable_werror=$enableval],
-    [enable_werror=no])
+    [enable_werror=yes])
 
 AC_ARG_ENABLE([lto],
     [AS_HELP_STRING([--enable-lto],[build using LTO (default is no)])],
