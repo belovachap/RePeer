@@ -292,7 +292,7 @@ void Shutdown(NodeContext& node)
     node.chainman.reset();
     node.scheduler.reset();
 
-    for (auto& t : m_minter_threads) {
+    for (auto& [name, t] : m_minter_threads) {
         if (t.joinable()) {
             t.join();
         }
@@ -1665,6 +1665,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     {
         MintStake(node);
     }
-    
+
     return true;
 }

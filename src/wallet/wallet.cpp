@@ -47,6 +47,7 @@
 #include <wallet/receive.h>
 #include <wallet/spend.h>
 #include <wallet/fees.h>
+#include <node/miner.h>
 
 #include <univalue.h>
 
@@ -149,6 +150,15 @@ bool AddWallet(WalletContext& context, const std::shared_ptr<CWallet>& wallet)
     context.wallets.push_back(wallet);
     wallet->ConnectScriptPubKeyManNotifiers();
     wallet->NotifyCanGetAddressesChanged();
+
+    // Start staking thread for this wallet
+    if (wallet->HaveChain()) {
+        node::NodeContext* node = wallet->chain().context();
+        if (node) {
+            node::StartMintStake(*node, wallet);
+        }
+    }
+
     return true;
 }
 
@@ -158,6 +168,10 @@ bool RemoveWallet(WalletContext& context, const std::shared_ptr<CWallet>& wallet
 
     interfaces::Chain& chain = wallet->chain();
     std::string name = wallet->GetName();
+
+    // Signal the staking thread to stop and join it
+    wallet->m_should_stop_minting = true;
+    node::StopMintStake(name);
 
     // Unregister with the validation interface which also drops shared pointers.
     wallet->m_chain_notifications_handler.reset();
