@@ -248,13 +248,6 @@ AC_ARG_ENABLE([gprof],
     [enable_gprof=$enableval],
     [enable_gprof=no])
 
-dnl Turn warnings into errors
-AC_ARG_ENABLE([werror],
-    [AS_HELP_STRING([--enable-werror],
-                    [Treat compiler warnings as errors (default is yes)])],
-    [enable_werror=$enableval],
-    [enable_werror=yes])
-
 AC_ARG_ENABLE([lto],
     [AS_HELP_STRING([--enable-lto],[build using LTO (default is no)])],
     [enable_lto=$enableval],
@@ -343,19 +336,7 @@ if test "$use_sanitizers" != ""; then
     ]],[[]])])
 fi
 
-ERROR_CXXFLAGS=
-if test "$enable_werror" = "yes"; then
-  if test "$CXXFLAG_WERROR" = ""; then
-    AC_MSG_ERROR([enable-werror set but -Werror is not usable])
-  fi
-  ERROR_CXXFLAGS=$CXXFLAG_WERROR
-
-  dnl -Wreturn-type is broken in GCC for MinGW-w64.
-  dnl https://sourceforge.net/p/mingw-w64/bugs/306/
-  AX_CHECK_COMPILE_FLAG([-Werror=return-type], [], [ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Wno-error=return-type"], [$CXXFLAG_WERROR],
-                        [AC_LANG_SOURCE([[#include <cassert>
-                                          int f(){ assert(false); }]])])
-fi
+ERROR_CXXFLAGS=$CXXFLAG_WERROR
 
 if test "$CXXFLAGS_overridden" = "no"; then
   AX_CHECK_COMPILE_FLAG([-Wall], [WARN_CXXFLAGS="$WARN_CXXFLAGS -Wall"], [], [$CXXFLAG_WERROR])
@@ -1472,7 +1453,6 @@ echo "  USDT tracing    = $use_usdt"
 echo "  sanitizers      = $use_sanitizers"
 echo "  debug enabled   = $enable_debug"
 echo "  gprof enabled   = $enable_gprof"
-echo "  werror          = $enable_werror"
 echo "  LTO             = $enable_lto"
 echo
 echo "  target os       = $host_os"
