@@ -957,6 +957,9 @@ public:
 
     //! Whether the (external) signer performs R-value signature grinding
     bool CanGrindR() const;
+
+    /** Signal to the staking thread to stop for this wallet */
+    std::atomic<bool> m_should_stop_minting{false};
 };
 
 /**
