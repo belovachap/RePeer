@@ -47,7 +47,7 @@ using wallet::CCoinControl;
 using wallet::ReserveDestination;
 
 int64_t nLastCoinStakeSearchInterval = 0;
-std::thread m_minter_thread;
+std::vector<std::thread> m_minter_threads;
 
 namespace node {
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev)
@@ -528,33 +528,25 @@ static bool ProcessBlockFound(const CBlock* pblock, const CChainParams& chainpar
     return true;
 }
 
-void PoSMiner(NodeContext& m_node)
+void PoSMiner(NodeContext& m_node, CWallet* pwallet)
 {
     std::string strMintMessage = _("Info: Minting suspended due to locked wallet.").translated;
     std::string strMintSyncMessage = _("Info: Minting suspended while synchronizing wallet.").translated;
     std::string strMintDisabledMessage = _("Info: Minting disabled by 'nominting' option.").translated;
     std::string strMintBlockMessage = _("Info: Minting suspended due to block creation failure.").translated;
     std::string strMintEmpty = "";
-#ifdef ENABLE_WALLET
+
     if (!gArgs.GetBoolArg("-minting", true) || !gArgs.GetBoolArg("-staking", true))
     {
-#endif
         strMintWarning = strMintDisabledMessage;
         LogPrintf("proof-of-stake minter disabled\n");
         return;
-#ifdef ENABLE_WALLET
     }
 
     CConnman* connman = m_node.connman.get();
-    CWallet* pwallet;
-    // ppctodo: deal with multiple wallets better
-    if (m_node.wallet_loader->getWallets().size() && gArgs.GetBoolArg("-minting", true))
-        pwallet = m_node.wallet_loader->getWallets()[0]->wallet();
-    else
-        return;
 
-    LogPrintf("CPUMiner started for proof-of-stake\n");
-    util::ThreadRename("peercoin-stake-minter");
+    LogPrintf("CPUMiner started for proof-of-stake (wallet: %s)\n", pwallet->GetName());
+    util::ThreadRename(("peercoin-stake-minter-" + pwallet->GetName()).c_str());
 
     unsigned int nExtraNonce = 0;
 
@@ -582,7 +574,7 @@ void PoSMiner(NodeContext& m_node)
         CCoinControl coincontrol;
         availableCoins = AvailableCoins(*pwallet, &coincontrol);
         pos_timio = 500 + 30 * sqrt(availableCoins.Size());
-        LogPrintf("Set proof-of-stake timeout: %ums for %u UTXOs\n", pos_timio, availableCoins.Size());
+        LogPrintf("Set proof-of-stake timeout: %ums for %u UTXOs (wallet: %s)\n", pos_timio, availableCoins.Size(), pwallet->GetName());
     }
 
     try {
@@ -708,17 +700,16 @@ void PoSMiner(NodeContext& m_node)
         LogPrintf("PeercoinMiner runtime error: %s\n", e.what());
         return;
     }
-#endif
 }
 
 // peercoin: stake minter thread
-void static ThreadStakeMinter(NodeContext& m_node)
+void static ThreadStakeMinter(NodeContext& m_node, CWallet* pwallet)
 {
-    LogPrintf("ThreadStakeMinter started\n");
+    LogPrintf("ThreadStakeMinter started for wallet: %s\n", pwallet->GetName());
     while(true) {
         try
         {
-            PoSMiner(m_node);
+            PoSMiner(m_node, pwallet);
             break;
         }
         catch (std::exception& e) {
@@ -733,6 +724,13 @@ void static ThreadStakeMinter(NodeContext& m_node)
 // peercoin: stake minter
 void MintStake(NodeContext& m_node)
 {
-    m_minter_thread = std::thread([&] { util::TraceThread("minter", [&] { ThreadStakeMinter(m_node); }); });
+    auto wallets = wallet::GetWallets(*m_node.wallet_loader->context());
+    for (auto& pwallet : wallets) {
+        m_minter_threads.emplace_back([&m_node, pwallet]() {
+            util::TraceThread("minter", [&m_node, pwallet]() {
+                ThreadStakeMinter(m_node, pwallet.get());
+            });
+        });
+    }
 }
 } // namespace node
