@@ -292,8 +292,10 @@ void Shutdown(NodeContext& node)
     node.chainman.reset();
     node.scheduler.reset();
 
-    if (m_minter_thread.joinable()) {
-        m_minter_thread.join();
+    for (auto& t : m_minter_threads) {
+        if (t.joinable()) {
+            t.join();
+        }
     }
 
     try {
