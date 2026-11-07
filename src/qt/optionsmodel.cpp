@@ -146,10 +146,6 @@ bool OptionsModel::Init(bilingual_str& error)
         settings.setValue("DisplayBitcoinUnit", QVariant::fromValue(m_display_bitcoin_unit));
     }
 
-    if (!settings.contains("strThirdPartyTxUrls"))
-        settings.setValue("strThirdPartyTxUrls", "");
-    strThirdPartyTxUrls = settings.value("strThirdPartyTxUrls", "").toString();
-
     if (!settings.contains("fCoinControlFeatures"))
         settings.setValue("fCoinControlFeatures", false);
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
@@ -354,8 +350,6 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
 #endif
     case DisplayUnit:
         return QVariant::fromValue(m_display_bitcoin_unit);
-    case ThirdPartyTxUrls:
-        return strThirdPartyTxUrls;
     case UseEmbeddedMonospacedFont:
         return m_use_embedded_monospaced_font;
     case CoinControlFeatures:
@@ -473,13 +467,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
 #endif
     case DisplayUnit:
         setDisplayUnit(value);
-        break;
-    case ThirdPartyTxUrls:
-        if (strThirdPartyTxUrls != value.toString()) {
-            strThirdPartyTxUrls = value.toString();
-            settings.setValue("strThirdPartyTxUrls", strThirdPartyTxUrls);
-            setRestartRequired(true);
-        }
         break;
     case UseEmbeddedMonospacedFont:
         m_use_embedded_monospaced_font = value.toBool();
