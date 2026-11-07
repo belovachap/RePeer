@@ -19,7 +19,7 @@
 #include <boost/multi_index_container.hpp>
 
 extern int64_t nLastCoinStakeSearchInterval;
-extern std::thread m_minter_thread;
+extern std::vector<std::thread> m_minter_threads;
 
 class ChainstateManager;
 
