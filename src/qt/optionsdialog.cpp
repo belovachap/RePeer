@@ -61,11 +61,9 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
 
     /* Window elements init */
 
-    /* remove Wallet tab and 3rd party-URL textbox in case of -disablewallet */
+    /* remove Wallet tab in case of -disablewallet */
     if (!enableWallet) {
         ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->tabWallet));
-        ui->thirdPartyTxUrlsLabel->setVisible(false);
-        ui->thirdPartyTxUrls->setVisible(false);
     }
 
     /* Display elements init */
@@ -153,9 +151,6 @@ void OptionsDialog::setModel(OptionsModel *_model)
     connect(ui->allowIncoming, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->connectSocks, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->connectSocksTor, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
-    /* Display */
-    connect(ui->thirdPartyTxUrls, &QLineEdit::textChanged, [this]{ showRestartWarning(); });
-
 }
 
 void OptionsDialog::setCurrentTab(OptionsDialog::Tab tab)
@@ -195,7 +190,6 @@ void OptionsDialog::setMapper()
 
     /* Display */
     mapper->addMapping(ui->unit, OptionsModel::DisplayUnit);
-    mapper->addMapping(ui->thirdPartyTxUrls, OptionsModel::ThirdPartyTxUrls);
     mapper->addMapping(ui->embeddedFont_radioButton, OptionsModel::UseEmbeddedMonospacedFont);
 }
 
