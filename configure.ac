@@ -136,23 +136,11 @@ AC_ARG_WITH([sqlite],
   [use_sqlite=$withval],
   [use_sqlite=auto])
 
-AC_ARG_WITH([bdb],
-  [AS_HELP_STRING([--without-bdb],
-  [disable bdb wallet support (default is enabled if wallet is enabled)])],
-  [use_bdb=$withval],
-  [use_bdb=auto])
-
 AC_ARG_ENABLE([usdt],
   [AS_HELP_STRING([--enable-usdt],
   [enable tracepoints for Userspace, Statically Defined Tracing (default is yes if sys/sdt.h is found)])],
   [use_usdt=$enableval],
   [use_usdt=yes])
-
-AC_ARG_WITH([sqlite],
-  [AS_HELP_STRING([--with-sqlite=yes|no|auto],
-  [enable sqlite wallet support (default: auto, i.e., enabled if wallet is enabled and sqlite is found)])],
-  [use_sqlite=$withval],
-  [use_sqlite=auto])
 
 AC_ARG_ENABLE([fuzz-binary],
     AS_HELP_STRING([--enable-fuzz-binary],
@@ -973,14 +961,6 @@ if test "$enable_fuzz_binary" = "yes"; then
 fi
 
 if test "$enable_wallet" != "no"; then
-    dnl Check for libdb_cxx only if wallet enabled
-    if test "$use_bdb" != "no"; then
-      BITCOIN_FIND_BDB48
-      if test "$suppress_external_warnings" != "no" ; then
-        BDB_CPPFLAGS=SUPPRESS_WARNINGS($BDB_CPPFLAGS)
-      fi
-    fi
-
     dnl Check for sqlite3
     if test "$use_sqlite" != "no"; then
       PKG_CHECK_MODULES([SQLITE], [sqlite3 >= 3.7.17], [have_sqlite=yes], [have_sqlite=no])
@@ -1001,33 +981,13 @@ if test "$enable_wallet" != "no"; then
     fi
     AC_MSG_RESULT([$use_sqlite])
 
-    dnl Disable wallet if both --without-bdb and --without-sqlite
-    if test "$use_bdb$use_sqlite" = "nono"; then
+    dnl Disable wallet if both sqlite is not available
+    if test "$use_sqlite" = "no"; then
         if test "$enable_wallet" = "yes"; then
-            AC_MSG_ERROR([wallet functionality requested but no BDB or SQLite support available.])
+            AC_MSG_ERROR([wallet functionality requested but no SQLite support available.])
         fi
         enable_wallet=no
     fi
-
-    dnl Check for sqlite3
-    if test "x$use_sqlite" != "xno"; then
-      PKG_CHECK_MODULES([SQLITE], [sqlite3 >= 3.7.17], [have_sqlite=yes], [have_sqlite=no])
-    fi
-    AC_MSG_CHECKING([whether to build wallet with support for sqlite])
-    if test "$use_sqlite" = "no"; then
-      use_sqlite=no
-    elif test "$have_sqlite" = "no"; then
-      if test "$use_sqlite" = "yes"; then
-        AC_MSG_ERROR([sqlite support requested but cannot be built. Use --without-sqlite])
-      fi
-      use_sqlite=no
-    else
-      if test "$use_sqlite" != "no"; then
-        AC_DEFINE([USE_SQLITE],[1],[Define if sqlite support should be compiled in])
-        use_sqlite=yes
-      fi
-    fi
-    AC_MSG_RESULT([$use_sqlite])
 fi
 
 if test "$use_usdt" != "no"; then
@@ -1330,7 +1290,6 @@ fi
 
 AM_CONDITIONAL([ENABLE_WALLET], [test "$enable_wallet" = "yes"])
 AM_CONDITIONAL([USE_SQLITE], [test "$use_sqlite" = "yes"])
-AM_CONDITIONAL([USE_BDB], [test "$use_bdb" = "yes"])
 AM_CONDITIONAL([ENABLE_QT], [test "$bitcoin_enable_qt" = "yes"])
 AM_CONDITIONAL([USE_QRCODE], [test "$use_qr" = "yes"])
 AM_CONDITIONAL([USE_LIBEVENT], [test "$use_libevent" = "yes"])
@@ -1401,7 +1360,6 @@ AC_SUBST(ARM_CRC_CXXFLAGS)
 AC_SUBST(ARM_SHANI_CXXFLAGS)
 AC_SUBST(LIBTOOL_APP_LDFLAGS)
 AC_SUBST(USE_SQLITE)
-AC_SUBST(USE_BDB)
 AC_SUBST(USE_QRCODE)
 AC_SUBST(TESTDEFS)
 AC_SUBST(HAVE_GMTIME_R)
@@ -1435,7 +1393,6 @@ echo "  with experimental syscall sandbox support = $use_syscall_sandbox"
 echo "  with wallet     = $enable_wallet"
 if test "$enable_wallet" != "no"; then
     echo "    with sqlite   = $use_sqlite"
-    echo "    with bdb      = $use_bdb"
 fi
 echo "  with gui / qt   = $bitcoin_enable_qt"
 if test $bitcoin_enable_qt != "no"; then
