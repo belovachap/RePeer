@@ -1661,10 +1661,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 #if HAVE_SYSTEM
     StartupNotify(args);
 #endif
-    if (node.init->has_wallet)
-    {
-        MintStake(node);
-    }
 
     return true;
 }

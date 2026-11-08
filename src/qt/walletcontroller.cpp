@@ -13,7 +13,6 @@
 
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
-#include <node/miner.h>
 #include <util/string.h>
 #include <util/threadnames.h>
 #include <util/translation.h>
@@ -86,10 +85,6 @@ void WalletController::closeWallet(WalletModel* wallet_model, QWidget* parent)
     box.setDefaultButton(QMessageBox::Yes);
     if (box.exec() != QMessageBox::Yes) return;
 
-    // peercoin: stop minter thread
-    if (m_minter_thread.joinable()) {
-        m_minter_thread.join();
-    }
     // First remove wallet from node.
     wallet_model->wallet().remove();
     // Now release the model.
@@ -168,12 +163,6 @@ WalletModel* WalletController::getOrCreateWallet(std::unique_ptr<interfaces::Wal
     connect(wallet_model, &WalletModel::coinsSent, this, &WalletController::coinsSent);
 
     Q_EMIT walletAdded(wallet_model);
-
-    // peercoin: start pos miner if it's not running already
-    if (!m_minter_thread.joinable()) {
-        node::NodeContext& tmpNode = *m_node.context();
-        node::MintStake(tmpNode);
-    }
 
     return wallet_model;
 }

@@ -724,20 +724,6 @@ void static ThreadStakeMinter(NodeContext& m_node, CWallet* pwallet)
     LogPrintf("ThreadStakeMinter exiting\n");
 }
 
-// peercoin: stake minter
-void MintStake(NodeContext& m_node)
-{
-    auto wallets = wallet::GetWallets(*m_node.wallet_loader->context());
-    for (auto& pwallet : wallets) {
-        std::string name = pwallet->GetName();
-        m_minter_threads[name] = std::thread([&m_node, pwallet]() {
-            util::TraceThread("minter", [&m_node, pwallet]() {
-                ThreadStakeMinter(m_node, pwallet.get());
-            });
-        });
-    }
-}
-
 void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet)
 {
     std::string name = wallet->GetName();

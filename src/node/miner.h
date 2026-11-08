@@ -212,7 +212,6 @@ namespace boost {
     class thread_group;
 } // namespace boost
 
-void MintStake(NodeContext& m_node);
 void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet);
 void StopMintStake(const std::string& wallet_name);
 
