@@ -14,12 +14,7 @@
 #include <util/system.h>
 #include <util/time.h>
 #include <util/translation.h>
-#ifdef USE_BDB
-#include <wallet/bdb.h>
-#endif
-#ifdef USE_SQLITE
 #include <wallet/sqlite.h>
-#endif
 #include <wallet/wallet.h>
 
 #include <atomic>
@@ -1163,72 +1158,24 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
         return nullptr;
     }
 
-    std::optional<DatabaseFormat> format;
-    if (exists) {
-        if (IsBDBFile(BDBDataFile(path))) {
-            format = DatabaseFormat::BERKELEY;
-        }
-        if (IsSQLiteFile(SQLiteDataFile(path))) {
-            if (format) {
-                error = Untranslated(strprintf("Failed to load database path '%s'. Data is in ambiguous format.", fs::PathToString(path)));
-                status = DatabaseStatus::FAILED_BAD_FORMAT;
-                return nullptr;
-            }
-            format = DatabaseFormat::SQLITE;
-        }
-    } else if (options.require_existing) {
+    if (exists && !IsSQLiteFile(SQLiteDataFile(path))) {
+        error = Untranslated(strprintf("Failed to load database path '%s'. Data is not in recognized format.", fs::PathToString(path)));
+        status = DatabaseStatus::FAILED_BAD_FORMAT;
+        return nullptr;
+    }
+    if (!exists && options.require_existing) {
         error = Untranslated(strprintf("Failed to load database path '%s'. Path does not exist.", fs::PathToString(path)));
         status = DatabaseStatus::FAILED_NOT_FOUND;
         return nullptr;
     }
 
-    if (!format && options.require_existing) {
-        error = Untranslated(strprintf("Failed to load database path '%s'. Data is not in recognized format.", fs::PathToString(path)));
-        status = DatabaseStatus::FAILED_BAD_FORMAT;
-        return nullptr;
-    }
-
-    if (format && options.require_create) {
+    if (exists && options.require_create) {
         error = Untranslated(strprintf("Failed to create database path '%s'. Database already exists.", fs::PathToString(path)));
         status = DatabaseStatus::FAILED_ALREADY_EXISTS;
         return nullptr;
     }
 
-    // A db already exists so format is set, but options also specifies the format, so make sure they agree
-    if (format && options.require_format && format != options.require_format) {
-        error = Untranslated(strprintf("Failed to load database path '%s'. Data is not in required format.", fs::PathToString(path)));
-        status = DatabaseStatus::FAILED_BAD_FORMAT;
-        return nullptr;
-    }
-
-    // Format is not set when a db doesn't already exist, so use the format specified by the options if it is set.
-    if (!format && options.require_format) format = options.require_format;
-
-    // If the format is not specified or detected, choose the default format based on what is available. We prefer BDB over SQLite for now.
-    if (!format) {
-#ifdef USE_SQLITE
-        format = DatabaseFormat::SQLITE;
-#endif
-#ifdef USE_BDB
-        format = DatabaseFormat::BERKELEY;
-#endif
-    }
-
-    if (format == DatabaseFormat::SQLITE) {
-#ifdef USE_SQLITE
-        return MakeSQLiteDatabase(path, options, status, error);
-#endif
-        error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support SQLite database format.", fs::PathToString(path)));
-        status = DatabaseStatus::FAILED_BAD_FORMAT;
-        return nullptr;
-    }
-
-#ifdef USE_BDB
-    return MakeBerkeleyDatabase(path, options, status, error);
-#endif
-    error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support Berkeley DB database format.", fs::PathToString(path)));
-    status = DatabaseStatus::FAILED_BAD_FORMAT;
-    return nullptr;
+    return MakeSQLiteDatabase(path, options, status, error);
 }
 
 /** Return object for accessing dummy database with no read/write capabilities. */
@@ -1240,29 +1187,7 @@ std::unique_ptr<WalletDatabase> CreateDummyWalletDatabase()
 /** Return object for accessing temporary in-memory database. */
 std::unique_ptr<WalletDatabase> CreateMockWalletDatabase(DatabaseOptions& options)
 {
-
-    std::optional<DatabaseFormat> format;
-    if (options.require_format) format = options.require_format;
-    if (!format) {
-#ifdef USE_BDB
-        format = DatabaseFormat::BERKELEY;
-#endif
-#ifdef USE_SQLITE
-        format = DatabaseFormat::SQLITE;
-#endif
-    }
-
-    if (format == DatabaseFormat::SQLITE) {
-#ifdef USE_SQLITE
-        return std::make_unique<SQLiteDatabase>(":memory:", "", options, true);
-#endif
-        assert(false);
-    }
-
-#ifdef USE_BDB
-    return std::make_unique<BerkeleyDatabase>(std::make_shared<BerkeleyEnvironment>(), "", options);
-#endif
-    assert(false);
+    return std::make_unique<SQLiteDatabase>(":memory:", "", options, true);
 }
 
 std::unique_ptr<WalletDatabase> CreateMockWalletDatabase()
