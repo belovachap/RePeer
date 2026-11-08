@@ -4985,7 +4985,7 @@ bool SignBlock(CBlock& block, const CWallet& keystore)
             return false;
         if (key.GetPubKey() != CPubKey(vchPubKey))
             return false;
-        return key.Sign(block.GetHash(), block.vchBlockSig, 0);
+        return key.Sign(block.GetHash(), block.vchBlockSig);
     }
     else
     {

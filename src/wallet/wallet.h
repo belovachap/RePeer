@@ -941,9 +941,6 @@ public:
     //! Add a descriptor to the wallet, return a ScriptPubKeyMan & associated output type
     ScriptPubKeyMan* AddWalletDescriptor(WalletDescriptor& desc, const FlatSigningProvider& signing_provider, const std::string& label, bool internal) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    //! Whether the (external) signer performs R-value signature grinding
-    bool CanGrindR() const;
-
     /** Signal to the staking thread to stop for this wallet */
     std::atomic<bool> m_should_stop_minting{false};
 };
@@ -1004,7 +1001,7 @@ bool AddWalletSetting(interfaces::Chain& chain, const std::string& wallet_name);
 bool RemoveWalletSetting(interfaces::Chain& chain, const std::string& wallet_name);
 
 //bool DummySignInput(const SigningProvider& provider, CTxIn &tx_in, const CTxOut &txout, bool use_max_sig);
-bool DummySignInput(const SigningProvider& provider, CTxIn &tx_in, const CTxOut &txout, bool can_grind_r, const CCoinControl* coin_control);
+bool DummySignInput(const SigningProvider& provider, CTxIn &tx_in, const CTxOut &txout, const CCoinControl* coin_control);
 
 bool FillInputToWeight(CTxIn& txin, int64_t target_weight);
 

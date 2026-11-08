@@ -115,9 +115,8 @@ public:
 
     /**
      * Create a DER-serialized signature.
-     * The test_case parameter tweaks the deterministic nonce.
      */
-    bool Sign(const uint256& hash, std::vector<unsigned char>& vchSig, bool grind = true, uint32_t test_case = 0) const;
+    bool Sign(const uint256& hash, std::vector<unsigned char>& vchSig) const;
 
     /**
      * Create a compact signature (65 bytes), which allows reconstructing the used public key.
