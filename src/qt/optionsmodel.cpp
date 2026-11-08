@@ -44,9 +44,6 @@ static const char* SettingName(OptionsModel::OptionID option)
     case OptionsModel::ProxyIP: return "proxy";
     case OptionsModel::ProxyPort: return "proxy";
     case OptionsModel::ProxyUse: return "proxy";
-    case OptionsModel::ProxyIPTor: return "onion";
-    case OptionsModel::ProxyPortTor: return "onion";
-    case OptionsModel::ProxyUseTor: return "onion";
     case OptionsModel::SplitCoins: return "splitcoins";
     case OptionsModel::CombineCoins: return "combinecoins";
     case OptionsModel::MaxMintingUtxos: return "maxmintingutxos";
@@ -154,7 +151,7 @@ bool OptionsModel::Init(bilingual_str& error)
     // and we want command-line parameters to overwrite the GUI settings.
     for (OptionID option : {DatabaseCache, ThreadsScriptVerif, SpendZeroConfChange,
                             SplitCoins, CombineCoins, MaxMintingUtxos, Listen,
-                            ProxyUse, ProxyUseTor}) {
+                            ProxyUse}) {
         std::string setting = SettingName(option);
         if (node().isSettingIgnored(setting)) addOverriddenOption("-" + setting);
         try {
@@ -311,10 +308,8 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
     switch (option) {
     // default proxy
     case ProxyUse:
-    case ProxyUseTor:
         return ParseProxyString(SettingToString(setting(), "")).is_set;
-    case ProxyIP:
-    case ProxyIPTor: {
+    case ProxyIP: {
         ProxySetting proxy = ParseProxyString(SettingToString(setting(), ""));
         if (proxy.is_set) {
             return proxy.ip;
@@ -324,8 +319,7 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
             return ParseProxyString(GetDefaultProxyAddress().toStdString()).ip;
         }
     }
-    case ProxyPort:
-    case ProxyPortTor: {
+    case ProxyPort: {
         ProxySetting proxy = ParseProxyString(SettingToString(setting(), ""));
         if (proxy.is_set) {
             return proxy.port;
@@ -402,36 +396,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
                 update(ProxyString(true, getOption(ProxyIP).toString(), value.toString()));
             }
             if (suffix.empty() && getOption(ProxyUse).toBool()) setRestartRequired(true);
-        }
-        break;
-
-    // separate Tor proxy
-    case ProxyUseTor:
-        if (changed()) {
-            if (suffix.empty() && !value.toBool()) setOption(option, true, "-prev");
-            update(ProxyString(value.toBool(), getOption(ProxyIPTor).toString(), getOption(ProxyPortTor).toString()));
-            if (suffix.empty() && value.toBool()) UpdateRwSetting(node(), option, "-prev", {});
-            if (suffix.empty()) setRestartRequired(true);
-        }
-        break;
-    case ProxyIPTor:
-        if (changed()) {
-            if (suffix.empty() && !getOption(ProxyUseTor).toBool()) {
-                setOption(option, value, "-prev");
-            } else {
-                update(ProxyString(true, value.toString(), getOption(ProxyPortTor).toString()));
-            }
-            if (suffix.empty() && getOption(ProxyUseTor).toBool()) setRestartRequired(true);
-        }
-        break;
-    case ProxyPortTor:
-        if (changed()) {
-            if (suffix.empty() && !getOption(ProxyUseTor).toBool()) {
-                setOption(option, value, "-prev");
-            } else {
-                update(ProxyString(true, getOption(ProxyIPTor).toString(), value.toString()));
-            }
-            if (suffix.empty() && getOption(ProxyUseTor).toBool()) setRestartRequired(true);
         }
         break;
 
@@ -553,12 +517,6 @@ void OptionsModel::checkAndMigrate()
         settings.setValue("addrProxy", GetDefaultProxyAddress());
     }
 
-    // Overwrite the 'addrSeparateProxyTor' setting in case it has been set to an illegal
-    // default value (see issue #12623; PR #12650).
-    if (settings.contains("addrSeparateProxyTor") && settings.value("addrSeparateProxyTor").toString().endsWith("%2")) {
-        settings.setValue("addrSeparateProxyTor", GetDefaultProxyAddress());
-    }
-
     // Migrate and delete legacy GUI settings that have now moved to <datadir>/settings.json.
     auto migrate_setting = [&](OptionID option, const QString& qt_name) {
         if (!settings.contains(qt_name)) return;
@@ -568,10 +526,6 @@ void OptionsModel::checkAndMigrate()
                 ProxySetting parsed = ParseProxyString(value.toString());
                 setOption(ProxyIP, parsed.ip);
                 setOption(ProxyPort, parsed.port);
-            } else if (option == ProxyIPTor) {
-                ProxySetting parsed = ParseProxyString(value.toString());
-                setOption(ProxyIPTor, parsed.ip);
-                setOption(ProxyPortTor, parsed.port);
             } else {
                 setOption(option, value);
             }
@@ -589,13 +543,11 @@ void OptionsModel::checkAndMigrate()
     migrate_setting(Listen, "fListen");
     migrate_setting(ProxyIP, "addrProxy");
     migrate_setting(ProxyUse, "fUseProxy");
-    migrate_setting(ProxyIPTor, "addrSeparateProxyTor");
-    migrate_setting(ProxyUseTor, "fUseSeparateProxyTor");
 
     // In case migrating QSettings caused any settings value to change, rerun
     // parameter interaction code to update other settings. This is particularly
-    // important for the -listen setting, which should cause -listenonion
-    // and other settings to default to false if it was set to false.
+    // important for the -listen setting, which should cause
+    // other settings to default to false if it was set to false.
     // (https://github.com/bitcoin-core/gui/issues/567).
     node().initParameterInteraction();
 }

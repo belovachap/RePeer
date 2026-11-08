@@ -1051,9 +1051,7 @@ CNodeState* PeerManagerImpl::State(NodeId pnode) EXCLUSIVE_LOCKS_REQUIRED(cs_mai
 }
 
 /**
- * Whether the peer supports the address. For example, a peer that does not
- * implement BIP155 cannot receive Tor v3 addresses because it requires
- * ADDRv2 (BIP155) encoding.
+ * Whether the peer supports the address.
  */
 static bool IsAddrCompatible(const Peer& peer, const CAddress& addr)
 {
@@ -5083,8 +5081,7 @@ bool PeerManagerImpl::MaybeDiscourageAndDisconnect(CNode& pnode, Peer& peer)
     if (pnode.addr.IsLocal()) {
         // We disconnect local peers for bad behavior but don't discourage (since that would discourage
         // all peers on the same local address)
-        LogPrint(BCLog::NET, "Warning: disconnecting but not discouraging %s peer %d!\n",
-                 pnode.m_inbound_onion ? "inbound onion" : "local", peer.m_id);
+        LogPrint(BCLog::NET, "Warning: disconnecting but not discouraging %s peer %d!\n", "local", peer.m_id);
         pnode.fDisconnect = true;
         return true;
     }

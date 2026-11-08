@@ -400,8 +400,6 @@ public:
     // Bind address of our side of the connection
     const CAddress addrBind;
     const std::string m_addr_name;
-    //! Whether this peer is an inbound onion, i.e. connected via our Tor onion service.
-    const bool m_inbound_onion;
     std::atomic<int> nVersion{0};
     Mutex m_subver_mutex;
     /**
@@ -503,11 +501,6 @@ public:
     /**
      * Get network the peer connected through.
      *
-     * Returns Network::NET_ONION for *inbound* onion connections,
-     * and CNetAddr::GetNetClass() otherwise. The latter cannot be used directly
-     * because it doesn't detect the former, and it's not the responsibility of
-     * the CNetAddr class to know the actual network a peer is connected through.
-     *
      * @return network the peer connected through.
      */
     Network ConnectedThroughNetwork() const;
@@ -558,7 +551,6 @@ public:
           const CAddress& addrBindIn,
           const std::string& addrNameIn,
           ConnectionType conn_type_in,
-          bool inbound_onion,
           CNodeOptions&& node_opts = {});
     CNode(const CNode&) = delete;
     CNode& operator=(const CNode&) = delete;
@@ -721,7 +713,6 @@ public:
         std::vector<NetWhitelistPermissions> vWhitelistedRange;
         std::vector<NetWhitebindPermissions> vWhiteBinds;
         std::vector<CService> vBinds;
-        std::vector<CService> onion_binds;
         /// True if the user did not specify -bind= or -whitebind= and thus
         /// we should bind on `0.0.0.0` (IPv4) and `::` (IPv6).
         bool bind_on_any;
@@ -758,7 +749,6 @@ public:
             LOCK(m_added_nodes_mutex);
             m_added_nodes = connOptions.m_added_nodes;
         }
-        m_onion_binds = connOptions.onion_binds;
     }
 
     CConnman(uint64_t seed0, uint64_t seed1, AddrMan& addrman, const NetGroupManager& netgroupman,
@@ -1075,11 +1065,6 @@ private:
     /**
      * Addr responses stored in different caches
      * per (network, local socket) prevent cross-network node identification.
-     * If a node for example is multi-homed under Tor and IPv6,
-     * a single cache (or no cache at all) would let an attacker
-     * to easily detect that it is the same node by comparing responses.
-     * Indexing by local socket prevents leakage when a node has multiple
-     * listening addresses on the same network.
      *
      * The used memory equals to 1000 CAddress records (or around 40 bytes) per
      * distinct Network (up to 5) we have/had an inbound peer from,
@@ -1160,12 +1145,6 @@ private:
      *  as these connections are intended to be short-lived and low-bandwidth.
      */
     std::atomic_bool m_start_extra_block_relay_peers{false};
-
-    /**
-     * A vector of -bind=<address>:<port>=onion arguments each of which is
-     * an address and port that are designated for incoming Tor connections.
-     */
-    std::vector<CService> m_onion_binds;
 
     /**
      * Mutex protecting m_i2p_sam_sessions.

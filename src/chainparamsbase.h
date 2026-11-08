@@ -26,14 +26,11 @@ public:
     ///@}
 
     const std::string& DataDir() const { return strDataDir; }
-    uint16_t OnionServiceTargetPort() const { return m_onion_service_target_port; }
 
     CBaseChainParams() = delete;
-    CBaseChainParams(const std::string& data_dir, uint16_t onion_service_target_port)
-        : m_onion_service_target_port(onion_service_target_port), strDataDir(data_dir) {}
+    CBaseChainParams(const std::string& data_dir) : strDataDir(data_dir) {}
 
 private:
-    const uint16_t m_onion_service_target_port;
     std::string strDataDir;
 };
 

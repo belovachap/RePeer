@@ -47,10 +47,10 @@ std::vector<unsigned char> NetGroupManager::GetGroup(const CNetAddr& address) co
         vchRet.push_back((ipv4 >> 24) & 0xFF);
         vchRet.push_back((ipv4 >> 16) & 0xFF);
         return vchRet;
-    } else if (address.IsTor() || address.IsI2P()) {
+    } else if (address.IsI2P()) {
         nBits = 4;
     } else if (address.IsCJDNS()) {
-        // Treat in the same way as Tor and I2P because the address in all of
+        // Treat in the same way as I2P because the address in all of
         // them is "random" bytes (derived from a public key). However in CJDNS
         // the first byte is a constant 0xfc, so the random bytes come after it.
         // Thus skip the constant 8 bits at the start.

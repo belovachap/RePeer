@@ -51,9 +51,6 @@ enum Network {
     /// IPv6
     NET_IPV6,
 
-    /// TOR (v2 or v3)
-    NET_ONION,
-
     /// I2P
     NET_I2P,
 
@@ -111,8 +108,6 @@ static constexpr size_t ADDR_INTERNAL_SIZE = 10;
 /// SAM 3.1 and earlier do not support specifying ports and force the port to 0.
 static constexpr uint16_t I2P_SAM31_PORT{0};
 
-std::string OnionToString(Span<const uint8_t> addr);
-
 /**
  * Network address.
  */
@@ -152,18 +147,17 @@ public:
     bool SetInternal(const std::string& name);
 
     /**
-     * Parse a Tor or I2P address and set this object to it.
+     * Parse an I2P address and set this object to it.
      * @param[in] addr Address to parse, for example
-     * pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscryd.onion or
      * ukeu3k5oycgaauneqgtnvselmt4yemvoilkln7jpvamvfx7dnkdq.b32.i2p.
      * @returns Whether the operation was successful.
-     * @see CNetAddr::IsTor(), CNetAddr::IsI2P()
+     * @see CNetAddr::IsI2P()
      */
     bool SetSpecial(const std::string& addr);
 
     bool IsBindAny() const; // INADDR_ANY equivalent
     bool IsIPv4() const;    // IPv4 mapped address (::FFFF:0:0/96, 0.0.0.0/0)
-    bool IsIPv6() const;    // IPv6 address (not mapped IPv4, not Tor)
+    bool IsIPv6() const;    // IPv6 address (not mapped IPv4)
     bool IsRFC1918() const; // IPv4 private networks (10.0.0.0/8, 192.168.0.0/16, 172.16.0.0/12)
     bool IsRFC2544() const; // IPv4 inter-network communications (198.18.0.0/15)
     bool IsRFC6598() const; // IPv4 ISP-level NAT (100.64.0.0/10)
@@ -179,7 +173,6 @@ public:
     bool IsRFC6052() const; // IPv6 well-known prefix for IPv4-embedded address (64:FF9B::/96)
     bool IsRFC6145() const; // IPv6 IPv4-translated address (::FFFF:0:0:0/96) (actually defined in RFC2765)
     bool IsHeNet() const;   // IPv6 Hurricane Electric - https://he.net (2001:0470::/36)
-    bool IsTor() const;
     bool IsI2P() const;
     bool IsCJDNS() const;
     bool IsLocal() const;
@@ -217,7 +210,7 @@ public:
      */
     bool IsRelayable() const
     {
-        return IsIPv4() || IsIPv6() || IsTor() || IsI2P() || IsCJDNS();
+        return IsIPv4() || IsIPv6() || IsI2P() || IsCJDNS();
     }
 
     /**
@@ -249,15 +242,6 @@ public:
     friend class CSubNet;
 
 private:
-    /**
-     * Parse a Tor address and set this object to it.
-     * @param[in] addr Address to parse, must be a valid C string, for example
-     * pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscryd.onion.
-     * @returns Whether the operation was successful.
-     * @see CNetAddr::IsTor()
-     */
-    bool SetTor(const std::string& addr);
-
     /**
      * Parse an I2P address and set this object to it.
      * @param[in] addr Address to parse, must be a valid C string, for example
@@ -331,7 +315,6 @@ private:
             memcpy(arr, INTERNAL_IN_IPV6_PREFIX.data(), prefix_size);
             memcpy(arr + prefix_size, m_addr.data(), m_addr.size());
             return;
-        case NET_ONION:
         case NET_I2P:
         case NET_CJDNS:
             break;
@@ -340,7 +323,7 @@ private:
             assert(false);
         } // no default case, so the compiler can warn about missing cases
 
-        // Serialize ONION, I2P and CJDNS as all-zeros.
+        // Serialize I2P and CJDNS as all-zeros.
         memset(arr, 0x0, V1_SERIALIZATION_SIZE);
     }
 

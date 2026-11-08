@@ -152,7 +152,6 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::NONE, "0"},
     {BCLog::NONE, ""},
     {BCLog::NET, "net"},
-    {BCLog::TOR, "tor"},
     {BCLog::MEMPOOL, "mempool"},
     {BCLog::HTTP, "http"},
     {BCLog::BENCH, "bench"},
@@ -226,8 +225,6 @@ std::string LogCategoryToStr(BCLog::LogFlags category)
         return "";
     case BCLog::LogFlags::NET:
         return "net";
-    case BCLog::LogFlags::TOR:
-        return "tor";
     case BCLog::LogFlags::MEMPOOL:
         return "mempool";
     case BCLog::LogFlags::HTTP:

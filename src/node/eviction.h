@@ -51,11 +51,6 @@ struct NodeEvictionCandidate {
  * following categories of peers, sorted by longest uptime, even if they're not
  * longest uptime overall:
  *
- * - onion peers connected via our tor control service
- *
- * - localhost peers, as manually configured hidden services not using
- *   `-bind=addr[:port]=onion` will not be detected as inbound onion connections
- *
  * - I2P peers
  *
  * - CJDNS peers

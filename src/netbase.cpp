@@ -34,7 +34,7 @@ static Proxy nameProxy GUARDED_BY(g_proxyinfo_mutex);
 int nConnectTimeout = DEFAULT_CONNECT_TIMEOUT;
 bool fNameLookup = DEFAULT_NAME_LOOKUP;
 
-// Need ample time for negotiation for very slow proxies such as Tor (milliseconds)
+// Need ample time for negotiation for very slow proxies
 int g_socks5_recv_timeout = 20 * 1000;
 static std::atomic<bool> interruptSocks5Recv(false);
 
@@ -86,11 +86,6 @@ enum Network ParseNetwork(const std::string& net_in) {
     std::string net = ToLower(net_in);
     if (net == "ipv4") return NET_IPV4;
     if (net == "ipv6") return NET_IPV6;
-    if (net == "onion") return NET_ONION;
-    if (net == "tor") {
-        LogPrintf("Warning: net name 'tor' is deprecated and will be removed in the future. You should use 'onion' instead.\n");
-        return NET_ONION;
-    }
     if (net == "i2p") {
         return NET_I2P;
     }
@@ -106,7 +101,6 @@ std::string GetNetworkName(enum Network net)
     case NET_UNROUTABLE: return "not_publicly_routable";
     case NET_IPV4: return "ipv4";
     case NET_IPV6: return "ipv6";
-    case NET_ONION: return "onion";
     case NET_I2P: return "i2p";
     case NET_CJDNS: return "cjdns";
     case NET_INTERNAL: return "internal";
@@ -140,12 +134,6 @@ static bool LookupIntern(const std::string& name, std::vector<CNetAddr>& vIP, un
 
     {
         CNetAddr addr;
-        // From our perspective, onion addresses are not hostnames but rather
-        // direct encodings of CNetAddr much like IPv4 dotted-decimal notation
-        // or IPv6 colon-separated hextet notation. Since we can't use
-        // getaddrinfo to decode them and it wouldn't make sense to resolve
-        // them, we return a network address representing it instead. See
-        // CNetAddr::SetSpecial(const std::string&) for more details.
         if (addr.SetSpecial(name)) {
             vIP.push_back(addr);
             return true;
@@ -435,8 +423,7 @@ bool Socks5(const std::string& strDest, uint16_t port, const ProxyCredentials* a
     if ((recvr = InterruptibleRecv(pchRet2, 4, g_socks5_recv_timeout, sock)) != IntrRecvError::OK) {
         if (recvr == IntrRecvError::Timeout) {
             /* If a timeout happens here, this effectively means we timed out while connecting
-             * to the remote node. This is very common for Tor, so do not print an
-             * error message. */
+             * to the remote node.Ddo not print an error message. */
             return false;
         } else {
             return error("Error while reading proxy response");

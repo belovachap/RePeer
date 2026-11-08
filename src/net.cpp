@@ -91,8 +91,8 @@ enum BindFlags {
     BF_NONE         = 0,
     BF_REPORT_ERROR = (1U << 0),
     /**
-     * Do not call AddLocal() for our special addresses, e.g., for incoming
-     * Tor connections, to prevent gossiping them over the network.
+     * Do not call AddLocal() for our special addresses, e.g.,
+     * to prevent gossiping them over the network.
      */
     BF_DONT_ADVERTISE = (1U << 1),
 };
@@ -572,7 +572,6 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
                              addr_bind,
                              pszDest ? pszDest : "",
                              conn_type,
-                             /*inbound_onion=*/false,
                              CNodeOptions{
                                  .i2p_sam_session = std::move(i2p_transient_session),
                                  .recv_flood_size = nReceiveFloodSize,
@@ -621,7 +620,7 @@ void CNode::SetAddrLocal(const CService& addrLocalIn) {
 
 Network CNode::ConnectedThroughNetwork() const
 {
-    return m_inbound_onion ? NET_ONION : addr.GetNetClass();
+    return addr.GetNetClass();
 }
 
 #undef X
@@ -1043,7 +1042,6 @@ void CConnman::CreateNodeFromAcceptedSocket(std::unique_ptr<Sock>&& sock,
         nodeServices = static_cast<ServiceFlags>(nodeServices | NODE_BLOOM);
     }
 
-    const bool inbound_onion = std::find(m_onion_binds.begin(), m_onion_binds.end(), addr_bind) != m_onion_binds.end();
     CNode* pnode = new CNode(id,
                              std::move(sock),
                              addr,
@@ -1052,7 +1050,6 @@ void CConnman::CreateNodeFromAcceptedSocket(std::unique_ptr<Sock>&& sock,
                              addr_bind,
                              /*addrNameIn=*/"",
                              ConnectionType::INBOUND,
-                             inbound_onion,
                              CNodeOptions{
                                  .permission_flags = permission_flags,
                                  .prefer_evict = discouraged,
@@ -1730,7 +1727,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
                     case ConnectionType::OUTBOUND_FULL_RELAY:
                     case ConnectionType::BLOCK_RELAY:
                         CAddress address{pnode->addr};
-                        if (address.IsTor() || address.IsI2P() || address.IsCJDNS()) {
+                        if (address.IsI2P() || address.IsCJDNS()) {
                             // Since our addrman-groups for these networks are
                             // random, without relation to the route we
                             // take to connect to these peers or to the
@@ -1900,7 +1897,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
                 LogPrint(BCLog::NET, "Making feeler connection to %s\n", addrConnect.ToStringAddrPort());
             }
             // Record addrman failure attempts when node has at least 2 persistent outbound connections to peers with
-            // different netgroups in ipv4/ipv6 networks + all peers in Tor/I2P/CJDNS networks.
+            // different netgroups in ipv4/ipv6 networks + all peers in I2P/CJDNS networks.
             // Don't record addrman failure attempts when node is offline. This can be identified since all local
             // network connections(if any) belong in the same netgroup and size of setConnected would only be 1.
             OpenNetworkConnection(addrConnect, (int)setConnected.size() + outbound_privacy_network_peers >= std::min(nMaxConnections - 1, 2), &grant, nullptr, conn_type);
@@ -2282,9 +2279,6 @@ bool CConnman::InitBinds(const Options& options)
     }
     for (const auto& addrBind : options.vWhiteBinds) {
         fBound |= Bind(addrBind.m_service, BF_REPORT_ERROR, addrBind.m_flags);
-    }
-    for (const auto& addr_bind : options.onion_binds) {
-        fBound |= Bind(addr_bind, BF_DONT_ADVERTISE, NetPermissionFlags::None);
     }
     if (options.bind_on_any) {
         struct in_addr inaddr_any;
@@ -2756,7 +2750,6 @@ CNode::CNode(NodeId idIn,
              const CAddress& addrBindIn,
              const std::string& addrNameIn,
              ConnectionType conn_type_in,
-             bool inbound_onion,
              CNodeOptions&& node_opts)
     : m_deserializer{std::make_unique<V1TransportDeserializer>(V1TransportDeserializer(Params(), idIn, SER_NETWORK, INIT_PROTO_VERSION))},
       m_serializer{std::make_unique<V1TransportSerializer>(V1TransportSerializer())},
@@ -2766,7 +2759,6 @@ CNode::CNode(NodeId idIn,
       addr{addrIn},
       addrBind{addrBindIn},
       m_addr_name{addrNameIn.empty() ? addr.ToStringAddrPort() : addrNameIn},
-      m_inbound_onion{inbound_onion},
       m_prefer_evict{node_opts.prefer_evict},
       nKeyedNetGroup{nKeyedNetGroupIn},
       m_conn_type{conn_type_in},
@@ -2775,8 +2767,6 @@ CNode::CNode(NodeId idIn,
       m_recv_flood_size{node_opts.recv_flood_size},
       m_i2p_sam_session{std::move(node_opts.i2p_sam_session)}
 {
-    if (inbound_onion) assert(conn_type_in == ConnectionType::INBOUND);
-
     for (const std::string &msg : getAllNetMessageTypes())
         mapRecvBytesPerMsgType[msg] = 0;
     mapRecvBytesPerMsgType[NET_MESSAGE_TYPE_OTHER] = 0;

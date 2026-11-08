@@ -38,7 +38,6 @@ namespace BCLog {
     enum LogFlags : uint32_t {
         NONE        = 0,
         NET         = (1 <<  0),
-        TOR         = (1 <<  1),
         MEMPOOL     = (1 <<  2),
         HTTP        = (1 <<  3),
         BENCH       = (1 <<  4),

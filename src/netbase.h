@@ -89,7 +89,7 @@ bool IsProxy(const CNetAddr &addr);
  * @returns Whether or not the operation succeeded.
  *
  * @note SOCKS5's support for UDP-over-SOCKS5 has been considered, but no SOCK5
- *       server in common use (most notably Tor) actually implements UDP
+ *       server in common use actually implements UDP
  *       support, and a DNS resolver is beyond the scope of this project.
  */
 bool SetNameProxy(const Proxy &addrProxy);

@@ -38,9 +38,6 @@ public:
         ProxyUse,               // bool
         ProxyIP,                // QString
         ProxyPort,              // int
-        ProxyUseTor,            // bool
-        ProxyIPTor,             // QString
-        ProxyPortTor,           // int
         DisplayUnit,            // BitcoinUnit
         UseEmbeddedMonospacedFont, // bool
         CoinControlFeatures,    // bool
