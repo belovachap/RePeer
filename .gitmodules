@@ -11,3 +11,6 @@
 [submodule "src/univalue"]
 	path = src/univalue
 	url = https://github.com/cculianu/univalue.git
+[submodule "src/crc32c"]
+	path = src/crc32c
+	url = https://github.com/google/crc32c.git
