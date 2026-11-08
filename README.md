@@ -1,4 +1,4 @@
-# RePeer, A Peercoin Client for Debian amd64
+# RePeer, A Peercoin Client for Debian 13 amd64 GNOME
 
 ## What is Peercoin?
 
@@ -8,14 +8,14 @@
 
 RePeer is a descendant of the Peercoin Core code base starting at the v0.15.2ppc tag.
 
-It assumes a specific target environment, Debian amd64, which helps reduce the complexity of the underlying C++ code and build setup.
+It assumes a specific target environment, Debian amd64 GNOME, which helps reduce the complexity of the underlying C++ code and build setup.
 
 ## Branches and Tags
 
-RePeer is tightly coupled to Debian releases. For example, you will find the "repeer-13" branch which assumes it is being built against Debian 13 (Trixie).
+RePeer is tightly coupled to Debian releases. For example, you will find the "repeer-13" branch which assumes it is being built against Debian 13 amd64 GNOME.
 
 Within a branch there are tags to mark points fit for end users.
-For example, you will find the "v13.0.1" tag which assumes it is being built against Debian 13 (Trixie) and is at a commit that is considered usable.
+For example, you will find the "v13.0.1" tag which assumes it is being built against Debian 13 amd64 GNOME and is at a commit that is considered usable.
 
 ## Building
 
