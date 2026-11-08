@@ -165,7 +165,6 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::PRUNE, "prune"},
     {BCLog::PROXY, "proxy"},
     {BCLog::MEMPOOLREJ, "mempoolrej"},
-    {BCLog::LIBEVENT, "libevent"},
     {BCLog::COINDB, "coindb"},
     {BCLog::QT, "qt"},
     {BCLog::LEVELDB, "leveldb"},
@@ -251,8 +250,6 @@ std::string LogCategoryToStr(BCLog::LogFlags category)
         return "proxy";
     case BCLog::LogFlags::MEMPOOLREJ:
         return "mempoolrej";
-    case BCLog::LogFlags::LIBEVENT:
-        return "libevent";
     case BCLog::LogFlags::COINDB:
         return "coindb";
     case BCLog::LogFlags::QT:

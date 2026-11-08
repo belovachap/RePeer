@@ -1109,38 +1109,6 @@ dnl libcrypto check
 PKG_CHECK_MODULES([SSL], [libssl],, [AC_MSG_ERROR(openssl not found.)])
 PKG_CHECK_MODULES([CRYPTO], [libcrypto],,[AC_MSG_ERROR(libcrypto not found.)])
 
-dnl libevent check
-
-use_libevent=no
-if test "$build_bitcoin_cli$build_bitcoind$bitcoin_enable_qt$enable_fuzz_binary$use_tests$use_bench" != "nononononono"; then
-  PKG_CHECK_MODULES([EVENT], [libevent >= 2.1.8], [use_libevent=yes], [AC_MSG_ERROR([libevent version 2.1.8 or greater not found.])])
-  PKG_CHECK_MODULES([EVENT_PTHREADS], [libevent_pthreads >= 2.1.8], [], [AC_MSG_ERROR([libevent_pthreads version 2.1.8 or greater not found.])])
-
-  if test "$suppress_external_warnings" != "no"; then
-    EVENT_CFLAGS=SUPPRESS_WARNINGS($EVENT_CFLAGS)
-  fi
-fi
-
-if test x$use_libevent = xyes; then
-  TEMP_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS $EVENT_CFLAGS"
-  AC_MSG_CHECKING([if evhttp_connection_get_peer expects const char**])
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-      #include <cstdint>
-      #include <event2/http.h>
-    ]], [[
-      evhttp_connection *conn = (evhttp_connection *)1;
-      const char *host;
-      uint16_t port;
-
-      evhttp_connection_get_peer(conn, &host, &port);
-    ]])],
-    [ AC_MSG_RESULT([yes]); AC_DEFINE([HAVE_EVHTTP_CONNECTION_GET_PEER_CONST_CHAR], [1], [Define this symbol if evhttp_connection_get_peer expects const char**]) ],
-    [ AC_MSG_RESULT([no]) ]
-  )
-  CXXFLAGS="$TEMP_CXXFLAGS"
-fi
-
 dnl QR Code encoding library check
 
 if test "$use_qr" != "no"; then
@@ -1292,7 +1260,6 @@ AM_CONDITIONAL([ENABLE_WALLET], [test "$enable_wallet" = "yes"])
 AM_CONDITIONAL([USE_SQLITE], [test "$use_sqlite" = "yes"])
 AM_CONDITIONAL([ENABLE_QT], [test "$bitcoin_enable_qt" = "yes"])
 AM_CONDITIONAL([USE_QRCODE], [test "$use_qr" = "yes"])
-AM_CONDITIONAL([USE_LIBEVENT], [test "$use_libevent" = "yes"])
 AM_CONDITIONAL([HARDEN], [test "$use_hardening" = "yes"])
 AM_CONDITIONAL([ENABLE_SSE42], [test "$enable_sse42" = "yes"])
 AM_CONDITIONAL([ENABLE_SSE41], [test "$enable_sse41" = "yes"])
