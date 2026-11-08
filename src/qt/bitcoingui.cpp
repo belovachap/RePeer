@@ -239,7 +239,7 @@ void BitcoinGUI::createActions()
     mintingAction->setStatusTip(tr("Show your minting capacity"));
     mintingAction->setToolTip(mintingAction->statusTip());
     mintingAction->setCheckable(true);
-    mintingAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
+    mintingAction->setShortcut(QKeySequence(QStringLiteral("Alt+5")));
     tabGroup->addAction(mintingAction);
 
     connect(overviewAction, &QAction::triggered, this, &BitcoinGUI::gotoOverviewPage);
