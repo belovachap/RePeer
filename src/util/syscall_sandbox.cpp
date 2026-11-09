@@ -830,6 +830,12 @@ void TestDisallowedSandboxCall()
     std::array<gid_t, 1> groups;
     [[maybe_unused]] int32_t ignored = getgroups(groups.size(), groups.data());
 }
+#else // !defined(USE_SYSCALL_SANDBOX)
+
+bool SetupSyscallSandbox(bool /*log_syscall_violation_before_terminating*/)
+{
+    return true;
+}
 #endif // defined(USE_SYSCALL_SANDBOX)
 
 void SetSyscallSandboxPolicy(SyscallSandboxPolicy syscall_policy)

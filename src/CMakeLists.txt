@@ -5,6 +5,9 @@ set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "Disable leveldb tests" FORCE)
 set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "Disable leveldb benchmarks" FORCE)
 add_subdirectory(leveldb)
 
+# leveldb turns off RTTI by default and that breaks our build, so turn it back on.
+target_compile_options(leveldb PRIVATE -frtti)
+
 add_subdirectory(minisketch)
 
 set(SECP256K1_BUILD_BENCHMARK OFF CACHE BOOL "Disable secp256k1 benchmarks" FORCE)
@@ -207,7 +210,7 @@ add_library(bitcoin_node STATIC
   warnings.cpp
   kernel.cpp
 )
-target_link_libraries(bitcoin_node PUBLIC leveldb minisketch univalue bitcoin_common bitcoin_consensus bitcoin_util)
+target_link_libraries(bitcoin_node PUBLIC leveldb minisketch univalue)
 target_include_directories(bitcoin_node PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
 
 if(ENABLE_WALLET)
@@ -242,7 +245,7 @@ if(ENABLE_WALLET)
     wallet/coinselection.cpp
   )
   target_include_directories(bitcoin_wallet PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
-  target_link_libraries(bitcoin_wallet PUBLIC leveldb sqlite3 univalue bitcoin_common bitcoin_consensus bitcoin_util)
+  target_link_libraries(bitcoin_wallet PUBLIC leveldb sqlite3 univalue bitcoin_common)
 endif()
 
 # --- Main daemon binary ---

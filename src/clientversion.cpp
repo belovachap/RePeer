@@ -24,7 +24,7 @@ string FormatFullVersion()
 /**
  * See BIP 14 spec (https://github.com/bitcoin/bips/blob/master/bip-0014.mediawiki)
  */
-string format_useragent(int major, int minor, int revision)
+string format_useragent(int major, int minor)
 {
     std::ostringstream ss;
     ss << "/RePeer:" << major << "." << minor << "/";
