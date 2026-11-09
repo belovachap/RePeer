@@ -1,278 +1,287 @@
-# --- Include sub-builds ---                                                                                                                                                                                        
-add_subdirectory(crc32c)                                                                                                                                                                                            
-add_subdirectory(leveldb)                                                                                                                                                                                           
-add_subdirectory(univalue)                                                                                                                                                                                          
-add_subdirectory(minisketch)                                                                                                                                                                                        
-add_subdirectory(secp256k1)                                                                                                                                                                                         
-                                                                                                                                                                                                                    
-# --- Crypto library ---                                                                                                                                                                                            
-add_library(bitcoin_crypto_base STATIC                                                                                                                                                                              
-  crypto/aes.cpp                                                                                                                                                                                                    
-  crypto/chacha_poly_aead.cpp                                                                                                                                                                                       
-  crypto/chacha20.cpp                                                                                                                                                                                               
-  crypto/hkdf_sha256_32.cpp                                                                                                                                                                                         
-  crypto/hmac_sha256.cpp                                                                                                                                                                                            
-  crypto/hmac_sha512.cpp                                                                                                                                                                                            
-  crypto/poly1305.cpp                                                                                                                                                                                               
-  crypto/muhash.cpp                                                                                                                                                                                                 
-  crypto/ripemd160.cpp                                                                                                                                                                                              
-  crypto/sha1.cpp                                                                                                                                                                                                   
-  crypto/sha256.cpp                                                                                                                                                                                                 
-  crypto/sha3.cpp                                                                                                                                                                                                   
-  crypto/sha512.cpp                                                                                                                                                                                                 
-  crypto/siphash.cpp                                                                                                                                                                                                
-)                                                                                                                                                                                                                   
-target_include_directories(bitcoin_crypto_base PUBLIC ${CMAKE_SOURCE_DIR}/src)                                                                                                                                      
-                                                                                                                                                                                                                    
-if(ENABLE_SSE41)                                                                                                                                                                                                    
-  add_library(bitcoin_crypto_sse41 STATIC crypto/sha256_sse41.cpp)                                                                                                                                                  
-  target_compile_options(bitcoin_crypto_sse41 PRIVATE ${SSE41_CXXFLAGS})                                                                                                                                            
-  target_compile_definitions(bitcoin_crypto_sse41 PRIVATE ENABLE_SSE41)                                                                                                                                             
-  list(APPEND CRYPTO_LIBS bitcoin_crypto_sse41)                                                                                                                                                                     
-endif()                                                                                                                                                                                                             
-# ... similar for AVX2, X86_SHANI, ARM_SHANI                                                                                                                                                                        
-                                                                                                                                                                                                                    
-set(LIBBITCOIN_CRYPTO bitcoin_crypto_base ${CRYPTO_LIBS})                                                                                                                                                           
-                                                                                                                                                                                                                    
-# --- Consensus library ---                                                                                                                                                                                         
-add_library(bitcoin_consensus STATIC                                                                                                                                                                                
-  arith_uint256.cpp                                                                                                                                                                                                 
-  consensus/merkle.cpp                                                                                                                                                                                              
-  consensus/tx_check.cpp                                                                                                                                                                                            
-  hash.cpp                                                                                                                                                                                                          
-  primitives/block.cpp                                                                                                                                                                                              
-  primitives/transaction.cpp                                                                                                                                                                                        
-  pubkey.cpp                                                                                                                                                                                                        
-  script/bitcoinconsensus.cpp                                                                                                                                                                                       
-  script/interpreter.cpp                                                                                                                                                                                            
-  script/script.cpp                                                                                                                                                                                                 
-  script/script_error.cpp                                                                                                                                                                                           
-  uint256.cpp                                                                                                                                                                                                       
-  util/strencodings.cpp                                                                                                                                                                                             
-)                                                                                                                                                                                                                   
-target_include_directories(bitcoin_consensus PUBLIC ${CMAKE_SOURCE_DIR}/src)                                                                                                                                        
-                                                                                                                                                                                                                    
-# --- Common library ---                                                                                                                                                                                            
-add_library(bitcoin_common STATIC                                                                                                                                                                                   
-  base58.cpp                                                                                                                                                                                                        
-  bech32.cpp                                                                                                                                                                                                        
-  chainparams.cpp                                                                                                                                                                                                   
-  coins.cpp                                                                                                                                                                                                         
-  common/bloom.cpp                                                                                                                                                                                                  
-  common/init.cpp                                                                                                                                                                                                   
-  common/interfaces.cpp                                                                                                                                                                                             
-  compressor.cpp                                                                                                                                                                                                    
-  core_read.cpp                                                                                                                                                                                                     
-  core_write.cpp                                                                                                                                                                                                    
-  deploymentinfo.cpp                                                                                                                                                                                                
-  init/common.cpp                                                                                                                                                                                                   
-  kernel/chainparams.cpp                                                                                                                                                                                            
-  key.cpp                                                                                                                                                                                                           
-  key_io.cpp                                                                                                                                                                                                        
-  merkleblock.cpp                                                                                                                                                                                                   
-  net_types.cpp                                                                                                                                                                                                     
-  netaddress.cpp                                                                                                                                                                                                    
-  netbase.cpp                                                                                                                                                                                                       
-  net_permissions.cpp                                                                                                                                                                                               
-  outputtype.cpp                                                                                                                                                                                                    
-  policy/policy.cpp                                                                                                                                                                                                 
-  protocol.cpp                                                                                                                                                                                                      
-  psbt.cpp                                                                                                                                                                                                          
-  scheduler.cpp                                                                                                                                                                                                     
-  script/descriptor.cpp                                                                                                                                                                                             
-  script/miniscript.cpp                                                                                                                                                                                             
-  script/sign.cpp                                                                                                                                                                                                   
-  script/signingprovider.cpp                                                                                                                                                                                        
-  script/standard.cpp                                                                                                                                                                                               
-  warnings.cpp                                                                                                                                                                                                      
-)                                                                                                                                                                                                                   
-target_include_directories(bitcoin_common PUBLIC ${CMAKE_SOURCE_DIR}/src)                                                                                                                                           
-                                                                                                                                                                                                                    
-# --- Util library ---                                                                                                                                                                                              
-add_library(bitcoin_util STATIC                                                                                                                                                                                     
-  support/lockedpool.cpp                                                                                                                                                                                            
-  chainparamsbase.cpp                                                                                                                                                                                               
-  clientversion.cpp                                                                                                                                                                                                 
-  logging.cpp                                                                                                                                                                                                       
-  random.cpp                                                                                                                                                                                                        
-  randomenv.cpp                                                                                                                                                                                                     
-  support/cleanse.cpp                                                                                                                                                                                               
-  sync.cpp                                                                                                                                                                                                          
-  util/asmap.cpp                                                                                                                                                                                                    
-  util/bip32.cpp                                                                                                                                                                                                    
-  util/bytevectorhash.cpp                                                                                                                                                                                           
-  util/check.cpp                                                                                                                                                                                                    
-  util/error.cpp                                                                                                                                                                                                    
-  util/exception.cpp                                                                                                                                                                                                
-  util/fs.cpp                                                                                                                                                                                                       
-  util/fs_helpers.cpp                                                                                                                                                                                               
-  util/getuniquepath.cpp                                                                                                                                                                                            
-  util/hasher.cpp                                                                                                                                                                                                   
-  util/sock.cpp                                                                                                                                                                                                     
-  util/syserror.cpp                                                                                                                                                                                                 
-  util/system.cpp                                                                                                                                                                                                   
-  util/message.cpp                                                                                                                                                                                                  
-  util/moneystr.cpp                                                                                                                                                                                                 
-  util/readwritefile.cpp                                                                                                                                                                                            
-  util/settings.cpp                                                                                                                                                                                                 
-  util/thread.cpp                                                                                                                                                                                                   
-  util/threadinterrupt.cpp                                                                                                                                                                                          
-  util/threadnames.cpp                                                                                                                                                                                              
-  util/serfloat.cpp                                                                                                                                                                                                 
-  util/spanparsing.cpp                                                                                                                                                                                              
-  util/strencodings.cpp                                                                                                                                                                                             
-  util/string.cpp                                                                                                                                                                                                   
-  util/syscall_sandbox.cpp                                                                                                                                                                                          
-  util/time.cpp                                                                                                                                                                                                     
-  util/tokenpipe.cpp                                                                                                                                                                                                
-)                                                                                                                                                                                                                   
-target_include_directories(bitcoin_util PUBLIC ${CMAKE_SOURCE_DIR}/src)                                                                                                                                             
-                                                                                                                                                                                                                    
-# --- Node library ---                                                                                                                                                                                              
-add_library(bitcoin_node STATIC                                                                                                                                                                                     
-  addrdb.cpp                                                                                                                                                                                                        
-  addrman.cpp                                                                                                                                                                                                       
-  banman.cpp                                                                                                                                                                                                        
-  blockencodings.cpp                                                                                                                                                                                                
-  blockfilter.cpp                                                                                                                                                                                                   
-  chain.cpp                                                                                                                                                                                                         
-  consensus/tx_verify.cpp                                                                                                                                                                                           
-  dbwrapper.cpp                                                                                                                                                                                                     
-  deploymentstatus.cpp                                                                                                                                                                                              
-  flatfile.cpp                                                                                                                                                                                                      
-  headerssync.cpp                                                                                                                                                                                                   
-  i2p.cpp                                                                                                                                                                                                           
-  index/base.cpp                                                                                                                                                                                                    
-  index/blockfilterindex.cpp                                                                                                                                                                                        
-  index/coinstatsindex.cpp                                                                                                                                                                                          
-  index/txindex.cpp                                                                                                                                                                                                 
-  init.cpp                                                                                                                                                                                                          
-  kernel/chain.cpp                                                                                                                                                                                                  
-  kernel/checks.cpp                                                                                                                                                                                                 
-  kernel/coinstats.cpp                                                                                                                                                                                              
-  kernel/context.cpp                                                                                                                                                                                                
-  kernel/cs_main.cpp                                                                                                                                                                                                
-  kernel/mempool_persist.cpp                                                                                                                                                                                        
-  net.cpp                                                                                                                                                                                                           
-  net_processing.cpp                                                                                                                                                                                                
-  netgroup.cpp                                                                                                                                                                                                      
-  node/blockmanager_args.cpp                                                                                                                                                                                        
-  node/blockstorage.cpp                                                                                                                                                                                             
-  node/caches.cpp                                                                                                                                                                                                   
-  node/chainstate.cpp                                                                                                                                                                                               
-  node/chainstatemanager_args.cpp                                                                                                                                                                                   
-  node/coin.cpp                                                                                                                                                                                                     
-  node/coins_view_args.cpp                                                                                                                                                                                          
-  node/connection_types.cpp                                                                                                                                                                                         
-  node/context.cpp                                                                                                                                                                                                  
-  node/database_args.cpp                                                                                                                                                                                            
-  node/eviction.cpp                                                                                                                                                                                                 
-  node/interface_ui.cpp                                                                                                                                                                                             
-  node/interfaces.cpp                                                                                                                                                                                               
-  node/mempool_args.cpp                                                                                                                                                                                             
-  node/mempool_persist_args.cpp                                                                                                                                                                                     
-  node/miner.cpp                                                                                                                                                                                                    
-  node/minisketchwrapper.cpp                                                                                                                                                                                        
-  node/psbt.cpp                                                                                                                                                                                                     
-  node/transaction.cpp                                                                                                                                                                                              
-  node/txreconciliation.cpp                                                                                                                                                                                         
-  node/utxo_snapshot.cpp                                                                                                                                                                                            
-  node/validation_cache_args.cpp                                                                                                                                                                                    
-  noui.cpp                                                                                                                                                                                                          
-  policy/packages.cpp                                                                                                                                                                                               
-  policy/settings.cpp                                                                                                                                                                                               
-  pow.cpp                                                                                                                                                                                                           
-  script/sigcache.cpp                                                                                                                                                                                               
-  shutdown.cpp                                                                                                                                                                                                      
-  signet.cpp                                                                                                                                                                                                        
-  timedata.cpp                                                                                                                                                                                                      
-  txdb.cpp                                                                                                                                                                                                          
-  txmempool.cpp                                                                                                                                                                                                     
-  txorphanage.cpp                                                                                                                                                                                                   
-  txrequest.cpp                                                                                                                                                                                                     
-  validation.cpp                                                                                                                                                                                                    
-  validationinterface.cpp                                                                                                                                                                                           
-  kernel.cpp                                                                                                                                                                                                        
-)                                                                                                                                                                                                                   
-target_include_directories(bitcoin_node PUBLIC ${CMAKE_SOURCE_DIR}/src)                                                                                                                                             
-                                                                                                                                                                                                                    
-if(ENABLE_WALLET)                                                                                                                                                                                                   
-  target_sources(bitcoin_node PRIVATE wallet/init.cpp)                                                                                                                                                              
-else()                                                                                                                                                                                                              
-  target_sources(bitcoin_node PRIVATE dummywallet.cpp)                                                                                                                                                              
-endif()                                                                                                                                                                                                             
-                                                                                                                                                                                                                    
-# --- Wallet library ---                                                                                                                                                                                            
-if(ENABLE_WALLET)                                                                                                                                                                                                   
-  add_library(bitcoin_wallet STATIC                                                                                                                                                                                 
-    wallet/coincontrol.cpp                                                                                                                                                                                          
-    wallet/context.cpp                                                                                                                                                                                              
-    wallet/crypter.cpp                                                                                                                                                                                              
-    wallet/db.cpp                                                                                                                                                                                                   
-    wallet/dump.cpp                                                                                                                                                                                                 
-    wallet/interfaces.cpp                                                                                                                                                                                           
-    wallet/load.cpp                                                                                                                                                                                                 
-    wallet/receive.cpp                                                                                                                                                                                              
-    wallet/scriptpubkeyman.cpp                                                                                                                                                                                      
-    wallet/spend.cpp                                                                                                                                                                                                
-    wallet/transaction.cpp                                                                                                                                                                                          
-    wallet/wallet.cpp                                                                                                                                                                                               
-    wallet/walletdb.cpp                                                                                                                                                                                             
-    wallet/walletutil.cpp                                                                                                                                                                                           
-    wallet/coinselection.cpp                                                                                                                                                                                        
-    kernelrecord.cpp                                                                                                                                                                                                
-  )                                                                                                                                                                                                                 
-  target_include_directories(bitcoin_wallet PUBLIC ${CMAKE_SOURCE_DIR}/src)                                                                                                                                         
-  if(USE_SQLITE)                                                                                                                                                                                                    
-    target_sources(bitcoin_wallet PRIVATE wallet/sqlite.cpp)                                                                                                                                                        
-    target_link_libraries(bitcoin_wallet PRIVATE ${SQLITE_LIBRARIES})                                                                                                                                               
-  endif()                                                                                                                                                                                                           
-endif()                                                                                                                                                                                                             
-                                                                                                                                                                                                                    
-# --- Main daemon binary ---                                                                                                                                                                                        
-add_executable(repeerd                                                                                                                                                                                              
-  bitcoind.cpp                                                                                                                                                                                                      
-  init/bitcoind.cpp                                                                                                                                                                                                 
-)                                                                                                                                                                                                                   
-target_link_libraries(repeerd PRIVATE                                                                                                                                                                               
-  bitcoin_node                                                                                                                                                                                                      
-  bitcoin_common                                                                                                                                                                                                    
-  bitcoin_util                                                                                                                                                                                                      
-  bitcoin_consensus                                                                                                                                                                                                 
-  ${LIBBITCOIN_CRYPTO}                                                                                                                                                                                              
-  ${LIBUNIVALUE}                                                                                                                                                                                                    
-  ${LIBLEVELDB}                                                                                                                                                                                                     
-  ${LIBMEMENV}                                                                                                                                                                                                      
-  ${LIBSECP256K1}                                                                                                                                                                                                   
-  ${SSL_LIBRARIES}                                                                                                                                                                                                  
-  ${CRYPTO_LIBRARIES}                                                                                                                                                                                               
-  ${SQLITE_LIBRARIES}                                                                                                                                                                                               
-  Threads::Threads                                                                                                                                                                                                  
-)                                                                                                                                                                                                                   
-                                                                                                                                                                                                                    
-# --- Qt GUI (replaces Makefile.qt.include) ---                                                                                                                                                                     
-if(ENABLE_QT)                                                                                                                                                                                                       
-  add_subdirectory(qt)                                                                                                                                                                                              
-endif()                                                                                                                                                                                                             
-                                                                                                                                                                                                                    
-# --- Kernel library ---                                                                                                                                                                                            
-if(BUILD_BITCOIN_KERNEL_LIB)                                                                                                                                                                                        
-  add_library(peercoinkernel SHARED                                                                                                                                                                                 
-    kernel/bitcoinkernel.cpp                                                                                                                                                                                        
-    # ... same source list as in Makefile.am                                                                                                                                                                        
-  )                                                                                                                                                                                                                 
-  target_include_directories(peercoinkernel PUBLIC ${CMAKE_SOURCE_DIR}/src)                                                                                                                                         
-  target_link_libraries(peercoinkernel PRIVATE                                                                                                                                                                      
-    ${LIBBITCOIN_CRYPTO} ${LIBUNIVALUE} ${LIBLEVELDB} ${LIBMEMENV} ${LIBSECP256K1}                                                                                                                                  
-  )                                                                                                                                                                                                                 
-  set_target_properties(peercoinkernel PROPERTIES                                                                                                                                                                   
-    CXX_VISIBILITY_PRESET default                                                                                                                                                                                   
-    VISIBILITY_INLINES_HIDDEN OFF                                                                                                                                                                                   
-  )                                                                                                                                                                                                                 
-endif()                                                                                                                                                                                                             
-                                                                                                                                                                                                                    
-# --- IPC / Multiprocess ---                                                                                                                                                                                        
-if(ENABLE_MULTIPROCESS)                                                                                                                                                                                             
-  # Use libmultiprocess's own CMake integration or custom commands                                                                                                                                                  
-  # to generate capnp files                                                                                                                                                                                         
+# --- Include sub-builds ---
+add_subdirectory(crc32c)
+
+set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "Disable leveldb tests" FORCE)
+set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "Disable leveldb benchmarks" FORCE)
+add_subdirectory(leveldb)
+
+add_subdirectory(minisketch)
+
+set(SECP256K1_BUILD_BENCHMARK OFF CACHE BOOL "Disable secp256k1 benchmarks" FORCE)
+add_subdirectory(secp256k1)
+
+# --- Crypto library ---
+add_library(bitcoin_crypto_base STATIC
+  crypto/aes.cpp
+  crypto/chacha_poly_aead.cpp
+  crypto/chacha20.cpp
+  crypto/hkdf_sha256_32.cpp
+  crypto/hmac_sha256.cpp
+  crypto/hmac_sha512.cpp
+  crypto/poly1305.cpp
+  crypto/muhash.cpp
+  crypto/ripemd160.cpp
+  crypto/sha1.cpp
+  crypto/sha256.cpp
+  crypto/sha3.cpp
+  crypto/sha512.cpp
+  crypto/siphash.cpp
+)
+target_include_directories(bitcoin_crypto_base PUBLIC ${CMAKE_SOURCE_DIR}/src)
+
+if(ENABLE_SSE41)
+  add_library(bitcoin_crypto_sse41 STATIC crypto/sha256_sse41.cpp)
+  target_compile_options(bitcoin_crypto_sse41 PRIVATE ${SSE41_CXXFLAGS})
+  target_compile_definitions(bitcoin_crypto_sse41 PRIVATE ENABLE_SSE41)
+  list(APPEND CRYPTO_LIBS bitcoin_crypto_sse41)
+endif()
+# ... similar for AVX2, X86_SHANI, ARM_SHANI
+
+set(LIBBITCOIN_CRYPTO bitcoin_crypto_base ${CRYPTO_LIBS})
+
+# --- Consensus library ---
+add_library(bitcoin_consensus STATIC
+  arith_uint256.cpp
+  consensus/merkle.cpp
+  consensus/tx_check.cpp
+  hash.cpp
+  primitives/block.cpp
+  primitives/transaction.cpp
+  pubkey.cpp
+  script/bitcoinconsensus.cpp
+  script/interpreter.cpp
+  script/script.cpp
+  script/script_error.cpp
+  uint256.cpp
+  util/strencodings.cpp
+)
+target_include_directories(bitcoin_consensus PUBLIC 
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/secp256k1/include)
+
+# --- Common library ---
+add_library(bitcoin_common STATIC
+  base58.cpp
+  bech32.cpp
+  chainparams.cpp
+  coins.cpp
+  common/bloom.cpp
+  common/init.cpp
+  common/interfaces.cpp
+  compressor.cpp
+  core_read.cpp
+  core_write.cpp
+  deploymentinfo.cpp
+  init/common.cpp
+  kernel/chainparams.cpp
+  key.cpp
+  key_io.cpp
+  merkleblock.cpp
+  net_types.cpp
+  netaddress.cpp
+  netbase.cpp
+  net_permissions.cpp
+  outputtype.cpp
+  policy/policy.cpp
+  protocol.cpp
+  psbt.cpp
+  scheduler.cpp
+  script/descriptor.cpp
+  script/miniscript.cpp
+  script/sign.cpp
+  script/signingprovider.cpp
+  script/standard.cpp
+  warnings.cpp
+)
+target_include_directories(bitcoin_common PUBLIC
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_BINARY_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/secp256k1/include)
+
+# --- Util library ---
+add_library(bitcoin_util STATIC
+  support/lockedpool.cpp
+  chainparamsbase.cpp
+  clientversion.cpp
+  logging.cpp
+  random.cpp
+  randomenv.cpp
+  support/cleanse.cpp
+  sync.cpp
+  util/asmap.cpp
+  util/bip32.cpp
+  util/bytevectorhash.cpp
+  util/check.cpp
+  util/error.cpp
+  util/exception.cpp
+  util/fs.cpp
+  util/fs_helpers.cpp
+  util/getuniquepath.cpp
+  util/hasher.cpp
+  util/sock.cpp
+  util/syserror.cpp
+  util/system.cpp
+  util/message.cpp
+  util/moneystr.cpp
+  util/readwritefile.cpp
+  util/settings.cpp
+  util/thread.cpp
+  util/threadinterrupt.cpp
+  util/threadnames.cpp
+  util/serfloat.cpp
+  util/spanparsing.cpp
+  util/strencodings.cpp
+  util/string.cpp
+  util/syscall_sandbox.cpp
+  util/time.cpp
+  util/tokenpipe.cpp
+)
+target_include_directories(bitcoin_util PUBLIC ${CMAKE_SOURCE_DIR}/src)
+
+# --- Node library ---
+add_library(bitcoin_node STATIC
+  addrdb.cpp
+  addrman.cpp
+  banman.cpp
+  blockencodings.cpp
+  blockfilter.cpp
+  chain.cpp
+  consensus/tx_verify.cpp
+  dbwrapper.cpp
+  deploymentstatus.cpp
+  flatfile.cpp
+  headerssync.cpp
+  i2p.cpp
+  index/base.cpp
+  index/blockfilterindex.cpp
+  index/coinstatsindex.cpp
+  index/txindex.cpp
+  init.cpp
+  kernel/chain.cpp
+  kernel/checks.cpp
+  kernel/coinstats.cpp
+  kernel/context.cpp
+  kernel/cs_main.cpp
+  kernel/mempool_persist.cpp
+  net.cpp
+  net_processing.cpp
+  netgroup.cpp
+  node/blockmanager_args.cpp
+  node/blockstorage.cpp
+  node/caches.cpp
+  node/chainstate.cpp
+  node/chainstatemanager_args.cpp
+  node/coin.cpp
+  node/coins_view_args.cpp
+  node/connection_types.cpp
+  node/context.cpp
+  node/database_args.cpp
+  node/eviction.cpp
+  node/interface_ui.cpp
+  node/interfaces.cpp
+  node/mempool_args.cpp
+  node/mempool_persist_args.cpp
+  node/miner.cpp
+  node/minisketchwrapper.cpp
+  node/psbt.cpp
+  node/transaction.cpp
+  node/txreconciliation.cpp
+  node/utxo_snapshot.cpp
+  node/validation_cache_args.cpp
+  noui.cpp
+  policy/packages.cpp
+  policy/settings.cpp
+  pow.cpp
+  script/sigcache.cpp
+  shutdown.cpp
+  signet.cpp
+  timedata.cpp
+  txdb.cpp
+  txmempool.cpp
+  txorphanage.cpp
+  txrequest.cpp
+  validation.cpp
+  validationinterface.cpp
+  kernel.cpp
+)
+target_include_directories(bitcoin_node PUBLIC ${CMAKE_SOURCE_DIR}/src)
+
+if(ENABLE_WALLET)
+  target_sources(bitcoin_node PRIVATE wallet/init.cpp)
+else()
+  target_sources(bitcoin_node PRIVATE dummywallet.cpp)
+endif()
+
+# --- Wallet library ---
+if(ENABLE_WALLET)
+  add_library(bitcoin_wallet STATIC
+    wallet/coincontrol.cpp
+    wallet/context.cpp
+    wallet/crypter.cpp
+    wallet/db.cpp
+    wallet/dump.cpp
+    wallet/interfaces.cpp
+    wallet/load.cpp
+    wallet/receive.cpp
+    wallet/scriptpubkeyman.cpp
+    wallet/spend.cpp
+    wallet/transaction.cpp
+    wallet/wallet.cpp
+    wallet/walletdb.cpp
+    wallet/walletutil.cpp
+    wallet/coinselection.cpp
+    kernelrecord.cpp
+  )
+  target_include_directories(bitcoin_wallet PUBLIC ${CMAKE_SOURCE_DIR}/src)
+  if(USE_SQLITE)
+    target_sources(bitcoin_wallet PRIVATE wallet/sqlite.cpp)
+    target_link_libraries(bitcoin_wallet PRIVATE ${SQLITE_LIBRARIES})
+  endif()
+endif()
+
+# --- Main daemon binary ---
+add_executable(repeerd
+  bitcoind.cpp
+  init/bitcoind.cpp
+)
+target_link_libraries(repeerd PRIVATE
+  bitcoin_node
+  bitcoin_common
+  bitcoin_util
+  bitcoin_consensus
+  ${LIBBITCOIN_CRYPTO}
+  ${LIBLEVELDB}
+  ${LIBMEMENV}
+  ${LIBSECP256K1}
+  ${SSL_LIBRARIES}
+  ${CRYPTO_LIBRARIES}
+  ${SQLITE_LIBRARIES}
+  Threads::Threads
+)
+
+# --- Qt GUI (replaces Makefile.qt.include) ---
+if(ENABLE_QT)
+  add_subdirectory(qt)
+endif()
+
+# --- Kernel library ---
+if(BUILD_BITCOIN_KERNEL_LIB)
+  add_library(peercoinkernel SHARED
+    kernel/bitcoinkernel.cpp
+    # ... same source list as in Makefile.am
+  )
+  target_include_directories(peercoinkernel PUBLIC ${CMAKE_SOURCE_DIR}/src)
+  target_link_libraries(peercoinkernel PRIVATE
+    ${LIBBITCOIN_CRYPTO} ${LIBLEVELDB} ${LIBMEMENV} ${LIBSECP256K1}
+  )
+  set_target_properties(peercoinkernel PROPERTIES
+    CXX_VISIBILITY_PRESET default
+    VISIBILITY_INLINES_HIDDEN OFF
+  )
+endif()
+
+# --- IPC / Multiprocess ---
+if(ENABLE_MULTIPROCESS)
+  # Use libmultiprocess's own CMake integration or custom commands
+  # to generate capnp files
 endif()

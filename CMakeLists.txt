@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
-project(RePeer VERSION 13.0.34 LANGUAGES CXX C)
+project(RePeer VERSION 13.34 LANGUAGES CXX C)
+
+string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+string(REPLACE "-DNDEBUG" "" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -128,8 +131,11 @@ pkg_check_modules(SQLITE sqlite3>=3.7.17)
 pkg_check_modules(QRENCODE libqrencode)
 pkg_check_modules(LIBMULTIPROCESS libmultiprocess)
 
+# Threads
+find_package(Threads REQUIRED)
+
 # Boost
-find_package(Boost 1.64.0 REQUIRED)
+find_package(Boost CONFIG REQUIRED)
 
 # Qt5 (replaces BITCOIN_QT_CONFIGURE)
 if(ENABLE_QT)

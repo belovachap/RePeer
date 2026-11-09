@@ -12,6 +12,9 @@ sudo apt install libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-t
 sudo apt install qtwayland5
 sudo apt install libqrencode-dev
 ```
+
+sudo apt install nlohmann-json3-dev # for univalue?
+sudo apt-get install libgflags-dev # for crc32c?
 ## Get Code
 
 ```bash
