@@ -2,8 +2,11 @@
 
 ## Install Dependencies
 
+TODO: Determine that minimum number of depencies needed to install...
+
 ```bash
 sudo apt install git
+sudo apt install cmake 
 sudo apt install build-essential libtool autotools-dev automake pkg-config bsdmainutils
 sudo apt install libboost-dev libssl-dev
 sudo apt install libsqlite3-dev
@@ -15,6 +18,7 @@ sudo apt install libqrencode-dev
 
 sudo apt install nlohmann-json3-dev # for univalue?
 sudo apt-get install libgflags-dev # for crc32c?
+
 ## Get Code
 
 ```bash
@@ -25,15 +29,9 @@ cd RePeer
 ## Build
 
 ```bash
-./autogen.sh
-./configure
-make # use "-j N" for N parallel jobs
-```
-
-cmake stuff:
-
-```
-mkdir build && cd build
-cmake .. -DENABLE_WALLET=ON -DENABLE_QT=ON -DCMAKE_BUILD_TYPE=Release
+mkdir build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . -j$(nproc)
 ```
+
