@@ -140,12 +140,10 @@ find_package(Threads REQUIRED)
 find_package(Boost CONFIG REQUIRED)
 
 # Qt5 (replaces BITCOIN_QT_CONFIGURE)
-if(ENABLE_QT)
-  find_package(Qt5 5.11.3 REQUIRED COMPONENTS Core Gui Widgets Network)
-  find_package(Qt5LinguistTools REQUIRED)
-  # D-Bus
-  find_package(Qt5DBus QUIET)
-endif()
+find_package(Qt5 5.11.3 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt5LinguistTools REQUIRED)
+# D-Bus
+find_package(Qt5DBus REQUIRED)
 
 # --- Generate config header (replaces AC_CONFIG_HEADERS) ---
 configure_file(
