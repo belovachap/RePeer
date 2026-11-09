@@ -65,8 +65,6 @@ Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin);
 #elif defined(QT_QPA_PLATFORM_COCOA)
 Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 Q_IMPORT_PLUGIN(QMacStylePlugin);
-#elif defined(QT_QPA_PLATFORM_ANDROID)
-Q_IMPORT_PLUGIN(QAndroidPlatformIntegrationPlugin)
 #endif
 #endif
 
@@ -392,12 +390,6 @@ int GuiMain(int argc, char* argv[])
     // Generate high-dpi pixmaps
     QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-#endif
-
-#if defined(QT_QPA_PLATFORM_ANDROID)
-    QApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
-    QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
-    QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
 #endif
 
     BitcoinApplication app;
