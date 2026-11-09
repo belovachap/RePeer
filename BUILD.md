@@ -26,3 +26,11 @@ cd RePeer
 ./configure
 make # use "-j N" for N parallel jobs
 ```
+
+cmake stuff:
+
+```
+mkdir build && cd build
+cmake .. -DENABLE_WALLET=ON -DENABLE_QT=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
