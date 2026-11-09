@@ -84,12 +84,9 @@ public:
         The client model represents the part of the core that communicates with the P2P network, and is wallet-agnostic.
     */
     void setClientModel(ClientModel *clientModel = nullptr, interfaces::BlockAndHeaderTipInfo* tip_info = nullptr);
-#ifdef ENABLE_WALLET
     void setWalletController(WalletController* wallet_controller);
     WalletController* getWalletController();
-#endif
 
-#ifdef ENABLE_WALLET
     /** Set the wallet model.
         The wallet model represents a bitcoin wallet, and offers access to the list of transactions, address book and sending
         functionality.
@@ -97,7 +94,6 @@ public:
     void addWallet(WalletModel* walletModel);
     void removeWallet(WalletModel* walletModel);
     void removeAllWallets();
-#endif // ENABLE_WALLET
     bool enableWallet = false;
 
     /** Disconnect core signals from GUI client */

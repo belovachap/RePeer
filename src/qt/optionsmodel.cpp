@@ -172,7 +172,6 @@ bool OptionsModel::Init(bilingual_str& error)
         settings.setValue("strDataDir", GUIUtil::getDefaultDataDirectory());
 
     // Wallet
-#ifdef ENABLE_WALLET
     if (!settings.contains("SubFeeFromAmount")) {
         settings.setValue("SubFeeFromAmount", false);
     }
@@ -185,7 +184,6 @@ bool OptionsModel::Init(bilingual_str& error)
         addOverriddenOption("-combinecoins");
     if (!settings.contains("nMaxMintingUtxos"))
         settings.setValue("nMaxMintingUtxos", wallet::MAX_MINTING_UTXOS);
-#endif
 
     // Display
     if (!settings.contains("UseEmbeddedMonospacedFont")) {
@@ -329,8 +327,6 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
             return ParseProxyString(GetDefaultProxyAddress().toStdString()).port;
         }
     }
-
-#ifdef ENABLE_WALLET
     case SpendZeroConfChange:
         return SettingToBool(setting(), wallet::DEFAULT_SPEND_ZEROCONF_CHANGE);
     case SubFeeFromAmount:
@@ -341,7 +337,6 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
         return SettingToBool(setting(), wallet::DEFAULT_COMBINE_COINS);
     case MaxMintingUtxos:
         return qlonglong(SettingToInt(setting(), wallet::MAX_MINTING_UTXOS));
-#endif
     case DisplayUnit:
         return QVariant::fromValue(m_display_bitcoin_unit);
     case UseEmbeddedMonospacedFont:
@@ -398,8 +393,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
             if (suffix.empty() && getOption(ProxyUse).toBool()) setRestartRequired(true);
         }
         break;
-
-#ifdef ENABLE_WALLET
     case SpendZeroConfChange:
         if (changed()) {
             update(value.toBool());
@@ -428,7 +421,6 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
             setRestartRequired(true);
         }
         break;
-#endif
     case DisplayUnit:
         setDisplayUnit(value);
         break;
@@ -535,11 +527,9 @@ void OptionsModel::checkAndMigrate()
 
     migrate_setting(DatabaseCache, "nDatabaseCache");
     migrate_setting(ThreadsScriptVerif, "nThreadsScriptVerif");
-#ifdef ENABLE_WALLET
     migrate_setting(SpendZeroConfChange, "bSpendZeroConfChange");
     migrate_setting(SplitCoins, "bSplitCoins");
     migrate_setting(CombineCoins, "bCombineCoins");
-#endif
     migrate_setting(Listen, "fListen");
     migrate_setting(ProxyIP, "addrProxy");
     migrate_setting(ProxyUse, "fUseProxy");

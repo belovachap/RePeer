@@ -66,6 +66,7 @@ add_library(bitcoin_consensus STATIC
   uint256.cpp
   util/strencodings.cpp
 )
+target_link_libraries(bitcoin_consensus PUBLIC bitcoin_util)
 target_include_directories(bitcoin_consensus PUBLIC
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_SOURCE_DIR}/src/secp256k1/include)
@@ -207,46 +208,39 @@ add_library(bitcoin_node STATIC
   util/syscall_sandbox.cpp
   validation.cpp
   validationinterface.cpp
+  wallet/init.cpp
   warnings.cpp
   kernel.cpp
 )
 target_link_libraries(bitcoin_node PUBLIC leveldb minisketch univalue)
 target_include_directories(bitcoin_node PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
 
-if(ENABLE_WALLET)
-  target_sources(bitcoin_node PUBLIC wallet/init.cpp)
-else()
-  target_sources(bitcoin_node PUBLIC dummywallet.cpp)
-endif()
-
 # --- Wallet library ---
-if(ENABLE_WALLET)
-  add_library(bitcoin_wallet STATIC
-    kernelrecord.cpp
-    key_io.cpp
-    psbt.cpp
-    script/descriptor.cpp
-    util/spanparsing.cpp
-    wallet/coincontrol.cpp
-    wallet/context.cpp
-    wallet/crypter.cpp
-    wallet/db.cpp
-    wallet/dump.cpp
-    wallet/interfaces.cpp
-    wallet/load.cpp
-    wallet/receive.cpp
-    wallet/scriptpubkeyman.cpp
-    wallet/spend.cpp
-    wallet/sqlite.cpp
-    wallet/transaction.cpp
-    wallet/wallet.cpp
-    wallet/walletdb.cpp
-    wallet/walletutil.cpp
-    wallet/coinselection.cpp
-  )
-  target_include_directories(bitcoin_wallet PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
-  target_link_libraries(bitcoin_wallet PUBLIC leveldb sqlite3 univalue bitcoin_common)
-endif()
+add_library(bitcoin_wallet STATIC
+  kernelrecord.cpp
+  key_io.cpp
+  psbt.cpp
+  script/descriptor.cpp
+  util/spanparsing.cpp
+  wallet/coincontrol.cpp
+  wallet/context.cpp
+  wallet/crypter.cpp
+  wallet/db.cpp
+  wallet/dump.cpp
+  wallet/interfaces.cpp
+  wallet/load.cpp
+  wallet/receive.cpp
+  wallet/scriptpubkeyman.cpp
+  wallet/spend.cpp
+  wallet/sqlite.cpp
+  wallet/transaction.cpp
+  wallet/wallet.cpp
+  wallet/walletdb.cpp
+  wallet/walletutil.cpp
+  wallet/coinselection.cpp
+)
+target_include_directories(bitcoin_wallet PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
+target_link_libraries(bitcoin_wallet PUBLIC leveldb sqlite3 univalue bitcoin_common)
 
 # --- Main daemon binary ---
 add_executable(repeerd
@@ -266,9 +260,7 @@ target_link_libraries(repeerd PUBLIC
 )
 
 # --- Qt GUI (replaces Makefile.qt.include) ---
-if(ENABLE_QT)
-  add_subdirectory(qt)
-endif()
+ add_subdirectory(qt)
 
 # --- Kernel library ---
 if(BUILD_BITCOIN_KERNEL_LIB)

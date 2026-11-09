@@ -76,9 +76,7 @@ Q_DECLARE_METATYPE(CAmount)
 Q_DECLARE_METATYPE(SynchronizationState)
 Q_DECLARE_METATYPE(SyncType)
 Q_DECLARE_METATYPE(uint256)
-#ifdef ENABLE_WALLET
 Q_DECLARE_METATYPE(wallet::AddressPurpose)
-#endif // ENABLE_WALLET
 
 static void RegisterMetaTypes()
 {
@@ -86,10 +84,8 @@ static void RegisterMetaTypes()
     qRegisterMetaType<bool*>();
     qRegisterMetaType<SynchronizationState>();
     qRegisterMetaType<SyncType>();
-  #ifdef ENABLE_WALLET
     qRegisterMetaType<WalletModel*>();
     qRegisterMetaType<wallet::AddressPurpose>();
-  #endif // ENABLE_WALLET
     // Register typedefs (see https://doc.qt.io/qt-5/qmetatype.html#qRegisterMetaType)
     // IMPORTANT: if CAmount is no longer a typedef use the normal variant above (see https://doc.qt.io/qt-5/qmetatype.html#qRegisterMetaType-1)
     qRegisterMetaType<CAmount>("CAmount");
@@ -296,7 +292,6 @@ void BitcoinApplication::requestShutdown()
     window->setClientModel(nullptr);
     pollShutdownTimer->stop();
 
-#ifdef ENABLE_WALLET
     // Delete wallet controller here manually, instead of relying on Qt object
     // tracking (https://doc.qt.io/qt-5/objecttrees.html). This makes sure
     // walletmodel m_handle_* notification handlers are deleted before wallets
@@ -305,7 +300,6 @@ void BitcoinApplication::requestShutdown()
     // destroyed, making GUI code less fragile as well.
     delete m_wallet_controller;
     m_wallet_controller = nullptr;
-#endif // ENABLE_WALLET
 
     delete clientModel;
     clientModel = nullptr;
