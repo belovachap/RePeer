@@ -28,7 +28,6 @@
 #cmakedefine01 CHAR_EQUALS_INT8
 #cmakedefine01 USE_ASM
 #cmakedefine01 ENABLE_WALLET
-#cmakedefine01 USE_SQLITE
 #cmakedefine01 USE_QRCODE
 #cmakedefine01 USE_DBUS
 #cmakedefine01 ENABLE_TRACING
@@ -44,7 +43,5 @@
 #define PACKAGE_NAME "@PROJECT_NAME@"
 #define REPEER_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
 #define REPEER_VERSION_MINOR @PROJECT_VERSION_MINOR@
-#define COPYRIGHT_YEAR 2026
-#define COPYRIGHT_HOLDERS_FINAL "Chapman Shoop (belovachap)"
 
 #endif // BITCOIN_CONFIG_H

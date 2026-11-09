@@ -209,8 +209,8 @@ std::optional<bilingual_str> LoadAddrman(const NetGroupManager& netgroupman, con
         DumpPeerAddresses(args, *addrman);
     } catch (const std::exception& e) {
         addrman = nullptr;
-        return strprintf(_("Invalid or corrupt peers.dat (%s). If you believe this is a bug, please report it to %s. As a workaround, you can move the file (%s) out of the way (rename, move, or delete) to have a new one created on the next start."),
-                         e.what(), PACKAGE_BUGREPORT, fs::quoted(fs::PathToString(path_addr)));
+        return strprintf(_("Invalid or corrupt peers.dat (%s). As a workaround, you can move the file (%s) out of the way (rename, move, or delete) to have a new one created on the next start."),
+                         e.what(), fs::quoted(fs::PathToString(path_addr)));
     }
     return std::nullopt;
 }

@@ -2944,8 +2944,7 @@ bool Chainstate::ActivateBestChain(BlockValidationState& state, std::shared_ptr<
     // Belt-and-suspenders check that we aren't attempting to advance the background
     // chainstate past the snapshot base block.
     if (WITH_LOCK(::cs_main, return m_disabled)) {
-        LogPrintf("m_disabled is set - this chainstate should not be in operation. " /* Continued */
-            "Please report this as a bug. %s\n", PACKAGE_BUGREPORT);
+        LogPrintf("m_disabled is set - this chainstate should not be in operation.\n");
         return false;
     }
 
@@ -5484,11 +5483,8 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation(
             "state that was built on the snapshot, resetting the chain height "
             "from %d to %d. On the next "
             "restart, the node will resume syncing from %d "
-            "without using any snapshot data. "
-            "Please report this incident to %s, including how you obtained the snapshot. "
-            "The invalid snapshot chainstate has been left on disk in case it is "
-            "helpful in diagnosing the issue that caused this error."),
-            PACKAGE_NAME, snapshot_tip_height, snapshot_base_height, snapshot_base_height, PACKAGE_BUGREPORT
+            "without using any snapshot data."),
+            PACKAGE_NAME, snapshot_tip_height, snapshot_base_height, snapshot_base_height
         );
 
         LogPrintf("[snapshot] !!! %s\n", user_error.original);

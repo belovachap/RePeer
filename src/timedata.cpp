@@ -8,6 +8,7 @@
 
 #include <timedata.h>
 
+#include <config/bitcoin-config.h>
 #include <netaddress.h>
 #include <node/interface_ui.h>
 #include <sync.h>

@@ -23,7 +23,6 @@ option(ENABLE_CLMUL "Enable CLMUL" OFF)
 option(ENABLE_CLZ "Enable CLZ" OFF)
 option(ENABLE_SYSCALL_SANDBOX "Enable seccomp sandbox" OFF)
 option(ENABLE_TRACING "Enable USDT tracing" OFF)
-option(USE_SQLITE "Use SQLite for wallet" OFF)
 option(USE_QRCODE "Use QR code support" OFF)
 option(ENABLE_DEBUG "Debug build" OFF)
 option(ENABLE_LTO "Link-time optimization" OFF)
@@ -127,9 +126,12 @@ check_cxx_source_compiles("
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SSL REQUIRED libssl)
 pkg_check_modules(CRYPTO REQUIRED libcrypto)
-pkg_check_modules(SQLITE sqlite3>=3.7.17)
+
 pkg_check_modules(QRENCODE libqrencode)
 pkg_check_modules(LIBMULTIPROCESS libmultiprocess)
+
+# SQLite3
+find_package(SQLite3 REQUIRED)
 
 # Threads
 find_package(Threads REQUIRED)

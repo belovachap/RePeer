@@ -796,13 +796,6 @@ QImage GetImage(const QLabel* label)
 #endif
 }
 
-QString MakeHtmlLink(const QString& source, const QString& link)
-{
-    return QString(source).replace(
-        link,
-        QLatin1String("<a href=\"") + link + QLatin1String("\">") + link + QLatin1String("</a>"));
-}
-
 void PrintSlotException(
     const std::exception* exception,
     const QObject* sender,

@@ -2490,7 +2490,7 @@ bool CWallet::DelAddressBook(const CTxDestination& address)
         // NOTE: This isn't a problem for sending addresses because they never have any DestData yet!
         // When adding new DestData, it should be considered here whether to retain or delete it (or move it?).
         if (IsMine(address)) {
-            WalletLogPrintf("%s called with IsMine address, NOT SUPPORTED. Please report this bug! %s\n", __func__, PACKAGE_BUGREPORT);
+            WalletLogPrintf("%s called with IsMine address, NOT SUPPORTED.\n", __func__);
             return false;
         }
         // Delete destdata tuples associated with address

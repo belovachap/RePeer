@@ -8,7 +8,10 @@ add_subdirectory(leveldb)
 add_subdirectory(minisketch)
 
 set(SECP256K1_BUILD_BENCHMARK OFF CACHE BOOL "Disable secp256k1 benchmarks" FORCE)
+set(SECP256K1_ENABLE_MODULE_RECOVERY ON CACHE BOOL "" FORCE)
 add_subdirectory(secp256k1)
+
+add_subdirectory(univalue)
 
 # --- Crypto library ---
 add_library(bitcoin_crypto_base STATIC
@@ -31,8 +34,8 @@ target_include_directories(bitcoin_crypto_base PUBLIC ${CMAKE_SOURCE_DIR}/src)
 
 if(ENABLE_SSE41)
   add_library(bitcoin_crypto_sse41 STATIC crypto/sha256_sse41.cpp)
-  target_compile_options(bitcoin_crypto_sse41 PRIVATE ${SSE41_CXXFLAGS})
-  target_compile_definitions(bitcoin_crypto_sse41 PRIVATE ENABLE_SSE41)
+  target_compile_options(bitcoin_crypto_sse41 PUBLIC ${SSE41_CXXFLAGS})
+  target_compile_definitions(bitcoin_crypto_sse41 PUBLIC ENABLE_SSE41)
   list(APPEND CRYPTO_LIBS bitcoin_crypto_sse41)
 endif()
 # ... similar for AVX2, X86_SHANI, ARM_SHANI
@@ -49,13 +52,18 @@ add_library(bitcoin_consensus STATIC
   primitives/transaction.cpp
   pubkey.cpp
   script/bitcoinconsensus.cpp
+  script/descriptor.cpp
   script/interpreter.cpp
+  script/miniscript.cpp
   script/script.cpp
   script/script_error.cpp
+  script/sign.cpp
+  script/signingprovider.cpp
+  script/standard.cpp
   uint256.cpp
   util/strencodings.cpp
 )
-target_include_directories(bitcoin_consensus PUBLIC 
+target_include_directories(bitcoin_consensus PUBLIC
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_SOURCE_DIR}/src/secp256k1/include)
 
@@ -86,17 +94,9 @@ add_library(bitcoin_common STATIC
   protocol.cpp
   psbt.cpp
   scheduler.cpp
-  script/descriptor.cpp
-  script/miniscript.cpp
-  script/sign.cpp
-  script/signingprovider.cpp
-  script/standard.cpp
-  warnings.cpp
 )
-target_include_directories(bitcoin_common PUBLIC
-  ${CMAKE_SOURCE_DIR}/src
-  ${CMAKE_BINARY_DIR}/src
-  ${CMAKE_SOURCE_DIR}/src/secp256k1/include)
+target_link_libraries(bitcoin_common PUBLIC univalue secp256k1 bitcoin_util bitcoin_consensus)
+target_include_directories(bitcoin_common PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
 
 # --- Util library ---
 add_library(bitcoin_util STATIC
@@ -125,6 +125,7 @@ add_library(bitcoin_util STATIC
   util/moneystr.cpp
   util/readwritefile.cpp
   util/settings.cpp
+  util/syscall_sandbox.cpp
   util/thread.cpp
   util/threadinterrupt.cpp
   util/threadnames.cpp
@@ -132,11 +133,11 @@ add_library(bitcoin_util STATIC
   util/spanparsing.cpp
   util/strencodings.cpp
   util/string.cpp
-  util/syscall_sandbox.cpp
   util/time.cpp
   util/tokenpipe.cpp
 )
-target_include_directories(bitcoin_util PUBLIC ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(bitcoin_util PUBLIC univalue)
+target_include_directories(bitcoin_util PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
 
 # --- Node library ---
 add_library(bitcoin_node STATIC
@@ -200,21 +201,29 @@ add_library(bitcoin_node STATIC
   txmempool.cpp
   txorphanage.cpp
   txrequest.cpp
+  util/syscall_sandbox.cpp
   validation.cpp
   validationinterface.cpp
+  warnings.cpp
   kernel.cpp
 )
-target_include_directories(bitcoin_node PUBLIC ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(bitcoin_node PUBLIC leveldb minisketch univalue bitcoin_common bitcoin_consensus bitcoin_util)
+target_include_directories(bitcoin_node PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
 
 if(ENABLE_WALLET)
-  target_sources(bitcoin_node PRIVATE wallet/init.cpp)
+  target_sources(bitcoin_node PUBLIC wallet/init.cpp)
 else()
-  target_sources(bitcoin_node PRIVATE dummywallet.cpp)
+  target_sources(bitcoin_node PUBLIC dummywallet.cpp)
 endif()
 
 # --- Wallet library ---
 if(ENABLE_WALLET)
   add_library(bitcoin_wallet STATIC
+    kernelrecord.cpp
+    key_io.cpp
+    psbt.cpp
+    script/descriptor.cpp
+    util/spanparsing.cpp
     wallet/coincontrol.cpp
     wallet/context.cpp
     wallet/crypter.cpp
@@ -225,18 +234,15 @@ if(ENABLE_WALLET)
     wallet/receive.cpp
     wallet/scriptpubkeyman.cpp
     wallet/spend.cpp
+    wallet/sqlite.cpp
     wallet/transaction.cpp
     wallet/wallet.cpp
     wallet/walletdb.cpp
     wallet/walletutil.cpp
     wallet/coinselection.cpp
-    kernelrecord.cpp
   )
-  target_include_directories(bitcoin_wallet PUBLIC ${CMAKE_SOURCE_DIR}/src)
-  if(USE_SQLITE)
-    target_sources(bitcoin_wallet PRIVATE wallet/sqlite.cpp)
-    target_link_libraries(bitcoin_wallet PRIVATE ${SQLITE_LIBRARIES})
-  endif()
+  target_include_directories(bitcoin_wallet PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
+  target_link_libraries(bitcoin_wallet PUBLIC leveldb sqlite3 univalue bitcoin_common bitcoin_consensus bitcoin_util)
 endif()
 
 # --- Main daemon binary ---
@@ -244,18 +250,15 @@ add_executable(repeerd
   bitcoind.cpp
   init/bitcoind.cpp
 )
-target_link_libraries(repeerd PRIVATE
+target_link_libraries(repeerd PUBLIC
   bitcoin_node
   bitcoin_common
   bitcoin_util
   bitcoin_consensus
+  bitcoin_wallet
   ${LIBBITCOIN_CRYPTO}
-  ${LIBLEVELDB}
-  ${LIBMEMENV}
-  ${LIBSECP256K1}
   ${SSL_LIBRARIES}
   ${CRYPTO_LIBRARIES}
-  ${SQLITE_LIBRARIES}
   Threads::Threads
 )
 
@@ -271,7 +274,7 @@ if(BUILD_BITCOIN_KERNEL_LIB)
     # ... same source list as in Makefile.am
   )
   target_include_directories(peercoinkernel PUBLIC ${CMAKE_SOURCE_DIR}/src)
-  target_link_libraries(peercoinkernel PRIVATE
+  target_link_libraries(peercoinkernel PUBLIC
     ${LIBBITCOIN_CRYPTO} ${LIBLEVELDB} ${LIBMEMENV} ${LIBSECP256K1}
   )
   set_target_properties(peercoinkernel PROPERTIES

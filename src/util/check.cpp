@@ -19,9 +19,8 @@
 std::string StrFormatInternalBug(std::string_view msg, std::string_view file, int line, std::string_view func)
 {
     return strprintf("Internal bug detected: \"%s\"\n%s:%d (%s)\n"
-                     "%s %s\n"
-                     "Please report this issue here: %s\n",
-                     msg, file, line, func, PACKAGE_NAME, FormatFullVersion(), PACKAGE_BUGREPORT);
+                     "%s %s\n",
+                     msg, file, line, func, PACKAGE_NAME, FormatFullVersion());
 }
 
 NonFatalCheckError::NonFatalCheckError(std::string_view msg, std::string_view file, int line, std::string_view func)

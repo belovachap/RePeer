@@ -215,16 +215,11 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
     }
 
     // Process help and version before taking care about datadir
-    if (HelpRequested(args) || args.IsArgSet("-version")) {
+    if (HelpRequested(args)) {
         std::string strUsage = PACKAGE_NAME " version " + FormatFullVersion() + "\n";
-
-        if (args.IsArgSet("-version")) {
-            strUsage += FormatParagraph(LicenseInfo());
-        } else {
-            strUsage += "\nUsage:  peercoind [options]                     Start " PACKAGE_NAME "\n"
-                "\n";
-            strUsage += args.GetHelpMessage();
-        }
+        strUsage += "\nUsage:  repeerd [options]                     Start " PACKAGE_NAME "\n"
+            "\n";
+        strUsage += args.GetHelpMessage();
 
         tfm::format(std::cout, "%s", strUsage);
         return true;
