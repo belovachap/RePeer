@@ -12,40 +12,30 @@
 #include <QStyle>
 #include <QTemporaryFile>
 #include <QVariant>
-#ifdef USE_DBUS
 #include <QDBusMetaType>
 #include <QtDBus>
 #include <stdint.h>
-#endif
 
-#ifdef USE_DBUS
 // https://wiki.ubuntu.com/NotificationDevelopmentGuidelines recommends at least 128
 const int FREEDESKTOP_NOTIFICATION_ICON_SIZE = 128;
-#endif
 
 Notificator::Notificator(const QString &_programName, QWidget *_parent) :
     QObject(_parent),
     parent(_parent),
     programName(_programName)
 {
-#ifdef USE_DBUS
     interface = new QDBusInterface("org.freedesktop.Notifications",
         "/org/freedesktop/Notifications", "org.freedesktop.Notifications");
     if(interface->isValid())
     {
         mode = Freedesktop;
     }
-#endif
 }
 
 Notificator::~Notificator()
 {
-#ifdef USE_DBUS
     delete interface;
-#endif
 }
-
-#ifdef USE_DBUS
 
 // Loosely based on https://www.qtcentre.org/archive/index.php/t-25879.html
 class FreedesktopImage
@@ -176,17 +166,14 @@ void Notificator::notifyDBus(Class cls, const QString &title, const QString &tex
     // "Fire and forget"
     interface->callWithArgumentList(QDBus::NoBlock, "Notify", args);
 }
-#endif
 
 void Notificator::notify(Class cls, const QString &title, const QString &text, const QIcon &icon, int millisTimeout)
 {
     switch(mode)
     {
-#ifdef USE_DBUS
     case Freedesktop:
         notifyDBus(cls, title, text, icon, millisTimeout);
         break;
-#endif
     default:
         if(cls == Critical)
         {

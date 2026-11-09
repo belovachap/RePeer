@@ -189,7 +189,7 @@ target_link_libraries(repeer-qt PRIVATE
   bitcoin_consensus
   bitcoin_wallet
   leveldb
-  Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network
+  Qt::Core Qt::Gui Qt::Widgets Qt::Network Qt::DBus
   ${QRENCODE_LIBRARIES}
   univalue
   ${LIBBITCOIN_CRYPTO}

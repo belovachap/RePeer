@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 project(RePeer VERSION 13.34 LANGUAGES CXX C)
 
+# The C/C++ assert() macro is disabled when NDEBUG is defined.
+# These lines allow runtime assertions to remain active even when compiling a high-performance Release build.
 string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 string(REPLACE "-DNDEBUG" "" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 
@@ -137,11 +139,9 @@ find_package(Threads REQUIRED)
 # Boost
 find_package(Boost CONFIG REQUIRED)
 
-# Qt5 (replaces BITCOIN_QT_CONFIGURE)
-find_package(Qt5 5.11.3 REQUIRED COMPONENTS Core Gui Widgets Network)
-find_package(Qt5LinguistTools REQUIRED)
-# D-Bus
-find_package(Qt5DBus REQUIRED)
+# Qt6
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6DBus REQUIRED)
 
 # --- Generate config header (replaces AC_CONFIG_HEADERS) ---
 configure_file(

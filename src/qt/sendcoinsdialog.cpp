@@ -91,7 +91,7 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
 
     // Coin Control
     connect(ui->pushButtonCoinControl, &QPushButton::clicked, this, &SendCoinsDialog::coinControlButtonClicked);
-    connect(ui->checkBoxCoinControlChange, &QCheckBox::stateChanged, this, &SendCoinsDialog::coinControlChangeChecked);
+    connect(ui->checkBoxCoinControlChange, &QCheckBox::checkStateChanged, this, &SendCoinsDialog::coinControlChangeChecked);
     connect(ui->lineEditCoinControlChange, &QValidatedLineEdit::textEdited, this, &SendCoinsDialog::coinControlChangeEdited);
 
     // Coin Control: clipboard actions
@@ -598,7 +598,7 @@ void SendCoinsDialog::coinControlButtonClicked()
 }
 
 // Coin Control: checkbox custom change address
-void SendCoinsDialog::coinControlChangeChecked(int state)
+void SendCoinsDialog::coinControlChangeChecked(Qt::CheckState state)
 {
     if (state == Qt::Unchecked)
     {

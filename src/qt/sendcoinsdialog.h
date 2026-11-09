@@ -85,7 +85,7 @@ private Q_SLOTS:
     void refreshBalance();
     void coinControlFeatureChanged(bool);
     void coinControlButtonClicked();
-    void coinControlChangeChecked(int);
+    void coinControlChangeChecked(Qt::CheckState);
     void coinControlChangeEdited(const QString &);
     void coinControlUpdateLabels();
     void coinControlClipboardQuantity();
