@@ -9,8 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # --- Feature options (replaces AC_ARG_ENABLE / AC_ARG_WITH) ---
-option(ENABLE_WALLET "Enable wallet" ON)
-option(ENABLE_QT "Enable Qt GUI" OFF)
 option(ENABLE_MULTIPROCESS "Enable multiprocess" OFF)
 option(ENABLE_ASM "Enable assembly routines" ON)
 option(ENABLE_SSE42 "Enable SSE4.2" OFF)

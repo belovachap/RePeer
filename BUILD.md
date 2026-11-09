@@ -6,7 +6,7 @@ TODO: Determine that minimum number of depencies needed to install...
 
 ```bash
 sudo apt install git
-sudo apt install cmake 
+sudo apt install cmake ninja-build
 sudo apt install build-essential libtool autotools-dev automake pkg-config bsdmainutils
 sudo apt install libboost-dev libssl-dev
 sudo apt install libsqlite3-dev
@@ -31,7 +31,7 @@ cd RePeer
 ```bash
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja
 cmake --build . -j$(nproc)
 ```
 

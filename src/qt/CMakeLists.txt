@@ -1,7 +1,8 @@
-# Qt resource compilation (replaces RCC)
-qt5_add_resources(QRC_SOURCES bitcoin.qrc)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOUIC_SEARCH_PATHS "${CMAKE_CURRENT_SOURCE_DIR}/forms")
+set(CMAKE_AUTORCC ON)
 
-# UI form compilation (replaces UIC)
 set(QT_FORMS_UI
   forms/addressbookpage.ui
   forms/askpassphrasedialog.ui
@@ -19,151 +20,179 @@ set(QT_FORMS_UI
   forms/sendcoinsentry.ui
   forms/transactiondescdialog.ui
 )
-qt5_wrap_ui(QT_FORMS_HEADERS ${QT_FORMS_UI})
 
-# MOC compilation (replaces MOC)
-set(QT_MOC_HEADERS
-  addressbookpage.h
-  addresstablemodel.h
-  askpassphrasedialog.h
-  bitcoin.h
-  bitcoinaddressvalidator.h
-  bitcoinamountfield.h
-  bitcoingui.h
-  bitcoinunits.h
-  clientmodel.h
-  coincontroldialog.h
-  coincontroltreewidget.h
-  createwalletdialog.h
-  csvmodelwriter.h
-  editaddressdialog.h
-  guiutil.h
-  informationwindow.h
-  initexecutor.h
-  intro.h
-  modaloverlay.h
-  notificator.h
-  optionsdialog.h
-  optionsmodel.h
-  overviewpage.h
-  qrimagewidget.h
-  qvalidatedlineedit.h
-  qvaluecombobox.h
-  receivecoinsdialog.h
-  receiverequestdialog.h
-  recentrequeststablemodel.h
-  sendcoinsdialog.h
-  sendcoinsentry.h
-  splashscreen.h
-  transactiondesc.h
-  transactiondescdialog.h
-  transactionfilterproxy.h
-  transactionoverviewwidget.h
-  transactiontablemodel.h
-  transactionview.h
-  utilitydialog.h
-  walletcontroller.h
-  walletframe.h
-  walletmodel.h
-  walletview.h
-  mintingfilterproxy.h
-  mintingtablemodel.h
-  mintingview.h
-)
-qt5_wrap_cpp(QT_MOC_SOURCES ${QT_MOC_HEADERS} OPTIONS -DQT_NO_KEYWORDS)
+set(QT_SOURCES
+  ${CMAKE_SOURCE_DIR}/src/init/bitcoin-qt.cpp
 
-# Source files
-set(QT_BASE_SOURCES
-  bitcoin.cpp
-  bitcoinaddressvalidator.cpp
-  bitcoinamountfield.cpp
-  bitcoingui.cpp
-  bitcoinunits.cpp
-  clientmodel.cpp
-  csvmodelwriter.cpp
-  guiutil.cpp
-  informationwindow.cpp
-  initexecutor.cpp
-  intro.cpp
-  modaloverlay.cpp
-  networkstyle.cpp
-  notificator.cpp
-  optionsdialog.cpp
-  optionsmodel.cpp
-  platformstyle.cpp
-  qvalidatedlineedit.cpp
-  qvaluecombobox.cpp
-  splashscreen.cpp
-  utilitydialog.cpp
-)
-
-set(QT_WALLET_SOURCES
   addressbookpage.cpp
+  addressbookpage.h
+
   addresstablemodel.cpp
+  addresstablemodel.h
+
   askpassphrasedialog.cpp
+  askpassphrasedialog.h
+
+  bitcoin.cpp
+  bitcoin.h
+
+  bitcoin.qrc
+
+  bitcoinaddressvalidator.cpp
+  bitcoinaddressvalidator.h
+
+   bitcoinamountfield.cpp
+  bitcoinamountfield.h
+
+  bitcoingui.cpp
+  bitcoingui.h
+
+  bitcoinunits.cpp
+  bitcoinunits.h
+
+  clientmodel.cpp
+  clientmodel.h
+
   coincontroldialog.cpp
+  coincontroldialog.h
+
   coincontroltreewidget.cpp
+  coincontroltreewidget.h
+
   createwalletdialog.cpp
+  createwalletdialog.h
+
+  csvmodelwriter.cpp
+  csvmodelwriter.h
+
   editaddressdialog.cpp
-  overviewpage.cpp
-  qrimagewidget.cpp
-  receivecoinsdialog.cpp
-  receiverequestdialog.cpp
-  recentrequeststablemodel.cpp
-  sendcoinsdialog.cpp
-  sendcoinsentry.cpp
-  transactiondesc.cpp
-  transactiondescdialog.cpp
-  transactionfilterproxy.cpp
-  transactionoverviewwidget.cpp
-  transactionrecord.cpp
-  transactiontablemodel.cpp
-  transactionview.cpp
-  walletcontroller.cpp
-  walletframe.cpp
-  walletmodel.cpp
-  walletmodeltransaction.cpp
-  walletview.cpp
+  editaddressdialog.h
+
+  guiconstants.h
+
+  guiutil.cpp
+  guiutil.h
+
+  informationwindow.cpp
+  informationwindow.h
+
+  initexecutor.cpp
+  initexecutor.h
+
+  intro.cpp
+  intro.h
+
+  main.cpp
+
   mintingfilterproxy.cpp
+  mintingfilterproxy.h
+
   mintingtablemodel.cpp
+  mintingtablemodel.h
+
   mintingview.cpp
+  mintingview.h
+
+  modaloverlay.cpp
+  modaloverlay.h
+
+  networkstyle.cpp
+  networkstyle.h
+
+  notificator.cpp
+  notificator.h
+
+  optionsdialog.cpp
+  optionsdialog.h
+
+  optionsmodel.cpp
+  optionsmodel.h
+
+  overviewpage.cpp
+  overviewpage.h
+
+  platformstyle.cpp
+  platformstyle.h
+
+  qrimagewidget.cpp
+  qrimagewidget.h
+
+  qvalidatedlineedit.cpp
+  qvalidatedlineedit.h
+
+  qvaluecombobox.cpp
+  qvaluecombobox.h
+
+  receivecoinsdialog.cpp
+  receivecoinsdialog.h
+
+  receiverequestdialog.cpp
+  receiverequestdialog.h
+
+  recentrequeststablemodel.cpp
+  recentrequeststablemodel.h
+
+  sendcoinsdialog.cpp
+  sendcoinsdialog.h
+
+  sendcoinsentry.cpp
+  sendcoinsentry.h
+
+  splashscreen.cpp
+  splashscreen.h
+
+  transactiondesc.cpp
+  transactiondesc.h
+
+  transactiondescdialog.cpp
+  transactiondescdialog.h
+
+  transactionfilterproxy.cpp
+  transactionfilterproxy.h
+
+  transactionoverviewwidget.cpp
+  transactionoverviewwidget.h
+
+  transactionrecord.cpp
+  transactionrecord.h
+
+  transactiontablemodel.cpp
+  transactiontablemodel.h
+
+  transactionview.cpp
+  transactionview.h
+
+  utilitydialog.cpp
+  utilitydialog.h
+
+  walletcontroller.cpp
+  walletcontroller.h
+
+  walletframe.cpp
+  walletframe.h
+
+  walletmodel.cpp
+  walletmodel.h
+
+  walletmodeltransaction.cpp
+  walletmodeltransaction.h
+
+  walletview.h
+  walletview.cpp
 )
 
-set(QT_SOURCES ${QT_BASE_SOURCES} ${QT_WALLET_SOURCES})
-
-add_library(bitcoinqt STATIC
-  ${QT_SOURCES}
-  ${QT_FORMS_HEADERS}
-  ${QT_MOC_SOURCES}
-  ${QRC_SOURCES}
-)
-target_include_directories(bitcoinqt PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
-target_compile_definitions(bitcoinqt PRIVATE QT_NO_KEYWORDS QT_USE_QSTRINGBUILDER)
-target_link_libraries(bitcoinqt PUBLIC
-  leveldb
-  Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network
-  ${QRENCODE_LIBRARIES}
-  univalue
-)
-
-# GUI executable
-add_executable(repeer-qt main.cpp ${CMAKE_SOURCE_DIR}/src/init/bitcoin-qt.cpp)
+add_executable(repeer-qt ${QT_FORMS_UI} ${QT_SOURCES})
 target_link_libraries(repeer-qt PRIVATE
-  bitcoinqt
   bitcoin_node
   bitcoin_common
   bitcoin_util
   bitcoin_consensus
   bitcoin_wallet
+  leveldb
+  Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network
+  ${QRENCODE_LIBRARIES}
+  univalue
   ${LIBBITCOIN_CRYPTO}
-  ${LIBUNIVALUE}
-  ${LIBLEVELDB}
-  ${LIBMEMENV}
-  ${LIBSECP256K1}
-  ${SQLITE_LIBRARIES}
+  ${SSL_LIBRARIES}
   ${CRYPTO_LIBRARIES}
 )
-
-# Translations (replaces LRELEASE)
-file(GLOB QT_TS_FILES "${CMAKE_SOURCE_DIR}/src/qt/locale/*.ts")
-qt5_add_translation(QT_QM_FILES ${QT_TS_FILES})
