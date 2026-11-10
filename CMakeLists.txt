@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(RePeer VERSION 13.35 LANGUAGES CXX C)
+project(RePeer VERSION 13.36 LANGUAGES CXX C)
 
 ## Tell CMake to default to static for internal submodules/dependencies.
 set(BUILD_SHARED_LIBS OFF)
