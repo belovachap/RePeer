@@ -1,21 +1,35 @@
+# Place binary executables in the build/bin directory.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# --- Include sub-builds ---
+# Submodules
+
+## crc32c
+set(CRC32C_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(CRC32C_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+set(CRC32C_USE_GLOG OFF CACHE BOOL "" FORCE)
+set(CRC32C_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(crc32c)
 
-set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "Disable leveldb tests" FORCE)
-set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "Disable leveldb benchmarks" FORCE)
+## leveldb
+set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+set(LEVELDB_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(leveldb)
-
-# leveldb turns off RTTI by default and that breaks our build, so turn it back on.
+### leveldb turns off RTTI by default and that breaks our build, so turn it back on.
 target_compile_options(leveldb PRIVATE -frtti)
 
+## minisketch
+set(MINISKETCH_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(minisketch)
 
-set(SECP256K1_BUILD_BENCHMARK OFF CACHE BOOL "Disable secp256k1 benchmarks" FORCE)
+## secp256k1
+set(SECP256K1_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_EXHAUSTIVE_TESTS OFF CACHE BOOL "" FORCE)
 set(SECP256K1_ENABLE_MODULE_RECOVERY ON CACHE BOOL "" FORCE)
 add_subdirectory(secp256k1)
 
+## univalue
 add_subdirectory(univalue)
 
 # --- Crypto library ---
