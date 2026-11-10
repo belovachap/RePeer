@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(RePeer VERSION 13.34 LANGUAGES CXX C)
+project(RePeer VERSION 13.35 LANGUAGES CXX C)
 
 # The C/C++ assert() macro is disabled when NDEBUG is defined.
 # These lines allow runtime assertions to remain active even when compiling a high-performance Release build.
