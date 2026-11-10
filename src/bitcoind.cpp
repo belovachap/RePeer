@@ -44,8 +44,6 @@ using node::NodeContext;
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 
-#if HAVE_DECL_FORK
-
 /** Custom implementation of daemon(). This implements the same order of operations as glibc.
  * Opens a pipe to the child process to be able to wait for an event to occur.
  *
@@ -85,11 +83,9 @@ int fork_daemon(bool nochdir, bool noclose, TokenPipeEnd& endpoint)
     endpoint = umbilical->TakeWriteEnd();
     umbilical->TakeReadEnd().Close();
 
-#if HAVE_DECL_SETSID
     if (setsid() < 0) {
         exit(1); // setsid failed.
     }
-#endif
 
     if (!nochdir) {
         if (chdir("/") != 0) {
@@ -114,8 +110,6 @@ int fork_daemon(bool nochdir, bool noclose, TokenPipeEnd& endpoint)
     endpoint.TokenWrite(0); // Success
     return 0;
 }
-
-#endif
 
 static void WriteInformationFile(interfaces::Node& node, const fs::path& data_dir, const fs::path& blocks_dir)
 {
@@ -225,14 +219,12 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
         return true;
     }
 
-#if HAVE_DECL_FORK
     // Communication with parent after daemonizing. This is used for signalling in the following ways:
     // - a boolean token is sent when the initialization process (all the Init* functions) have finished to indicate
     // that the parent process can quit, and whether it was successful/unsuccessful.
     // - an unexpected shutdown of the child process creates an unexpected end of stream at the parent
     // end, which is interpreted as failure to start.
     TokenPipeEnd daemon_ep;
-#endif
     std::any context{&node};
     try
     {
@@ -269,7 +261,6 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
         }
 
         if (args.GetBoolArg("-daemon", DEFAULT_DAEMON) || args.GetBoolArg("-daemonwait", DEFAULT_DAEMONWAIT)) {
-#if HAVE_DECL_FORK
             tfm::format(std::cout, PACKAGE_NAME " starting\n");
 
             // Daemonize
@@ -293,9 +284,6 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
                 }
             }
             }
-#else
-            return InitError(Untranslated("-daemon is not supported on this operating system"));
-#endif // HAVE_DECL_FORK
         }
         // Lock data directory after daemonization
         if (!AppInitLockDataDirectory())
@@ -311,13 +299,12 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
         PrintExceptionContinue(nullptr, "AppInit()");
     }
 
-#if HAVE_DECL_FORK
     if (daemon_ep.IsOpen()) {
         // Signal initialization status to parent, then close pipe.
         daemon_ep.TokenWrite(fRet);
         daemon_ep.Close();
     }
-#endif
+
     SetSyscallSandboxPolicy(SyscallSandboxPolicy::SHUTOFF);
     if (fRet) {
         // Start the information writer thread
