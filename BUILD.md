@@ -2,18 +2,17 @@
 
 ## Install Dependencies
 
-TODO: Determine that minimum number of depencies needed to install...
-
 ```bash
 sudo apt install git \
                  cmake \
                  ninja-build \
-                 libboost-dev \
+                 build-essential \
+                 pkg-config \
                  libssl-dev \
                  libsqlite3-dev \
-                 systemtap-sdt-dev \
+                 libboost-dev \
                  qt6-base-dev \
-                 libqrencode-dev
+                 systemtap-sdt-dev
 ```
 
 ## Get Code
