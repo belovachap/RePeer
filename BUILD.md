@@ -11,8 +11,7 @@ sudo apt install git \
                  libssl-dev \
                  libsqlite3-dev \
                  libboost-dev \
-                 qt6-base-dev \
-                 systemtap-sdt-dev
+                 qt6-base-dev
 ```
 
 ## Get Code

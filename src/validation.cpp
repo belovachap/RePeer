@@ -54,7 +54,6 @@
 #include <util/strencodings.h>
 #include <util/system.h>
 #include <util/time.h>
-#include <util/trace.h>
 #include <util/translation.h>
 #include <validationinterface.h>
 #include <warnings.h>
@@ -1341,10 +1340,6 @@ MempoolAcceptResult AcceptToMemoryPool(Chainstate& active_chainstate, const CTra
 
         for (const COutPoint& hashTx : coins_to_uncache)
             active_chainstate.CoinsTip().Uncache(hashTx);
-        TRACE2(mempool, rejected,
-                tx->GetHash().data(),
-                result.m_state.GetRejectReason().c_str()
-        );
     }
     // After we've (potentially) uncached entries, ensure our coins cache is still within its size limits
     BlockValidationState state_dummy;
@@ -2263,14 +2258,6 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
              Ticks<SecondsDouble>(time_index),
              Ticks<MillisecondsDouble>(time_index) / num_blocks_total);
 
-    TRACE6(validation, block_connected,
-        block_hash.data(),
-        pindex->nHeight,
-        block.vtx.size(),
-        nInputs,
-        nSigOpsCost,
-        time_5 - time_start // in microseconds (µs)
-    );
     return true;
 }
 
@@ -2384,11 +2371,6 @@ bool Chainstate::FlushStateToDisk(
                 return AbortNode(state, "Failed to write to coin database");
             m_last_flush = nNow;
             full_flush_completed = true;
-            TRACE4(utxocache, flush,
-                   int64_t{Ticks<std::chrono::microseconds>(SteadyClock::now() - nNow)},
-                   (u_int32_t)mode,
-                   (u_int64_t)coins_count,
-                   (u_int64_t)coins_mem_usage);
         }
     }
     if (full_flush_completed) {

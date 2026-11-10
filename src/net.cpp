@@ -24,7 +24,6 @@
 #include <util/system.h>
 #include <util/thread.h>
 #include <util/threadinterrupt.h>
-#include <util/trace.h>
 #include <util/translation.h>
 
 #include <fcntl.h>
@@ -2813,15 +2812,6 @@ void CConnman::PushMessage(CNode* pnode, CSerializedNetMsg&& msg)
     if (gArgs.GetBoolArg("-capturemessages", false)) {
         CaptureMessage(pnode->addr, msg.m_type, msg.data, /*is_incoming=*/false);
     }
-
-    TRACE6(net, outbound_message,
-        pnode->GetId(),
-        pnode->m_addr_name.c_str(),
-        pnode->ConnectionTypeAsString().c_str(),
-        msg.m_type.c_str(),
-        msg.data.size(),
-        msg.data.data()
-    );
 
     // make sure we use the appropriate network transport format
     std::vector<unsigned char> serializedHeader;
