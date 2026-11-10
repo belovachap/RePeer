@@ -5,10 +5,6 @@
 #ifndef BITCOIN_COMPAT_ENDIAN_H
 #define BITCOIN_COMPAT_ENDIAN_H
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
-
 #include <compat/byteswap.h>
 
 #include <cstdint>
@@ -19,7 +15,6 @@
 #include <sys/endian.h>
 #endif
 
-#ifndef HAVE_CONFIG_H
 // While not technically a supported configuration, defaulting to defining these
 // DECLs when we were compiled without autotools makes it easier for other build
 // systems to build things like libbitcoinconsensus for strange targets.
@@ -61,8 +56,6 @@
 #ifdef le64toh
 #define HAVE_DECL_LE64TOH 1
 #endif
-
-#endif // HAVE_CONFIG_H
 
 #if defined(WORDS_BIGENDIAN)
 

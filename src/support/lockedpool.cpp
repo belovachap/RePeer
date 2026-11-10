@@ -1,13 +1,5 @@
-// Copyright (c) 2016-2022 The Bitcoin Core developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include <support/lockedpool.h>
 #include <support/cleanse.h>
-
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
 
 #include <sys/mman.h> // for mmap
 #include <sys/resource.h> // for getrlimit

@@ -1,12 +1,4 @@
-// Copyright (c) 2022 The Bitcoin Core developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include <util/check.h>
-
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
 
 #include <clientversion.h>
 #include <tinyformat.h>

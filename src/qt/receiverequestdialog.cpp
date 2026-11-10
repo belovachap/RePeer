@@ -1,7 +1,3 @@
-// Copyright (c) 2011-2021 The Bitcoin Core developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include <qt/receiverequestdialog.h>
 #include <qt/forms/ui_receiverequestdialog.h>
 
@@ -13,10 +9,6 @@
 
 #include <QDialog>
 #include <QString>
-
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h> /* for USE_QRCODE */
-#endif
 
 ReceiveRequestDialog::ReceiveRequestDialog(QWidget* parent)
     : QDialog(parent, GUIUtil::dialog_flags),

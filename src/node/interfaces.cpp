@@ -1,7 +1,3 @@
-// Copyright (c) 2018-2022 The Bitcoin Core developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include <addrdb.h>
 #include <banman.h>
 #include <blockfilter.h>
@@ -41,10 +37,6 @@
 #include <validation.h>
 #include <validationinterface.h>
 #include <warnings.h>
-
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
 
 #include <any>
 #include <memory>
