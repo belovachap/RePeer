@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 project(RePeer VERSION 13.35 LANGUAGES CXX C)
 
+## Tell CMake to default to static for internal submodules/dependencies.
+set(BUILD_SHARED_LIBS OFF)
+
 # The C/C++ assert() macro is disabled when NDEBUG is defined.
 # These lines allow runtime assertions to remain active even when compiling a high-performance Release build.
 string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
