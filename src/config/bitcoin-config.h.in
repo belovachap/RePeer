@@ -27,7 +27,6 @@
 #cmakedefine01 HAVE_SYSCTL_ARND
 #cmakedefine01 CHAR_EQUALS_INT8
 #cmakedefine01 USE_ASM
-#cmakedefine01 USE_QRCODE
 #cmakedefine01 ENABLE_TRACING
 #cmakedefine01 USE_SYSCALL_SANDBOX
 #cmakedefine01 ENABLE_SSE41

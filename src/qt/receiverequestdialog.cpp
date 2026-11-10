@@ -4,7 +4,6 @@
 #include <qt/bitcoinunits.h>
 #include <qt/guiutil.h>
 #include <qt/optionsmodel.h>
-#include <qt/qrimagewidget.h>
 #include <qt/walletmodel.h>
 
 #include <QDialog>
@@ -39,17 +38,6 @@ void ReceiveRequestDialog::setInfo(const SendCoinsRecipient &_info)
     this->info = _info;
     setWindowTitle(tr("Request payment to %1").arg(info.label.isEmpty() ? info.address : info.label));
     QString uri = GUIUtil::formatBitcoinURI(info);
-
-#ifdef USE_QRCODE
-    if (ui->qr_code->setQR(uri, info.address)) {
-        connect(ui->btnSaveAs, &QPushButton::clicked, ui->qr_code, &QRImageWidget::saveImage);
-    } else {
-        ui->btnSaveAs->setEnabled(false);
-    }
-#else
-    ui->btnSaveAs->hide();
-    ui->qr_code->hide();
-#endif
 
     ui->uri_content->setText("<a href=\"" + uri + "\">" + GUIUtil::HtmlEscape(uri) + "</a>");
     ui->address_content->setText(info.address);

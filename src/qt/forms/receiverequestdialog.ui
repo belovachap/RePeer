@@ -17,16 +17,6 @@
    <property name="sizeConstraint">
     <enum>QLayout::SetFixedSize</enum>
    </property>
-   <item row="0" column="0" colspan="2" alignment="Qt::AlignHCenter">
-    <widget class="QRImageWidget" name="qr_code">
-     <property name="text">
-      <string notr="true">QR image</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-    </widget>
-   </item>
    <item row="1" column="0" colspan="2">
     <widget class="QLabel" name="payment_header">
      <property name="font">
@@ -255,16 +245,6 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="btnSaveAs">
-       <property name="text">
-        <string>&amp;Save Image…</string>
-       </property>
-       <property name="autoDefault">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -291,18 +271,10 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QRImageWidget</class>
-   <extends>QLabel</extends>
-   <header>qt/qrimagewidget.h</header>
-  </customwidget>
- </customwidgets>
  <tabstops>
   <tabstop>buttonBox</tabstop>
   <tabstop>btnCopyURI</tabstop>
   <tabstop>btnCopyAddress</tabstop>
-  <tabstop>btnSaveAs</tabstop>
  </tabstops>
  <resources/>
  <connections>

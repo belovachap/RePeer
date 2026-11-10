@@ -114,9 +114,6 @@ set(QT_SOURCES
   platformstyle.cpp
   platformstyle.h
 
-  qrimagewidget.cpp
-  qrimagewidget.h
-
   qvalidatedlineedit.cpp
   qvalidatedlineedit.h
 
