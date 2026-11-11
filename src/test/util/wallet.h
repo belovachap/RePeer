@@ -1,5 +1,5 @@
-#ifndef BITCOIN_TEST_UTIL_WALLET_H
-#define BITCOIN_TEST_UTIL_WALLET_H
+#ifndef TEST_UTIL_WALLET_H
+#define TEST_UTIL_WALLET_H
 
 #include <wallet/db.h>
 
@@ -142,4 +142,4 @@ std::unique_ptr<WalletDatabase> CreateMockableWalletDatabase();
 
 } // namespace wallet
 
-#endif // BITCOIN_TEST_UTIL_WALLET_H
+#endif // TEST_UTIL_WALLET_H
