@@ -35,7 +35,7 @@
 #include <streams.h>
 #include <timedata.h>
 #include <txdb.h>
-// #include <txmempool.h>
+#include <txmempool.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <util/thread.h>
@@ -104,7 +104,6 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
             "-logthreadnames",
             "-loglevel=trace",
             "-debug",
-            "-debugexclude=libevent",
             "-debugexclude=leveldb",
         },
         extra_args);
@@ -162,15 +161,15 @@ ChainTestingSetup::ChainTestingSetup(const std::string& chainName, const std::ve
     m_node.scheduler->m_service_thread = std::thread(util::TraceThread, "scheduler", [&] { m_node.scheduler->serviceQueue(); });
     GetMainSignals().RegisterBackgroundSignalScheduler(*m_node.scheduler);
 
-    // {
-    //     CTxMemPool::Options opts;
-    //     opts.m_max_size_bytes = 300000000;
-    //     opts.m_expiry = 24 * 60 * 60;
-    //     opts.m_require_standard = true;
-    //     opts.m_permit_bare_multisig = false;
-    //     opts.m_max_datacarrier_bytes = 80;
-    //     m_node.mempool = std::make_unique<CTxMemPool>(opts);
-    // }
+    {
+        CTxMemPool::Options opts;
+        opts.max_size_bytes = 300000000;
+        opts.expiry = std::chrono::hours{24};
+        opts.require_standard = true;
+        opts.permit_bare_multisig = false;
+        opts.max_datacarrier_bytes = 80;
+        m_node.mempool = std::make_unique<CTxMemPool>(opts);
+    }
 
     m_cache_sizes = CalculateCacheSizes(m_args);
 
