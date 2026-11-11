@@ -1,10 +1,9 @@
 #ifndef BITCOIN_CRYPTO_COMMON_H
 #define BITCOIN_CRYPTO_COMMON_H
 
+#include <endian.h>
 #include <stdint.h>
 #include <string.h>
-
-#include <compat/endian.h>
 
 uint16_t static inline ReadLE16(const unsigned char* ptr)
 {

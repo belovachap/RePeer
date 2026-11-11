@@ -1,37 +1,3 @@
-# Place binary executables in the build/bin directory.
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-# Submodules
-
-## crc32c
-set(CRC32C_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(CRC32C_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
-set(CRC32C_USE_GLOG OFF CACHE BOOL "" FORCE)
-set(CRC32C_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(crc32c)
-
-## leveldb
-set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
-set(LEVELDB_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(leveldb)
-### leveldb turns off RTTI by default and that breaks our build, so turn it back on.
-target_compile_options(leveldb PRIVATE -frtti)
-
-## minisketch
-set(MINISKETCH_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-add_subdirectory(minisketch)
-
-## secp256k1
-set(SECP256K1_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
-set(SECP256K1_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(SECP256K1_BUILD_EXHAUSTIVE_TESTS OFF CACHE BOOL "" FORCE)
-set(SECP256K1_ENABLE_MODULE_RECOVERY ON CACHE BOOL "" FORCE)
-add_subdirectory(secp256k1)
-
-## univalue
-add_subdirectory(univalue)
-
 # --- Crypto library ---
 add_library(bitcoin_crypto_base STATIC
   crypto/aes.cpp
@@ -258,22 +224,7 @@ add_library(bitcoin_wallet STATIC
 target_include_directories(bitcoin_wallet PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
 target_link_libraries(bitcoin_wallet PUBLIC leveldb sqlite3 univalue bitcoin_common)
 
-# --- Main daemon binary ---
-add_executable(repeerd
-  bitcoind.cpp
-  init/bitcoind.cpp
-)
-target_link_libraries(repeerd PUBLIC
-  bitcoin_node
-  bitcoin_common
-  bitcoin_util
-  bitcoin_consensus
-  bitcoin_wallet
-  ${LIBBITCOIN_CRYPTO}
-  ${SSL_LIBRARIES}
-  ${CRYPTO_LIBRARIES}
-  Threads::Threads
-)
+
 
 # --- Qt GUI (replaces Makefile.qt.include) ---
  add_subdirectory(qt)

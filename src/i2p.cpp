@@ -4,7 +4,6 @@
 
 #include <chainparams.h>
 #include <compat/compat.h>
-#include <compat/endian.h>
 #include <crypto/sha256.h>
 #include <i2p.h>
 #include <logging.h>
