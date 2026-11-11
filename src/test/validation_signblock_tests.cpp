@@ -87,6 +87,18 @@ static std::shared_ptr<wallet::CWallet> MakeTestWallet(const CKey& key, interfac
     return wallet;
 }
 
+// Helper for taproot tests: creates a descriptor-based wallet with a tr() descriptor.
+static std::shared_ptr<wallet::CWallet> MakeTestTaprootWallet(const CKey& key, interfaces::Chain* chain)
+{
+    auto wallet = std::make_shared<wallet::CWallet>(chain, "test", wallet::CreateMockableWalletDatabase());
+    LOCK(wallet->cs_wallet);
+    wallet->SetupDescriptorScriptPubKeyMans();
+    wallet::ScriptPubKeyMan* spk_man = wallet->GetScriptPubKeyMan(OutputType::BECH32M, /*internal=*/false);
+    auto* desc_spk_man = dynamic_cast<wallet::DescriptorScriptPubKeyMan*>(spk_man);
+    desc_spk_man->AddKey(key.GetPubKey().GetID(), key);
+    return wallet;
+}
+
 // --- PUBKEY path, legacy keystore, key found, pubkey matches → success ---
 
 BOOST_AUTO_TEST_CASE(SignBlock_pubkey_legacy_success)
@@ -315,6 +327,62 @@ BOOST_AUTO_TEST_CASE(SignBlock_witness_v0_keyhash_empty_vin)
     block.nNonce = 0;
 
     auto wallet = MakeTestWallet(key, m_node.chain.get());
+    BOOST_CHECK(!SignBlock(block, *wallet));
+}
+
+// --- WITNESS_V1_TAPROOT path, valid x-only pubkey → should succeed (currently fails) ---
+
+BOOST_AUTO_TEST_CASE(SignBlock_witness_v1_taproot_success)
+{
+    CKey key;
+    key.MakeNewKey(true);
+    XOnlyPubKey xonly_pubkey{key.GetPubKey()};
+
+    CScript scriptPubKey;
+    scriptPubKey << OP_1 << ToByteVector(xonly_pubkey);
+
+    CBlock block = MakePoWBlock(scriptPubKey);
+    auto wallet = MakeTestTaprootWallet(key, m_node.chain.get());
+
+    BOOST_CHECK(SignBlock(block, *wallet));
+    BOOST_CHECK(!block.vchBlockSig.empty());
+    BOOST_CHECK(xonly_pubkey.VerifySchnorr(block.GetHash(), block.vchBlockSig));
+}
+
+// --- WITNESS_V1_TAPROOT path, key NOT in wallet → false ---
+
+BOOST_AUTO_TEST_CASE(SignBlock_witness_v1_taproot_key_not_found)
+{
+    CKey key;
+    key.MakeNewKey(true);
+    XOnlyPubKey xonly_pubkey{key.GetPubKey()};
+
+    CScript scriptPubKey;
+    scriptPubKey << OP_1 << ToByteVector(xonly_pubkey);
+
+    CBlock block = MakePoWBlock(scriptPubKey);
+
+    CKey other_key;
+    other_key.MakeNewKey(true);
+    auto wallet = MakeTestTaprootWallet(other_key, m_node.chain.get());
+
+    BOOST_CHECK(!SignBlock(block, *wallet));
+}
+
+// --- WITNESS_V1_TAPROOT path, invalid x-only pubkey in script → false ---
+
+BOOST_AUTO_TEST_CASE(SignBlock_witness_v1_taproot_invalid_pubkey)
+{
+    CKey key;
+    key.MakeNewKey(true);
+
+    // 32 bytes of zeros is not a valid x-only pubkey (not on curve).
+    CScript scriptPubKey;
+    scriptPubKey << OP_1 << std::vector<unsigned char>(32, 0x00);
+
+    CBlock block = MakePoWBlock(scriptPubKey);
+    auto wallet = MakeTestTaprootWallet(key, m_node.chain.get());
+
     BOOST_CHECK(!SignBlock(block, *wallet));
 }
 
