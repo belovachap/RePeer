@@ -299,3 +299,29 @@ if(ENABLE_MULTIPROCESS)
   # Use libmultiprocess's own CMake integration or custom commands
   # to generate capnp files
 endif()
+
+# unit testing
+
+add_executable(repeer-test
+  test/main.cpp
+  test/validation_block_tests.cpp
+  test/validation_signblock_tests.cpp
+  
+  test/util/setup_common.cpp
+  test/util/setup_common.h
+  test/util/wallet.cpp
+  test/util/wallet.h
+)
+target_include_directories(repeer-test PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
+target_link_libraries(repeer-test PUBLIC
+  bitcoin_node
+  bitcoin_common
+  bitcoin_util
+  bitcoin_consensus
+  bitcoin_wallet
+  Boost::unit_test_framework
+  ${LIBBITCOIN_CRYPTO}
+  ${SSL_LIBRARIES}
+  ${CRYPTO_LIBRARIES}
+  Threads::Threads
+)

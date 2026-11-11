@@ -1573,7 +1573,7 @@ void Chainstate::InvalidChainFound(CBlockIndex* pindexNew)
 
     LogPrintf("%s: invalid block=%s  height=%d  log2_trust=%.8g  moneysupply=%s  date=%s  moneysupply=%s\n", __func__,
       pindexNew->GetBlockHash().ToString(), pindexNew->nHeight,
-      log(pindexNew->nChainTrust.getdouble())/log(2.0), 
+      log(pindexNew->nChainTrust.getdouble())/log(2.0),
       FormatMoney(m_chain.Tip()->nMoneySupply),
       FormatISO8601DateTime(pindexNew->GetBlockTime()),
       FormatMoney(pindexNew->nMoneySupply));
@@ -4951,27 +4951,39 @@ typedef std::vector<unsigned char> valtype;
 bool SignBlock(CBlock& block, const CWallet& keystore)
 {
     std::vector<valtype> vSolutions;
-    const CTxOut& txout = block.IsProofOfStake()? block.vtx[1]->vout[1] : block.vtx[0]->vout[0];
+    const CTransaction& tx = block.IsProofOfStake() ? *block.vtx[1] : *block.vtx[0];
+    const CTxOut& txout = block.IsProofOfStake() ? block.vtx[1]->vout[1] : block.vtx[0]->vout[0];
 
-    if (Solver(txout.scriptPubKey, vSolutions) != TxoutType::PUBKEY)
+    TxoutType whichType = Solver(txout.scriptPubKey, vSolutions);
+
+    CPubKey pubKey;
+    if (whichType == TxoutType::PUBKEY) {
+        pubKey = CPubKey(vSolutions[0]);
+    } else if (whichType == TxoutType::WITNESS_V0_KEYHASH) {
+        // For P2WPKH, extract pubkey from the witness stack
+        if (tx.vin.empty() || tx.vin[0].scriptWitness.IsNull() || tx.vin[0].scriptWitness.stack.empty())
+            return false;
+        const valtype& pubkey_data = tx.vin[0].scriptWitness.stack.back();
+        pubKey = CPubKey(pubkey_data);
+        if (!pubKey.IsValid())
+            return false;
+    } else {
         return false;
+    }
 
     // Sign
     if (keystore.IsLegacy())
     {
-        const valtype& vchPubKey = vSolutions[0];
         CKey key;
-        if (!keystore.GetLegacyScriptPubKeyMan()->GetKey(CKeyID(Hash160(vchPubKey)), key))
+        if (!keystore.GetLegacyScriptPubKeyMan()->GetKey(CKeyID(pubKey.GetID()), key))
             return false;
-        if (key.GetPubKey() != CPubKey(vchPubKey))
+        if (key.GetPubKey() != pubKey)
             return false;
         return key.Sign(block.GetHash(), block.vchBlockSig);
     }
     else
     {
-        CTxDestination address;
-        CPubKey pubKey(vSolutions[0]);
-        address = PKHash(pubKey);
+        CTxDestination address = PKHash(pubKey);
         PKHash* pkhash = std::get_if<PKHash>(&address);
         SigningResult res = keystore.SignBlockHash(block.GetHash(), *pkhash, block.vchBlockSig);
         if (res == SigningResult::OK)
@@ -4987,13 +4999,36 @@ bool CheckBlockSignature(const CBlock& block)
         return block.vchBlockSig.empty();
 
     std::vector<valtype> vSolutions;
-    const CTxOut& txout = block.IsProofOfStake()? block.vtx[1]->vout[1] : block.vtx[0]->vout[0];
+    const CTransaction& tx = block.IsProofOfStake() ? *block.vtx[1] : *block.vtx[0];
+    const CTxOut& txout = block.IsProofOfStake() ? block.vtx[1]->vout[1] : block.vtx[0]->vout[0];
 
-    if (Solver(txout.scriptPubKey, vSolutions) != TxoutType::PUBKEY)
+    TxoutType whichType = Solver(txout.scriptPubKey, vSolutions);
+
+    CPubKey key;
+    if (whichType == TxoutType::PUBKEY) {
+        key = CPubKey(vSolutions[0]);
+    } else if (whichType == TxoutType::WITNESS_V0_KEYHASH) {
+        // For P2WPKH, the pubkey must be in the witness stack of the coinbase/coinstake input
+        if (tx.vin.empty() || tx.vin[0].scriptWitness.IsNull() || tx.vin[0].scriptWitness.stack.empty())
+            return false;
+        const valtype& pubkey_data = tx.vin[0].scriptWitness.stack.back();
+        key = CPubKey(pubkey_data);
+        if (!key.IsValid())
+            return false;
+        // Verify the witness pubkey hash matches the scriptPubKey program
+        if (Hash160(pubkey_data) != uint160(vSolutions[0]))
+            return false;
+    } else if (whichType == TxoutType::WITNESS_V1_TAPROOT) {
+        // For P2TR, the 32-byte witness program is the x-only pubkey.
+        // Block signature for taproot requires Schnorr verification.
+        XOnlyPubKey xonly_key{vSolutions[0]};
+        if (block.vchBlockSig.empty())
+            return false;
+        return xonly_key.VerifySchnorr(block.GetHash(), block.vchBlockSig);
+    } else {
         return false;
+    }
 
-    const valtype& vchPubKey = vSolutions[0];
-    CPubKey key(vchPubKey);
     if (block.vchBlockSig.empty())
         return false;
     return key.Verify(block.GetHash(), block.vchBlockSig);
