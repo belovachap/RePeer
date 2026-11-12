@@ -640,6 +640,31 @@ SigningResult DescriptorScriptPubKeyMan::SignBlockHash(const uint256 &hash, cons
     return SigningResult::OK;
 }
 
+SigningResult DescriptorScriptPubKeyMan::SignSchnorrBlockHash(const uint256 &hash, const PKHash& pkhash, std::vector<unsigned char>& vchSig, std::vector<unsigned char> vSolution) const
+{
+    std::unique_ptr<FlatSigningProvider> keys = GetSigningProvider(GetScriptForDestination(pkhash), true);
+    if (!keys) {
+        return SigningResult::PRIVATE_KEY_NOT_AVAILABLE;
+    }
+
+    CKey key;
+    if (!keys->GetKey(ToKeyID(pkhash), key)) {
+        return SigningResult::PRIVATE_KEY_NOT_AVAILABLE;
+    }
+
+    // Verify the x-only pubkey matches the scriptPubKey.
+    if (XOnlyPubKey{key.GetPubKey()} != XOnlyPubKey{vSolution})
+    {
+        return SigningResult::SIGNING_FAILED;
+    }
+
+    if (!key.SignSchnorr(hash, vchSig, nullptr, uint256())) {
+        return SigningResult::SIGNING_FAILED;
+    }
+
+    return SigningResult::OK;
+}
+
 TransactionError LegacyScriptPubKeyMan::FillPSBT(PartiallySignedTransaction& psbtx, const PrecomputedTransactionData& txdata, int sighash_type, bool sign, bool bip32derivs, int* n_signed, bool finalize) const
 {
     if (n_signed) {

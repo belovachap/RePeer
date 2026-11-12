@@ -943,6 +943,8 @@ public:
 
     /** Signal to the staking thread to stop for this wallet */
     std::atomic<bool> m_should_stop_minting{false};
+
+    void AddScriptPubKeyMan(OutputType type, bool internal, std::unique_ptr<DescriptorScriptPubKeyMan> spk_man);
 };
 
 /**

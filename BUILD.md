@@ -11,6 +11,7 @@ sudo apt install git \
                  libssl-dev \
                  libsqlite3-dev \
                  libboost-dev \
+                 libboost-test-dev \
                  qt6-base-dev
 ```
 

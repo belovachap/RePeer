@@ -3955,9 +3955,7 @@ void CWallet::SetupDescriptorScriptPubKeyMans(const CExtKey& master_key)
                 }
             }
             spk_manager->SetupDescriptorGeneration(master_key, t, internal);
-            uint256 id = spk_manager->GetID();
-            m_spk_managers[id] = std::move(spk_manager);
-            AddActiveScriptPubKeyMan(id, t, internal);
+            AddScriptPubKeyMan(t, internal, std::move(spk_manager));
         }
     }
 }
@@ -4128,4 +4126,13 @@ ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const Flat
 
     return spk_man;
 }
+
+void CWallet::AddScriptPubKeyMan(OutputType type, bool internal, std::unique_ptr<DescriptorScriptPubKeyMan> spk_man)
+{
+    AssertLockHeld(cs_wallet);
+    uint256 id = spk_man->GetID();
+    m_spk_managers[id] = std::move(spk_man);
+    AddActiveScriptPubKeyMan(id, type, internal);
+}
+
 } // namespace wallet

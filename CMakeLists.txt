@@ -138,7 +138,7 @@ find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
 
 # Boost
-find_package(Boost CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework)
 
 # Qt6
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
