@@ -489,7 +489,7 @@ set(REPEERD_SOURCE_FILES
   src/wallet/sqlite.h
   src/wallet/transaction.cpp
   src/wallet/transaction.h
-  types.h
+  src/wallet/types.h
   src/wallet/wallet.cpp
   src/wallet/wallet.h
   src/wallet/walletdb.cpp
@@ -502,3 +502,328 @@ set(REPEERD_SOURCE_FILES
 add_executable(repeerd ${REPEERD_SOURCE_FILES})
 target_include_directories(repeerd PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
 target_link_libraries(repeerd PUBLIC crypto leveldb minisketch secp256k1 sqlite3 univalue)
+
+# repeer-qt executable
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOUIC_SEARCH_PATHS "src/qt/forms")
+set(CMAKE_AUTORCC ON)
+
+set(REPEER-QT_SOURCE_FILES
+  src/base58.cpp
+  src/base58.h
+  src/chain.cpp
+  src/chain.h
+  src/chainparams.cpp
+  src/chainparams.h
+  src/chainparamsbase.cpp
+  src/chainparamsbase.h
+  src/clientversion.cpp
+  src/clientversion.h
+  src/coins.cpp
+  src/coins.h
+  src/core_write.cpp
+  src/hash.cpp
+  src/hash.h
+  src/init.cpp
+  src/init.h
+  src/kernel.cpp
+  src/kernel.h
+  src/kernelrecord.cpp
+  src/kernelrecord.h
+  src/key_io.cpp
+  src/key_io.h
+  src/key.cpp
+  src/key.h
+  src/logging.cpp
+  src/logging.h
+  src/net.cpp
+  src/net.h
+  src/netbase.cpp
+  src/netbase.h
+  src/netaddress.cpp
+  src/netaddress.h
+  src/noui.cpp
+  src/noui.h
+  src/outputtype.cpp
+  src/outputtype.h
+  src/protocol.cpp
+  src/protocol.h
+  src/psbt.cpp
+  src/psbt.h
+  src/pubkey.cpp
+  src/pubkey.h
+  src/random.cpp
+  src/random.h
+  src/scheduler.cpp
+  src/scheduler.h
+  src/timedata.cpp
+  src/timedata.h
+  src/uint256.cpp
+  src/uint256.h
+  src/validation.cpp
+  src/validation.h
+  src/warnings.cpp
+  src/warnings.h
+
+  src/common/interfaces.cpp
+  src/common/init.cpp
+  src/common/init.h
+
+  src/consensus/tx_verify.cpp
+  src/consensus/tx_verify.h
+
+  src/crypto/aes.cpp
+  src/crypto/aes.h
+  src/crypto/chacha20.cpp
+  src/crypto/chacha20.h
+  src/crypto/hmac_sha512.cpp
+  src/crypto/hmac_sha512.h
+  src/crypto/ripemd160.cpp
+  src/crypto/ripemd160.h
+  src/crypto/sha1.cpp
+  src/crypto/sha1.h
+  src/crypto/sha256.cpp
+  src/crypto/sha256.h
+  src/crypto/sha512.cpp
+  src/crypto/sha512.h
+  src/crypto/siphash.cpp
+  src/crypto/siphash.h
+
+  src/index/txindex.cpp
+  src/index/txindex.h
+
+  src/init/bitcoin-qt.cpp
+
+  src/interfaces/handler.h
+
+  src/kernel/cs_main.cpp
+  src/kernel/cs_main.h
+
+  src/node/blockstorage.cpp
+  src/node/blockstorage.h
+  src/node/interface_ui.cpp
+  src/node/interface_ui.h
+  src/node/miner.cpp
+  src/node/miner.h
+
+  src/policy/policy.cpp
+  src/policy/policy.h
+
+  src/primitives/block.cpp
+  src/primitives/block.h
+  src/primitives/transaction.cpp
+  src/primitives/transaction.h
+
+  src/qt/addressbookpage.cpp
+  src/qt/addressbookpage.h
+  src/qt/addresstablemodel.cpp
+  src/qt/addresstablemodel.h
+  src/qt/askpassphrasedialog.cpp
+  src/qt/askpassphrasedialog.h
+  src/qt/bitcoin.cpp
+  src/qt/bitcoin.h
+  src/qt/bitcoin.qrc
+  src/qt/bitcoinaddressvalidator.cpp
+  src/qt/bitcoinaddressvalidator.h
+  src/qt/bitcoinamountfield.cpp
+  src/qt/bitcoinamountfield.h
+  src/qt/bitcoingui.cpp
+  src/qt/bitcoingui.h
+  src/qt/bitcoinunits.cpp
+  src/qt/bitcoinunits.h
+  src/qt/clientmodel.cpp
+  src/qt/clientmodel.h
+  src/qt/coincontroldialog.cpp
+  src/qt/coincontroldialog.h
+  src/qt/coincontroltreewidget.cpp
+  src/qt/coincontroltreewidget.h
+  src/qt/createwalletdialog.cpp
+  src/qt/createwalletdialog.h
+  src/qt/csvmodelwriter.cpp
+  src/qt/csvmodelwriter.h
+  src/qt/editaddressdialog.cpp
+  src/qt/editaddressdialog.h
+  src/qt/guiutil.cpp
+  src/qt/guiutil.h
+  src/qt/informationwindow.h
+  src/qt/informationwindow.cpp
+  src/qt/initexecutor.cpp
+  src/qt/initexecutor.h
+  src/qt/intro.cpp
+  src/qt/intro.h
+  src/qt/main.cpp
+  src/qt/mintingfilterproxy.cpp
+  src/qt/mintingfilterproxy.h
+  src/qt/mintingtablemodel.cpp
+  src/qt/mintingtablemodel.h
+  src/qt/mintingview.cpp
+  src/qt/mintingview.h
+  src/qt/modaloverlay.cpp
+  src/qt/modaloverlay.h
+  src/qt/networkstyle.cpp
+  src/qt/networkstyle.h
+  src/qt/notificator.cpp
+  src/qt/notificator.h
+  src/qt/optionsdialog.cpp
+  src/qt/optionsdialog.h
+  src/qt/optionsmodel.cpp
+  src/qt/optionsmodel.h
+  src/qt/overviewpage.cpp
+  src/qt/overviewpage.h
+  src/qt/platformstyle.cpp
+  src/qt/platformstyle.h
+  src/qt/qvalidatedlineedit.cpp
+  src/qt/qvalidatedlineedit.h
+  src/qt/qvaluecombobox.cpp
+  src/qt/qvaluecombobox.h
+  src/qt/receivecoinsdialog.cpp
+  src/qt/receivecoinsdialog.h
+  src/qt/receiverequestdialog.cpp
+  src/qt/receiverequestdialog.h
+  src/qt/recentrequeststablemodel.cpp
+  src/qt/recentrequeststablemodel.h
+  src/qt/sendcoinsdialog.cpp
+  src/qt/sendcoinsdialog.h
+  src/qt/sendcoinsentry.cpp
+  src/qt/sendcoinsentry.h
+  src/qt/splashscreen.cpp
+  src/qt/splashscreen.h
+  src/qt/transactiondesc.cpp
+  src/qt/transactiondesc.h
+  src/qt/transactiondescdialog.cpp
+  src/qt/transactiondescdialog.h
+  src/qt/transactionfilterproxy.cpp
+  src/qt/transactionfilterproxy.h
+  src/qt/transactionoverviewwidget.cpp
+  src/qt/transactionoverviewwidget.h
+  src/qt/transactiontablemodel.cpp
+  src/qt/transactiontablemodel.h
+  src/qt/transactionrecord.cpp
+  src/qt/transactionrecord.h
+  src/qt/transactionview.cpp
+  src/qt/transactionview.h
+  src/qt/utilitydialog.cpp
+  src/qt/utilitydialog.h
+  src/qt/walletcontroller.cpp
+  src/qt/walletcontroller.h
+  src/qt/walletframe.cpp
+  src/qt/walletframe.h
+  src/qt/walletmodel.cpp
+  src/qt/walletmodel.h
+  src/qt/walletmodeltransaction.cpp
+  src/qt/walletmodeltransaction.h
+  src/qt/walletview.cpp
+  src/qt/walletview.h
+
+  src/script/descriptor.cpp
+  src/script/descriptor.h
+  src/script/interpreter.cpp
+  src/script/interpreter.h
+  src/script/miniscript.cpp
+  src/script/miniscript.h
+  src/script/script_error.cpp
+  src/script/script_error.h
+  src/script/script.cpp
+  src/script/script.h
+  src/script/sign.cpp
+  src/script/sign.h
+  src/script/signingprovider.cpp
+  src/script/signingprovider.h
+  src/script/standard.cpp
+  src/script/standard.h
+
+  src/support/cleanse.cpp
+  src/support/cleanse.h
+  src/support/lockedpool.cpp
+  src/support/lockedpool.h
+
+  src/util/bip32.cpp
+  src/util/bip32.h
+  src/util/bytevectorhash.cpp
+  src/util/bytevectorhash.h
+  src/util/check.cpp
+  src/util/check.h
+  src/util/exception.cpp
+  src/util/exception.h
+  src/util/fs_helpers.cpp
+  src/util/fs_helpers.h
+  src/util/fs.cpp
+  src/util/fs.h
+  src/util/getuniquepath.cpp
+  src/util/getuniquepath.h
+  src/util/hasher.cpp
+  src/util/hasher.h
+  src/util/message.cpp
+  src/util/message.h
+  src/util/moneystr.cpp
+  src/util/moneystr.h
+  src/util/settings.cpp
+  src/util/settings.h
+  src/util/spanparsing.cpp
+  src/util/spanparsing.h
+  src/util/strencodings.cpp
+  src/util/strencodings.h
+  src/util/string.cpp
+  src/util/string.h
+  src/util/syserror.cpp
+  src/util/syserror.h
+  src/util/system.cpp
+  src/util/system.h
+  src/util/threadnames.cpp
+  src/util/threadnames.h
+  src/util/threadinterrupt.cpp
+  src/util/threadinterrupt.h
+  src/util/time.cpp
+  src/util/time.h
+
+  src/wallet/coincontrol.cpp
+  src/wallet/coincontrol.h
+  src/wallet/coinselection.cpp
+  src/wallet/coinselection.h
+  src/wallet/context.cpp
+  src/wallet/context.h
+  src/wallet/crypter.cpp
+  src/wallet/crypter.h
+  src/wallet/db.cpp
+  src/wallet/db.h
+  src/wallet/interfaces.cpp
+  src/wallet/load.cpp
+  src/wallet/load.h
+  src/wallet/receive.cpp
+  src/wallet/receive.h
+  src/wallet/scriptpubkeyman.cpp
+  src/wallet/scriptpubkeyman.h
+  src/wallet/spend.cpp
+  src/wallet/spend.h
+  src/wallet/sqlite.cpp
+  src/wallet/sqlite.h
+  src/wallet/transaction.cpp
+  src/wallet/transaction.h
+  src/wallet/wallet.cpp
+  src/wallet/wallet.h
+  src/wallet/walletdb.cpp
+  src/wallet/walletdb.h
+  src/wallet/walletutil.cpp
+  src/wallet/walletutil.cpp
+)
+
+set_source_files_properties(src/node/interface_ui.h PROPERTIES SKIP_AUTOUIC ON)
+set_source_files_properties(src/wallet/interfaces.cpp PROPERTIES SKIP_AUTOUIC ON)
+set_source_files_properties(src/wallet/wallet.h PROPERTIES SKIP_AUTOUIC ON)
+
+add_executable(repeer-qt ${REPEER-QT_SOURCE_FILES})
+target_include_directories(repeer-qt PUBLIC
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_BINARY_DIR}/src
+  ${CMAKE_BINARY_DIR}/repeer-qt_autogen/include
+)
+target_link_libraries(repeer-qt PUBLIC
+  crypto
+  leveldb
+  Qt::Core Qt::DBus Qt::Network Qt::Widgets
+  secp256k1
+  sqlite3
+  univalue
+)
