@@ -309,8 +309,6 @@ add_executable(repeer-test
   
   test/util/setup_common.cpp
   test/util/setup_common.h
-  test/util/wallet.cpp
-  test/util/wallet.h
 )
 target_include_directories(repeer-test PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
 target_link_libraries(repeer-test PUBLIC

@@ -4956,9 +4956,48 @@ bool SignBlock(CBlock& block, const CWallet& wallet)
 
     TxoutType whichType = Solver(txout.scriptPubKey, vSolutions);
 
+    if (whichType == TxoutType::WITNESS_V1_TAPROOT)
+    {
+        wallet::ScriptPubKeyMan* spk_man = wallet.GetScriptPubKeyMan(OutputType::BECH32M, /*internal=*/false);
+        if (!spk_man)
+        {
+            std::cout << "FAILED BECAUSE: !spk_man" << std::endl;
+            return false;
+        }
+        
+        auto* desc_spk_man = dynamic_cast<wallet::DescriptorScriptPubKeyMan*>(spk_man);
+        if (!desc_spk_man)
+        {
+            std::cout << "FAILED BECAUSE: !desc_spk_man" << std::endl;
+            return false;
+        }
+
+        std::unique_ptr<FlatSigningProvider> keys = desc_spk_man->GetSigningProvider(txout.scriptPubKey, true);
+        if (!keys)
+        {
+            std::cout << "FAILED BECAUSE: !keys" << std::endl;
+            return false;
+        }
+
+        if (keys->keys.empty())
+        {
+            std::cout << "FAILED BECAUSE: keys->keys.empty()" << std::endl;
+            return false;
+        }
+
+        CKey key = keys->keys.begin()->second;
+
+        if (!key.SignSchnorr(block.GetHash(), block.vchBlockSig, nullptr, uint256()))
+        {
+            std::cout << "FAILED BECAUSE: !key.SignSchnorr(block.GetHash(), block.vchBlockSig, nullptr, uint256())" << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
     CPubKey pubKey;
-    bool is_taproot = false;
-    if (whichType == TxoutType::PUBKEY || whichType == TxoutType::WITNESS_V1_TAPROOT)
+    if (whichType == TxoutType::PUBKEY)
     {
         pubKey = CPubKey(vSolutions[0]);
     }
@@ -4977,35 +5016,23 @@ bool SignBlock(CBlock& block, const CWallet& wallet)
         return false;
     }
 
-    // Sign
-    if (whichType == TxoutType::PUBKEY || whichType == TxoutType::WITNESS_V0_KEYHASH)
+    // Sign (ECDSA paths)
+    if (wallet.IsLegacy())
     {
-        if (wallet.IsLegacy())
-        {
-            CKey key;
-            if (!wallet.GetLegacyScriptPubKeyMan()->GetKey(CKeyID(pubKey.GetID()), key))
-                return false;
-            if (key.GetPubKey() != pubKey)
-                return false;
-            return key.Sign(block.GetHash(), block.vchBlockSig);
-        }
-        else
-        {
-            CTxDestination address = PKHash(pubKey);
-            PKHash* pkhash = std::get_if<PKHash>(&address);
-            SigningResult res = wallet.SignBlockHash(block.GetHash(), *pkhash, block.vchBlockSig);
-            return res == SigningResult::OK;
-        }
+        CKey key;
+        if (!wallet.GetLegacyScriptPubKeyMan()->GetKey(CKeyID(pubKey.GetID()), key))
+            return false;
+        if (key.GetPubKey() != pubKey)
+            return false;
+        return key.Sign(block.GetHash(), block.vchBlockSig);
     }
-
-    // TxoutType::WITNESS_V1_TAPROOT
-    CTxDestination address = PKHash(pubKey);
-    PKHash* pkhash = std::get_if<PKHash>(&address);
-    wallet::ScriptPubKeyMan* spk_man = wallet.GetScriptPubKeyMan(OutputType::BECH32M, /*internal=*/false);
-    auto* desc_spk_man = dynamic_cast<wallet::DescriptorScriptPubKeyMan*>(spk_man);
-    SigningResult res = desc_spk_man->SignSchnorrBlockHash(block.GetHash(), *pkhash, block.vchBlockSig, vSolutions[0]);
-    return res == SigningResult::OK;
-
+    else
+    {
+        CTxDestination address = PKHash(pubKey);
+        PKHash* pkhash = std::get_if<PKHash>(&address);
+        SigningResult res = wallet.SignBlockHash(block.GetHash(), *pkhash, block.vchBlockSig);
+        return res == SigningResult::OK;
+    }
 }
 
 // peercoin: check block signature
