@@ -115,7 +115,7 @@ CAmount CachedTxGetCredit(const CWallet& wallet, const CWalletTx& wtx, const ism
         return 0;
 
     CAmount credit = 0;
-    const isminefilter get_amount_filter{filter & ISMINE_ALL};
+    const isminefilter get_amount_filter{filter & ISMINE_SPENDABLE};
     if (get_amount_filter) {
         // GetBalance can assume transactions in mapWallet won't change
         credit += GetCachableAmount(wallet, wtx, CWalletTx::CREDIT, get_amount_filter);
@@ -129,7 +129,7 @@ CAmount CachedTxGetDebit(const CWallet& wallet, const CWalletTx& wtx, const ismi
         return 0;
 
     CAmount debit = 0;
-    const isminefilter get_amount_filter{filter & ISMINE_ALL};
+    const isminefilter get_amount_filter{filter & ISMINE_SPENDABLE};
     if (get_amount_filter) {
         debit += GetCachableAmount(wallet, wtx, CWalletTx::DEBIT, get_amount_filter);
     }

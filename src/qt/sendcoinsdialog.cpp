@@ -191,8 +191,6 @@ bool SendCoinsDialog::PrepareSendText(QString& question_string, QString& informa
     m_current_transaction = std::make_unique<WalletModelTransaction>(recipients);
     WalletModel::SendCoinsReturn prepareStatus;
 
-    updateCoinControlState();
-
     CCoinControl coin_control = *m_coin_control;
     coin_control.m_allow_other_inputs = !coin_control.HasSelected(); // future, could introduce a checkbox to customize this value.
     prepareStatus = model->prepareTransaction(*m_current_transaction, coin_control);
@@ -433,10 +431,6 @@ void SendCoinsDialog::setBalance(const interfaces::WalletBalances& balances)
     if(model && model->getOptionsModel())
     {
         CAmount balance = balances.balance;
-        if (model->wallet().isLegacy() && model->wallet().privateKeysDisabled()) {
-            balance = balances.watch_only_balance;
-            ui->labelBalanceName->setText(tr("Watch-only balance:"));
-        }
         ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balance));
     }
 }
@@ -492,9 +486,6 @@ void SendCoinsDialog::processSendCoinsReturn(const WalletModel::SendCoinsReturn 
 
 void SendCoinsDialog::useAvailableBalance(SendCoinsEntry* entry)
 {
-    // Include watch-only for wallets without private key
-    m_coin_control->fAllowWatchOnly = model->wallet().privateKeysDisabled();
-
     // Same behavior as send: if we have selected coins, only obtain their available balance.
     // Copy to avoid modifying the member's data.
     CCoinControl coin_control = *m_coin_control;
@@ -515,12 +506,6 @@ void SendCoinsDialog::useAvailableBalance(SendCoinsEntry* entry)
     } else {
       entry->setAmount(0);
     }
-}
-
-void SendCoinsDialog::updateCoinControlState()
-{
-    // Include watch-only for wallets without private key
-    m_coin_control->fAllowWatchOnly = model->wallet().privateKeysDisabled();
 }
 
 void SendCoinsDialog::updateNumberOfBlocks(int count, const QDateTime& blockDate, double nVerificationProgress, bool headers, SynchronizationState sync_state) {
@@ -663,8 +648,6 @@ void SendCoinsDialog::coinControlUpdateLabels()
 {
     if (!model || !model->getOptionsModel())
         return;
-
-    updateCoinControlState();
 
     // set pay amounts
     CoinControlDialog::payAmounts.clear();

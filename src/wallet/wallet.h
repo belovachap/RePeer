@@ -848,13 +848,6 @@ public:
     //! Get the wallet descriptors for a script.
     std::vector<WalletDescriptor> GetWalletDescriptors(const CScript& script) const;
 
-    //! Get the LegacyScriptPubKeyMan which is used for all types, internal, and external.
-    std::nullptr_t GetLegacyScriptPubKeyMan() const;
-    std::nullptr_t GetOrCreateLegacyScriptPubKeyMan();
-
-    //! Make a LegacyScriptPubKeyMan and set it for all types, internal, and external.
-    void SetupLegacyScriptPubKeyMan();
-
     const CKeyingMaterial& GetEncryptionKey() const override;
     bool HasEncryptionKeys() const override;
 
