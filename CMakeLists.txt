@@ -28,7 +28,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(CRYPTO REQUIRED libcrypto)
 pkg_check_modules(SSL REQUIRED libssl)
 find_package(Boost CONFIG REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core DBus Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core DBus Widgets Network)
 find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -101,15 +101,12 @@ set(REPEERD_SOURCE_FILES
   src/compressor.h
   src/core_io.h
   src/core_memusage.h
-  # core_read.cpp not used??
-  # core_write.cpp not used??
   src/cuckoocache.h
   src/dbwrapper.cpp
   src/dbwrapper.h
   src/deploymentinfo.cpp
   src/deploymentinfo.h
-  # deploymentstatus.cpp not used??
-  # deploymentstatus.h not used??
+  src/deploymentstatus.h
   src/flatfile.cpp
   src/flatfile.h
   src/hash.cpp
@@ -123,8 +120,6 @@ set(REPEERD_SOURCE_FILES
   src/init.h
   src/kernel.cpp
   src/kernel.h
-  # kernelrecord.cpp not used?
-  # kernelrecord.h not used?
   src/key_io.cpp
   src/key_io.h
   src/key.cpp
@@ -176,12 +171,10 @@ set(REPEERD_SOURCE_FILES
   src/signet.h
   src/span.h
   src/streams.h
-  # sync.cpp not used?
-  # sync.h not used?
+  src/sync.h
   src/threadsafety.h
   src/timedata.cpp
   src/timedata.h
-  # timedatadummy.cpp not used?
   src/tinyformat.h
   src/txdb.cpp
   src/txdb.h
@@ -199,8 +192,7 @@ set(REPEERD_SOURCE_FILES
   src/validationinterface.cpp
   src/validationinterface.h
   src/version.h
-  # versionbits.cpp not used?
-  # versionbits.h not used?
+  src/versionbits.h
   src/walletinitinterface.h
   src/warnings.cpp
   src/warnings.h
@@ -214,8 +206,6 @@ set(REPEERD_SOURCE_FILES
   src/compat/assumptions.h
   src/compat/compat.h
   src/compat/cpuid.h
-  # src/compat/stdin.cpp not used?
-  # src/compat/stdin.h not used?
 
   src/config/bitcoin-config.h
 
@@ -230,35 +220,19 @@ set(REPEERD_SOURCE_FILES
   src/consensus/tx_verify.h
   src/consensus/validation.h
 
-  # ctaes sub module discovered! the header file is included in aes.cpp and aes.h but the c file isn't referenced anywhere... not used?
   src/crypto/aes.cpp
   src/crypto/aes.h
-  # chacha_poly_aead.cpp not used?
-  # chacha_poly_aead.h not used?
   src/crypto/chacha20.cpp
   src/crypto/chacha20.h
   src/crypto/common.h
-  # hkdf_sha256_32.cpp not used?
-  # hkdf_sha256_32.h not used?
-  # hmac_sha256.cpp not used?
-  # hmac_sha256.h not used?
   src/crypto/hmac_sha512.cpp
   src/crypto/hmac_sha512.h
   src/crypto/muhash.cpp
   src/crypto/muhash.h
-  # poly1305.cpp not used?
-  # poly1305.h not used?
   src/crypto/ripemd160.cpp
   src/crypto/ripemd160.h
   src/crypto/sha1.cpp
   src/crypto/sha1.h
-  # sha3.cpp not used?
-  # sha3.h not used?
-  # sha256_arm_shani.cpp not used?
-  # sha256_avx2.cpp not used?
-  # sha256_sse4.cpp not used?
-  # sha256_sse41.cpp not used?
-  # sha256_x86_shani.cpp not used?
   src/crypto/sha256.cpp
   src/crypto/sha256.h
   src/crypto/sha512.cpp
@@ -286,13 +260,12 @@ set(REPEERD_SOURCE_FILES
   src/interfaces/node.h
   src/interfaces/wallet.h
 
-  # bitcoinkernel.cpp not used?
   src/kernel/blockmanager_opts.h
   src/kernel/chain.cpp
   src/kernel/chain.h
   src/kernel/chainparams.cpp
   src/kernel/chainparams.h
-  # src/kernel/chainstatemaanger_opts.h not used?
+  src/kernel/chainstatemanager_opts.h
   src/kernel/checks.cpp
   src/kernel/checks.h
   src/kernel/coinstats.cpp
@@ -308,7 +281,7 @@ set(REPEERD_SOURCE_FILES
   src/kernel/mempool_persist.h
   src/kernel/validation_cache_sizes.h
 
-  # src/logging/ not used?
+  src/logging/timer.h
 
   src/node/blockmanager_args.cpp
   src/node/blockmanager_args.h
@@ -341,8 +314,6 @@ set(REPEERD_SOURCE_FILES
   src/node/mempool_persist_args.h
   src/node/miner.cpp
   src/node/miner.h
-  # minisketchwrapper.cpp/.h not used?
-  # psbt.cpp/.h not used?
   src/node/transaction.cpp
   src/node/transaction.h
   src/node/txreconciliation.cpp
@@ -352,12 +323,13 @@ set(REPEERD_SOURCE_FILES
   src/node/validation_cache_args.cpp
   src/node/validation_cache_args.h
 
-  # fee* (6 files) not used?
+  src/policy/feerate.h
+  src/policy/fees.h
   src/policy/packages.cpp
   src/policy/packages.h
   src/policy/policy.cpp
   src/policy/policy.h
-  # rbf.cpp/.h not used?
+  src/policy/rbf.h
   src/policy/settings.cpp
   src/policy/settings.h
 
@@ -366,7 +338,6 @@ set(REPEERD_SOURCE_FILES
   src/primitives/transaction.cpp
   src/primitives/transaction.h
 
-  # bitcoinconsensus.cpp/.h not used?
   src/script/descriptor.cpp
   src/script/descriptor.h
   src/script/interpreter.cpp
@@ -387,11 +358,13 @@ set(REPEERD_SOURCE_FILES
   src/script/standard.cpp
   src/script/standard.h
 
-  # allocators/ not used?
   src/support/cleanse.cpp
   src/support/cleanse.h
   src/support/lockedpool.cpp
   src/support/lockedpool.h
+
+  src/support/allocators/secure.h
+  src/support/allocators/zeroafterfree.h
 
   src/util/asmap.cpp
   src/util/asmap.h
@@ -408,7 +381,7 @@ set(REPEERD_SOURCE_FILES
   src/util/exception.cpp
   src/util/exception.h
   src/util/fastrange.h
-  # fees.cpp/.h not used?
+  src/util/fees.h
   src/util/fs_helpers.cpp
   src/util/fs_helpers.h
   src/util/fs.cpp
@@ -426,11 +399,10 @@ set(REPEERD_SOURCE_FILES
   src/util/moneystr.h
   src/util/overflow.h
   src/util/overloaded.h
-  # rbf.cpp/.h not used?
+  src/util/rbf.h
   src/util/readwritefile.cpp
   src/util/readwritefile.h
   src/util/result.h
-  # serfloat.cpp/.h not used?
   src/util/settings.cpp
   src/util/settings.h
   src/util/sock.cpp
@@ -458,7 +430,7 @@ set(REPEERD_SOURCE_FILES
   src/util/tokenpipe.cpp
   src/util/tokenpipe.h
   src/util/translation.h
-  # src/util/types.h only used in src/logging but that might not be used either?
+  src/util/types.h
   src/util/ui_change_type.h
   src/util/vector.h
 
@@ -472,9 +444,7 @@ set(REPEERD_SOURCE_FILES
   src/wallet/crypter.h
   src/wallet/db.cpp
   src/wallet/db.h
-  # dump.cpp/.h not used?
-  # feebumper.cpp/.h not used?
-  # fees.cpp/.h not used?
+  src/wallet/fees.h
   src/wallet/init.cpp
   src/wallet/interfaces.cpp
   src/wallet/load.cpp
@@ -494,7 +464,6 @@ set(REPEERD_SOURCE_FILES
   src/wallet/wallet.h
   src/wallet/walletdb.cpp
   src/wallet/walletdb.h
-  # wallettool.cpp/.h not used?
   src/wallet/walletutil.cpp
   src/wallet/walletutil.h
 )
@@ -539,7 +508,7 @@ set(REPEER-QT_SOURCE_FILES
   src/coins.h
   src/compressor.cpp
   src/compressor.h
-  src/core_write.cpp
+  src/core_write.cpp # unique to repeer-qt?
   src/dbwrapper.cpp
   src/dbwrapper.h
   src/deploymentinfo.cpp
@@ -556,8 +525,8 @@ set(REPEER-QT_SOURCE_FILES
   src/init.h
   src/kernel.cpp
   src/kernel.h
-  src/kernelrecord.cpp
-  src/kernelrecord.h
+  src/kernelrecord.cpp # unique to repeer-qt?
+  src/kernelrecord.h # unique to repeer-qt?
   src/key_io.cpp
   src/key_io.h
   src/key.cpp

@@ -6,7 +6,6 @@
 #include <netaddress.h>
 
 #include <crypto/common.h>
-#include <crypto/sha3.h>
 #include <hash.h>
 #include <prevector.h>
 #include <tinyformat.h>
