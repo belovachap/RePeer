@@ -31,9 +31,9 @@ public:
     explicit TransactionTableModel(const PlatformStyle *platformStyle, WalletModel *parent = nullptr);
     ~TransactionTableModel();
 
+    // Note: the numbering is important for some reason...
     enum ColumnIndex {
         Status = 0,
-        Watchonly = 1,
         Date = 2,
         Type = 3,
         ToAddress = 4,
@@ -48,10 +48,6 @@ public:
         TypeRole = Qt::UserRole,
         /** Date and time this transaction was created */
         DateRole,
-        /** Watch-only boolean */
-        WatchonlyRole,
-        /** Watch-only icon */
-        WatchonlyDecorationRole,
         /** Long description (HTML format) */
         LongDescriptionRole,
         /** Address of transaction */
@@ -105,7 +101,6 @@ private:
     QString formatTxAmount(const TransactionRecord *wtx, bool showUnconfirmed=true, BitcoinUnits::SeparatorStyle separators=BitcoinUnits::SeparatorStyle::STANDARD) const;
     QString formatTooltip(const TransactionRecord *rec) const;
     QVariant txStatusDecoration(const TransactionRecord *wtx) const;
-    QVariant txWatchonlyDecoration(const TransactionRecord *wtx) const;
     QVariant txAddressDecoration(const TransactionRecord *wtx) const;
 
 public Q_SLOTS:

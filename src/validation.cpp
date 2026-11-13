@@ -4957,27 +4957,14 @@ bool SignBlock(CBlock& block, const CWallet& keystore)
         return false;
 
     // Sign
-    if (keystore.IsLegacy())
-    {
-        const valtype& vchPubKey = vSolutions[0];
-        CKey key;
-        if (!keystore.GetLegacyScriptPubKeyMan()->GetKey(CKeyID(Hash160(vchPubKey)), key))
-            return false;
-        if (key.GetPubKey() != CPubKey(vchPubKey))
-            return false;
-        return key.Sign(block.GetHash(), block.vchBlockSig);
-    }
-    else
-    {
-        CTxDestination address;
-        CPubKey pubKey(vSolutions[0]);
-        address = PKHash(pubKey);
-        PKHash* pkhash = std::get_if<PKHash>(&address);
-        SigningResult res = keystore.SignBlockHash(block.GetHash(), *pkhash, block.vchBlockSig);
-        if (res == SigningResult::OK)
-            return true;
-        return false;
-    }
+    CTxDestination address;
+    CPubKey pubKey(vSolutions[0]);
+    address = PKHash(pubKey);
+    PKHash* pkhash = std::get_if<PKHash>(&address);
+    SigningResult res = keystore.SignBlockHash(block.GetHash(), *pkhash, block.vchBlockSig);
+    if (res == SigningResult::OK)
+        return true;
+    return false;
 }
 
 // peercoin: check block signature

@@ -76,7 +76,6 @@ private:
     void processSendCoinsReturn(const WalletModel::SendCoinsReturn &sendCoinsReturn, const QString &msgArg = QString());
     // Format confirmation message
     bool PrepareSendText(QString& question_string, QString& informative_text, QString& detailed_text);
-    void updateCoinControlState();
 
 private Q_SLOTS:
     void sendButtonClicked(bool checked);

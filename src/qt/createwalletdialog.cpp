@@ -18,41 +18,6 @@ CreateWalletDialog::CreateWalletDialog(QWidget* parent) :
     connect(ui->wallet_name_line_edit, &QLineEdit::textEdited, [this](const QString& text) {
         ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(!text.isEmpty());
     });
-
-    connect(ui->encrypt_wallet_checkbox, &QCheckBox::toggled, [this](bool checked) {
-        // Disable the disable_privkeys_checkbox when isEncryptWalletChecked is
-        // set to true, enable it when isEncryptWalletChecked is false.
-        ui->disable_privkeys_checkbox->setEnabled(!checked);
-        // When the disable_privkeys_checkbox is disabled, uncheck it.
-        if (!ui->disable_privkeys_checkbox->isEnabled()) {
-            ui->disable_privkeys_checkbox->setChecked(false);
-        }
-    });
-
-    connect(ui->disable_privkeys_checkbox, &QCheckBox::toggled, [this](bool checked) {
-        // Disable the encrypt_wallet_checkbox when isDisablePrivateKeysChecked is
-        // set to true, enable it when isDisablePrivateKeysChecked is false.
-        ui->encrypt_wallet_checkbox->setEnabled(!checked);
-
-        // Wallets without private keys start out blank
-        if (checked) {
-            ui->blank_wallet_checkbox->setChecked(true);
-        }
-
-        // When the encrypt_wallet_checkbox is disabled, uncheck it.
-        if (!ui->encrypt_wallet_checkbox->isEnabled()) {
-            ui->encrypt_wallet_checkbox->setChecked(false);
-        }
-    });
-
-    connect(ui->blank_wallet_checkbox, &QCheckBox::toggled, [this](bool checked) {
-        if (!checked) {
-          ui->disable_privkeys_checkbox->setChecked(false);
-        }
-    });
-
-    ui->descriptor_checkbox->setEnabled(false);
-    ui->descriptor_checkbox->setChecked(true);
 }
 
 CreateWalletDialog::~CreateWalletDialog()
@@ -72,15 +37,15 @@ bool CreateWalletDialog::isEncryptWalletChecked() const
 
 bool CreateWalletDialog::isDisablePrivateKeysChecked() const
 {
-    return ui->disable_privkeys_checkbox->isChecked();
+    return false;
 }
 
 bool CreateWalletDialog::isMakeBlankWalletChecked() const
 {
-    return ui->blank_wallet_checkbox->isChecked();
+    return false;
 }
 
 bool CreateWalletDialog::isDescriptorWalletChecked() const
 {
-    return ui->descriptor_checkbox->isChecked();
+    return true;
 }
