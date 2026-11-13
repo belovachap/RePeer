@@ -175,14 +175,6 @@ public:
         bool& in_mempool,
         int& num_blocks) = 0;
 
-    //! Fill PSBT.
-    virtual TransactionError fillPSBT(int sighash_type,
-        bool sign,
-        bool bip32derivs,
-        size_t* n_signed,
-        PartiallySignedTransaction& psbtx,
-        bool& complete) = 0;
-
     //! Get balances.
     virtual WalletBalances getBalances() = 0;
 

@@ -343,15 +343,6 @@ public:
         }
         return {};
     }
-    TransactionError fillPSBT(int sighash_type,
-        bool sign,
-        bool bip32derivs,
-        size_t* n_signed,
-        PartiallySignedTransaction& psbtx,
-        bool& complete) override
-    {
-        return m_wallet->FillPSBT(psbtx, complete, sighash_type, sign, bip32derivs, n_signed);
-    }
     WalletBalances getBalances() override
     {
         const auto bal = GetBalance(*m_wallet);

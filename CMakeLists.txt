@@ -152,8 +152,6 @@ set(REPEER-SHARED_SOURCE_FILES
   src/prevector.h
   src/protocol.cpp
   src/protocol.h
-  src/psbt.cpp
-  src/psbt.h
   src/pubkey.cpp
   src/pubkey.h
   src/random.cpp

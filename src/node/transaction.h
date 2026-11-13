@@ -18,11 +18,6 @@ struct Params;
 namespace node {
 struct NodeContext;
 
-/** Maximum fee rate for sendrawtransaction and testmempoolaccept RPC calls.
- * Also used by the GUI when broadcasting a completed PSBT.
- * By default, a transaction with a fee rate higher than this will be rejected
- * by these RPCs and the GUI. This can be overridden with the maxfeerate argument.
- */
 static const CFeeRate DEFAULT_MAX_RAW_TX_FEE_RATE{COIN / 10};
 
 /**
