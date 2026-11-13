@@ -67,8 +67,8 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
         result.txout_address.emplace_back(address);
         result.txout_address_is_mine.emplace_back(wallet.IsMine(txout));
     }
-    result.credit = CachedTxGetCredit(wallet, wtx, ISMINE_ALL);
-    result.debit = CachedTxGetDebit(wallet, wtx, ISMINE_ALL);
+    result.credit = CachedTxGetCredit(wallet, wtx, ISMINE_SPENDABLE);
+    result.debit = CachedTxGetDebit(wallet, wtx, ISMINE_SPENDABLE);
     result.change = CachedTxGetChange(wallet, wtx);
     result.time = wtx.GetTxTime();
     result.value_map = wtx.mapValue;
@@ -170,10 +170,6 @@ public:
     }
     bool haveWatchOnly() override
     {
-        auto spk_man = m_wallet->GetLegacyScriptPubKeyMan();
-        if (spk_man) {
-            return spk_man->HaveWatchOnly();
-        }
         return false;
     };
     bool setAddressBook(const CTxDestination& dest, const std::string& name, const std::optional<AddressPurpose>& purpose) override

@@ -395,70 +395,6 @@ ReadKeyValue(CWallet* pwallet, DataStream& ssKey, CDataStream& ssValue,
             if (!pwallet->LoadToWallet(hash, fill_wtx)) {
                 return false;
             }
-        } else if (strType == DBKeys::WATCHS) {
-            wss.nWatchKeys++;
-            CScript script;
-            ssKey >> script;
-            uint8_t fYes;
-            ssValue >> fYes;
-            if (fYes == '1') {
-                pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadWatchOnly(script);
-            }
-        } else if (strType == DBKeys::KEY) {
-            CPubKey vchPubKey;
-            ssKey >> vchPubKey;
-            if (!vchPubKey.IsValid())
-            {
-                strErr = "Error reading wallet database: CPubKey corrupt";
-                return false;
-            }
-            CKey key;
-            CPrivKey pkey;
-            uint256 hash;
-
-            wss.nKeys++;
-            ssValue >> pkey;
-
-            // Old wallets store keys as DBKeys::KEY [pubkey] => [privkey]
-            // ... which was slow for wallets with lots of keys, because the public key is re-derived from the private key
-            // using EC operations as a checksum.
-            // Newer wallets store keys as DBKeys::KEY [pubkey] => [privkey][hash(pubkey,privkey)], which is much faster while
-            // remaining backwards-compatible.
-            try
-            {
-                ssValue >> hash;
-            }
-            catch (const std::ios_base::failure&) {}
-
-            bool fSkipCheck = false;
-
-            if (!hash.IsNull())
-            {
-                // hash pubkey/privkey to accelerate wallet load
-                std::vector<unsigned char> vchKey;
-                vchKey.reserve(vchPubKey.size() + pkey.size());
-                vchKey.insert(vchKey.end(), vchPubKey.begin(), vchPubKey.end());
-                vchKey.insert(vchKey.end(), pkey.begin(), pkey.end());
-
-                if (Hash(vchKey) != hash)
-                {
-                    strErr = "Error reading wallet database: CPubKey/CPrivKey corrupt";
-                    return false;
-                }
-
-                fSkipCheck = true;
-            }
-
-            if (!key.Load(pkey, vchPubKey, fSkipCheck))
-            {
-                strErr = "Error reading wallet database: CPrivKey corrupt";
-                return false;
-            }
-            if (!pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadKey(key, vchPubKey))
-            {
-                strErr = "Error reading wallet database: LegacyScriptPubKeyMan::LoadKey failed";
-                return false;
-            }
         } else if (strType == DBKeys::MASTER_KEY) {
             // Master encryption key is loaded into only the wallet and not any of the ScriptPubKeyMans.
             unsigned int nID;
@@ -473,110 +409,6 @@ ReadKeyValue(CWallet* pwallet, DataStream& ssKey, CDataStream& ssValue,
             pwallet->mapMasterKeys[nID] = kMasterKey;
             if (pwallet->nMasterKeyMaxID < nID)
                 pwallet->nMasterKeyMaxID = nID;
-        } else if (strType == DBKeys::CRYPTED_KEY) {
-            CPubKey vchPubKey;
-            ssKey >> vchPubKey;
-            if (!vchPubKey.IsValid())
-            {
-                strErr = "Error reading wallet database: CPubKey corrupt";
-                return false;
-            }
-            std::vector<unsigned char> vchPrivKey;
-            ssValue >> vchPrivKey;
-
-            // Get the checksum and check it
-            bool checksum_valid = false;
-            if (!ssValue.eof()) {
-                uint256 checksum;
-                ssValue >> checksum;
-                if (!(checksum_valid = Hash(vchPrivKey) == checksum)) {
-                    strErr = "Error reading wallet database: Encrypted key corrupt";
-                    return false;
-                }
-            }
-
-            wss.nCKeys++;
-
-            if (!pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadCryptedKey(vchPubKey, vchPrivKey, checksum_valid))
-            {
-                strErr = "Error reading wallet database: LegacyScriptPubKeyMan::LoadCryptedKey failed";
-                return false;
-            }
-            wss.fIsEncrypted = true;
-        } else if (strType == DBKeys::KEYMETA) {
-            CPubKey vchPubKey;
-            ssKey >> vchPubKey;
-            CKeyMetadata keyMeta;
-            ssValue >> keyMeta;
-            wss.nKeyMeta++;
-            pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadKeyMetadata(vchPubKey.GetID(), keyMeta);
-
-            // Extract some CHDChain info from this metadata if it has any
-            if (keyMeta.nVersion >= CKeyMetadata::VERSION_WITH_HDDATA && !keyMeta.hd_seed_id.IsNull() && keyMeta.hdKeypath.size() > 0) {
-                // Get the path from the key origin or from the path string
-                // Not applicable when path is "s" or "m" as those indicate a seed
-                // See https://github.com/bitcoin/bitcoin/pull/12924
-                bool internal = false;
-                uint32_t index = 0;
-                if (keyMeta.hdKeypath != "s" && keyMeta.hdKeypath != "m") {
-                    std::vector<uint32_t> path;
-                    if (keyMeta.has_key_origin) {
-                        // We have a key origin, so pull it from its path vector
-                        path = keyMeta.key_origin.path;
-                    } else {
-                        // No key origin, have to parse the string
-                        if (!ParseHDKeypath(keyMeta.hdKeypath, path)) {
-                            strErr = "Error reading wallet database: keymeta with invalid HD keypath";
-                            return false;
-                        }
-                    }
-
-                    // Extract the index and internal from the path
-                    // Path string is m/0'/k'/i'
-                    // Path vector is [0', k', i'] (but as ints OR'd with the hardened bit
-                    // k == 0 for external, 1 for internal. i is the index
-                    if (path.size() != 3) {
-                        strErr = "Error reading wallet database: keymeta found with unexpected path";
-                        return false;
-                    }
-                    if (path[0] != 0x80000000) {
-                        strErr = strprintf("Unexpected path index of 0x%08x (expected 0x80000000) for the element at index 0", path[0]);
-                        return false;
-                    }
-                    if (path[1] != 0x80000000 && path[1] != (1 | 0x80000000)) {
-                        strErr = strprintf("Unexpected path index of 0x%08x (expected 0x80000000 or 0x80000001) for the element at index 1", path[1]);
-                        return false;
-                    }
-                    if ((path[2] & 0x80000000) == 0) {
-                        strErr = strprintf("Unexpected path index of 0x%08x (expected to be greater than or equal to 0x80000000)", path[2]);
-                        return false;
-                    }
-                    internal = path[1] == (1 | 0x80000000);
-                    index = path[2] & ~0x80000000;
-                }
-
-                // Insert a new CHDChain, or get the one that already exists
-                auto ins = wss.m_hd_chains.emplace(keyMeta.hd_seed_id, CHDChain());
-                CHDChain& chain = ins.first->second;
-                if (ins.second) {
-                    // For new chains, we want to default to VERSION_HD_BASE until we see an internal
-                    chain.nVersion = CHDChain::VERSION_HD_BASE;
-                    chain.seed_id = keyMeta.hd_seed_id;
-                }
-                if (internal) {
-                    chain.nVersion = CHDChain::VERSION_HD_CHAIN_SPLIT;
-                    chain.nInternalChainCounter = std::max(chain.nInternalChainCounter, index + 1);
-                } else {
-                    chain.nExternalChainCounter = std::max(chain.nExternalChainCounter, index + 1);
-                }
-            }
-        } else if (strType == DBKeys::WATCHMETA) {
-            CScript script;
-            ssKey >> script;
-            CKeyMetadata keyMeta;
-            ssValue >> keyMeta;
-            wss.nKeyMeta++;
-            pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadScriptMetadata(CScriptID(script), keyMeta);
         } else if (strType == DBKeys::DEFAULTKEY) {
             // We don't want or need the default key, but if there is one set,
             // we want to make sure that it is valid so that we can detect corruption
@@ -584,23 +416,6 @@ ReadKeyValue(CWallet* pwallet, DataStream& ssKey, CDataStream& ssValue,
             ssValue >> vchPubKey;
             if (!vchPubKey.IsValid()) {
                 strErr = "Error reading wallet database: Default Key corrupt";
-                return false;
-            }
-        } else if (strType == DBKeys::POOL) {
-            int64_t nIndex;
-            ssKey >> nIndex;
-            CKeyPool keypool;
-            ssValue >> keypool;
-
-            pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadKeyPool(nIndex, keypool);
-        } else if (strType == DBKeys::CSCRIPT) {
-            uint160 hash;
-            ssKey >> hash;
-            CScript script;
-            ssValue >> script;
-            if (!pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadCScript(script))
-            {
-                strErr = "Error reading wallet database: LegacyScriptPubKeyMan::LoadCScript failed";
                 return false;
             }
         } else if (strType == DBKeys::ORDERPOSNEXT) {
@@ -611,10 +426,6 @@ ReadKeyValue(CWallet* pwallet, DataStream& ssKey, CDataStream& ssValue,
             ssKey >> strKey;
             ssValue >> strValue;
             pwallet->LoadDestData(DecodeDestination(strAddress), strKey, strValue);
-        } else if (strType == DBKeys::HDCHAIN) {
-            CHDChain chain;
-            ssValue >> chain;
-            pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadHDChain(chain);
         } else if (strType == DBKeys::OLD_KEY) {
             strErr = "Found unsupported 'wkey' record, try loading with version 0.18";
             return false;
@@ -910,15 +721,6 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
     pwallet->WalletLogPrintf("Keys: %u plaintext, %u encrypted, %u w/ metadata, %u total. Unknown wallet records: %u\n",
            wss.nKeys, wss.nCKeys, wss.nKeyMeta, wss.nKeys + wss.nCKeys, wss.m_unknown_records);
 
-    // nTimeFirstKey is only reliable if all keys have metadata
-    if (pwallet->IsLegacy() && (wss.nKeys + wss.nCKeys + wss.nWatchKeys) != wss.nKeyMeta) {
-        auto spk_man = pwallet->GetOrCreateLegacyScriptPubKeyMan();
-        if (spk_man) {
-            LOCK(spk_man->cs_KeyStore);
-            spk_man->UpdateTimeFirstKey(1);
-        }
-    }
-
     for (const uint256& hash : wss.vWalletUpgrade)
         WriteTx(pwallet->mapWallet.at(hash));
 
@@ -950,16 +752,8 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
 
     // Set the inactive chain
     if (wss.m_hd_chains.size() > 0) {
-        LegacyScriptPubKeyMan* legacy_spkm = pwallet->GetLegacyScriptPubKeyMan();
-        if (!legacy_spkm) {
-            pwallet->WalletLogPrintf("Inactive HD Chains found but no Legacy ScriptPubKeyMan\n");
-            return DBErrors::CORRUPT;
-        }
-        for (const auto& chain_pair : wss.m_hd_chains) {
-            if (chain_pair.first != pwallet->GetLegacyScriptPubKeyMan()->GetHDChain().seed_id) {
-                pwallet->GetLegacyScriptPubKeyMan()->AddInactiveHDChain(chain_pair.second);
-            }
-        }
+        pwallet->WalletLogPrintf("Inactive HD Chains found but no Legacy ScriptPubKeyMan\n");
+        return DBErrors::CORRUPT;
     }
 
     return result;

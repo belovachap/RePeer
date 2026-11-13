@@ -161,7 +161,7 @@ CAmount CachedTxGetAvailableCredit(const CWallet& wallet, const CWalletTx& wtx, 
     AssertLockHeld(wallet.cs_wallet);
 
     // Avoid caching ismine for NO or ALL cases (could remove this check and simplify in the future).
-    bool allow_cache = (filter & ISMINE_ALL) && (filter & ISMINE_ALL) != ISMINE_ALL;
+    bool allow_cache = (filter & ISMINE_SPENDABLE) && (filter & ISMINE_SPENDABLE) != ISMINE_SPENDABLE;
 
     // Must wait until coinbase is safely deep enough in the chain before valuing it
     if (wallet.IsTxImmatureCoinBase(wtx))
@@ -290,7 +290,7 @@ bool CachedTxIsTrusted(const CWallet& wallet, const CWalletTx& wtx, std::set<uin
     if (nDepth >= 1) return true;
     if (nDepth < 0) return false;
     // using wtx's cached debit
-    if (!wallet.m_spend_zero_conf_change || !CachedTxIsFromMe(wallet, wtx, ISMINE_ALL)) return false;
+    if (!wallet.m_spend_zero_conf_change || !CachedTxIsFromMe(wallet, wtx, ISMINE_SPENDABLE)) return false;
 
     // Don't trust unconfirmed transactions from us unless they are in the mempool.
     if (!wtx.InMempool()) return false;
@@ -333,17 +333,13 @@ Balance GetBalance(const CWallet& wallet, const int min_depth, bool avoid_reuse)
             const bool is_trusted{CachedTxIsTrusted(wallet, wtx, trusted_parents)};
             const int tx_depth{wallet.GetTxDepthInMainChain(wtx)};
             const CAmount tx_credit_mine{CachedTxGetAvailableCredit(wallet, wtx, ISMINE_SPENDABLE | reuse_filter)};
-            const CAmount tx_credit_watchonly{CachedTxGetAvailableCredit(wallet, wtx, ISMINE_WATCH_ONLY | reuse_filter)};
             if (is_trusted && tx_depth >= min_depth) {
                 ret.m_mine_trusted += tx_credit_mine;
-                ret.m_watchonly_trusted += tx_credit_watchonly;
             }
             if (!is_trusted && tx_depth == 0 && wtx.InMempool()) {
                 ret.m_mine_untrusted_pending += tx_credit_mine;
-                ret.m_watchonly_untrusted_pending += tx_credit_watchonly;
             }
             ret.m_mine_immature += CachedTxGetImmatureCredit(wallet, wtx, ISMINE_SPENDABLE);
-            ret.m_watchonly_immature += CachedTxGetImmatureCredit(wallet, wtx, ISMINE_WATCH_ONLY);
         }
     }
     return ret;
@@ -367,7 +363,7 @@ std::map<CTxDestination, CAmount> GetAddressBalances(const CWallet& wallet)
                 continue;
 
             int nDepth = wallet.GetTxDepthInMainChain(wtx);
-            if (nDepth < (CachedTxIsFromMe(wallet, wtx, ISMINE_ALL) ? 0 : 1))
+            if (nDepth < (CachedTxIsFromMe(wallet, wtx, ISMINE_SPENDABLE) ? 0 : 1))
                 continue;
 
             for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
