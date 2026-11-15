@@ -31,13 +31,12 @@ public:
     explicit TransactionTableModel(const PlatformStyle *platformStyle, WalletModel *parent = nullptr);
     ~TransactionTableModel();
 
-    // Note: the numbering is important for some reason...
     enum ColumnIndex {
         Status = 0,
-        Date = 2,
-        Type = 3,
-        ToAddress = 4,
-        Amount = 5
+        Date = 1,
+        Type = 2,
+        ToAddress = 3,
+        Amount = 4
     };
 
     /** Roles to get specific information from a transaction row.
