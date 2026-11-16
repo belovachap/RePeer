@@ -348,7 +348,7 @@ std::map<CTxDestination, std::vector<COutput>> ListCoins(const CWallet& wallet)
     coins_params.skip_locked = false;
     for (const COutput& coin : AvailableCoins(wallet, &coin_control, /*feerate=*/std::nullopt, coins_params).All()) {
         CTxDestination address;
-        if ((coin.spendable) &&
+        if ((coin.spendable || coin.solvable) &&
             ExtractDestination(FindNonChangeParentOutput(wallet, coin.outpoint).scriptPubKey, address)) {
             result[address].emplace_back(coin);
         }
