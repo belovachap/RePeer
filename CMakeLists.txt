@@ -27,7 +27,7 @@ configure_file(
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CRYPTO REQUIRED libcrypto)
 pkg_check_modules(SSL REQUIRED libssl)
-find_package(Boost CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework)
 find_package(Qt6 REQUIRED COMPONENTS Core DBus Widgets Network)
 find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
@@ -618,4 +618,19 @@ target_include_directories(repeer-qt PUBLIC
 target_link_libraries(repeer-qt PUBLIC
   repeer-shared
   Qt::Core Qt::DBus Qt::Network Qt::Widgets
+)
+
+# unit testing executable
+
+add_executable(repeer-test
+  src/test/main.cpp
+  src/test/wallet_create_tests.cpp
+  
+  src/test/util/setup_common.cpp
+  src/test/util/setup_common.h
+)
+target_include_directories(repeer-test PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
+target_link_libraries(repeer-test PUBLIC
+  repeer-shared
+  Boost::unit_test_framework
 )
