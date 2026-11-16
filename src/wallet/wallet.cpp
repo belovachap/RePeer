@@ -392,30 +392,18 @@ std::shared_ptr<CWallet> CreateWallet(WalletContext& context, const std::string&
         return nullptr;
     }
 
-    bool generate_keys = passphrase.empty();
-    std::shared_ptr<CWallet> wallet = CWallet::Create(context, name, std::move(database), generate_keys, error, warnings);
+    bool will_encrypt_wallet = !passphrase.empty();
+    std::shared_ptr<CWallet> wallet = CWallet::Create(context, name, std::move(database), will_encrypt_wallet, error, warnings);
     if (!wallet) {
         error = Untranslated("Wallet creation failed.") + Untranslated(" ") + error;
         status = DatabaseStatus::FAILED_CREATE;
         return nullptr;
     }
 
-    if (!passphrase.empty()) {
-        if (!wallet->EncryptWallet(passphrase)) {
-            error = Untranslated("Error: Wallet created but failed to encrypt.");
-            status = DatabaseStatus::FAILED_ENCRYPT;
-            return nullptr;
-        }
-
-        if (!wallet->Unlock(passphrase)) {
-            error = Untranslated("Error: Wallet was encrypted but could not be unlocked");
-            status = DatabaseStatus::FAILED_ENCRYPT;
-            return nullptr;
-        }
-
-        // Relock the wallet
-        wallet->Lock();
-
+    if (will_encrypt_wallet && !wallet->EncryptWallet(passphrase)) {
+        error = Untranslated("Error: Wallet created but failed to encrypt.");
+        status = DatabaseStatus::FAILED_ENCRYPT;
+        return nullptr;
     }
 
     NotifyWalletLoaded(context, wallet);
@@ -875,38 +863,6 @@ void CWallet::WalletUpdateSpent(const CTransactionRef &tx)
             }
         }
     }
-}
-
-void CWallet::SetSpentKeyState(WalletBatch& batch, const uint256& hash, unsigned int n, bool used, std::set<CTxDestination>& tx_destinations)
-{
-    AssertLockHeld(cs_wallet);
-    const CWalletTx* srctx = GetWalletTx(hash);
-    if (!srctx) return;
-
-    CTxDestination dst;
-    if (ExtractDestination(srctx->tx->vout[n].scriptPubKey, dst)) {
-        if (IsMine(dst)) {
-            if (used != IsAddressUsed(dst)) {
-                if (used) {
-                    tx_destinations.insert(dst);
-                }
-                SetAddressUsed(batch, dst, used);
-            }
-        }
-    }
-}
-
-bool CWallet::IsSpentKey(const CScript& scriptPubKey) const
-{
-    AssertLockHeld(cs_wallet);
-    CTxDestination dest;
-    if (!ExtractDestination(scriptPubKey, dest)) {
-        return false;
-    }
-    if (IsAddressUsed(dest)) {
-        return true;
-    }
-    return false;
 }
 
 CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const TxState& state, const UpdateWalletTxFn& update_wtx, bool fFlushOnClose, bool rescanning_old_block)
@@ -1556,26 +1512,6 @@ bool CWallet::DummySignTx(CMutableTransaction &txNew, const std::vector<CTxOut> 
         nIn++;
     }
     return true;
-}
-
-bool CWallet::ImportScripts(const std::set<CScript> scripts, int64_t timestamp)
-{
-    return false;
-}
-
-bool CWallet::ImportPrivKeys(const std::map<CKeyID, CKey>& privkey_map, const int64_t timestamp)
-{
-    return false;
-}
-
-bool CWallet::ImportPubKeys(const std::vector<CKeyID>& ordered_pubkeys, const std::map<CKeyID, CPubKey>& pubkey_map, const std::map<CKeyID, std::pair<CPubKey, KeyOriginInfo>>& key_origins, const bool add_keypool, const bool internal, const int64_t timestamp)
-{
-    return false;
-}
-
-bool CWallet::ImportScriptPubKeys(const std::string& label, const std::set<CScript>& script_pub_keys, const bool have_solving_data, const bool apply_label, const int64_t timestamp)
-{
-    return false;
 }
 
 /**
@@ -2530,7 +2466,7 @@ std::unique_ptr<WalletDatabase> MakeWalletDatabase(const std::string& name, cons
     return MakeDatabase(wallet_path, options, status, error_string);
 }
 
-std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::string& name, std::unique_ptr<WalletDatabase> database, bool generate_keys, bilingual_str& error, std::vector<bilingual_str>& warnings)
+std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::string& name, std::unique_ptr<WalletDatabase> database, bool will_encrypt_wallet, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
     interfaces::Chain* chain = context.chain;
     ArgsManager& args = *Assert(context.args);
@@ -2584,15 +2520,18 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
         }
     }
 
-    // This wallet is in its first run if there are no ScriptPubKeyMans
     const bool fFirstRun = walletInstance->m_spk_managers.empty();
-    if (fFirstRun && generate_keys) {
+
+    // If we're going to encrypt the wallet, wait until the wallet is encrypted to generate keys
+    if (fFirstRun && !will_encrypt_wallet) {
         LOCK(walletInstance->cs_wallet);
         walletInstance->SetupDescriptorScriptPubKeyMans();
-        // Record the starting block so we don't rescan from genesis
-        if (chain) {
-            walletInstance->chainStateFlushed(chain->getTipLocator());
-        }
+    }
+
+    // Record the starting block so we don't rescan from genesis
+    if (fFirstRun && chain) {
+        LOCK(walletInstance->cs_wallet);
+        walletInstance->chainStateFlushed(chain->getTipLocator());
     }
 
     if (!args.GetArg("-addresstype", "").empty()) {

@@ -228,7 +228,6 @@ struct DatabaseOptions {
     bool require_existing = false;
     bool require_create = false;
     std::optional<DatabaseFormat> require_format;
-    uint64_t create_flags = 0;
     SecureString create_passphrase;
 
     // Specialized options. Not every option is supported by every backend.

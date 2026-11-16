@@ -284,7 +284,6 @@ public:
     //! Delete records of the given types
     bool EraseRecords(const std::unordered_set<std::string>& types);
 
-    bool WriteWalletFlags(const uint64_t flags);
     //! Begin a new transaction
     bool TxnBegin();
     //! Commit current transaction

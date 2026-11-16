@@ -37,10 +37,6 @@ public:
     virtual ~WalletStorage() = default;
     virtual std::string GetDisplayName() const = 0;
     virtual WalletDatabase& GetDatabase() const = 0;
-    virtual bool IsWalletFlagSet(uint64_t) const = 0;
-    virtual void UnsetBlankWalletFlag(WalletBatch&) = 0;
-    virtual bool CanSupportFeature(enum WalletFeature) const = 0;
-    virtual void SetMinVersion(enum WalletFeature, WalletBatch* = nullptr) = 0;
     virtual const CKeyingMaterial& GetEncryptionKey() const = 0;
     virtual bool HasEncryptionKeys() const = 0;
     virtual bool IsLocked() const = 0;
@@ -371,8 +367,6 @@ public:
     int32_t GetEndRange() const;
 
     bool GetDescriptorString(std::string& out, const bool priv) const;
-
-    void UpgradeDescriptorCache();
 };
 } // namespace wallet
 

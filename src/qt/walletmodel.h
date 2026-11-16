@@ -66,7 +66,6 @@ public:
 
     enum EncryptionStatus
     {
-        NoKeys,       // wallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)
         Unencrypted,  // !wallet->IsCrypted()
         Locked,       // wallet->IsCrypted() && wallet->IsLocked()
         Unlocked      // wallet->IsCrypted() && !wallet->IsLocked()
@@ -133,7 +132,6 @@ public:
     UnlockContext requestUnlock();
 
     static bool isWalletEnabled();
-    bool privateKeysDisabled() const;
     bool canGetAddresses() const;
 
     interfaces::Node& node() const { return m_node; }

@@ -291,8 +291,7 @@ void SendCoinsDialog::sendButtonClicked([[maybe_unused]] bool checked)
     assert(m_current_transaction);
 
     const QString confirmation = tr("Confirm send coins");
-    const bool enable_send{!model->wallet().privateKeysDisabled()};
-    auto confirmationDialog = new SendConfirmationDialog(confirmation, question_string, informative_text, detailed_text, SEND_CONFIRM_DELAY, enable_send, this);
+    auto confirmationDialog = new SendConfirmationDialog(confirmation, question_string, informative_text, detailed_text, SEND_CONFIRM_DELAY, this);
     confirmationDialog->setAttribute(Qt::WA_DeleteOnClose);
     // TODO: Replace QDialog::exec() with safer QDialog::show().
     const auto retval = static_cast<QMessageBox::StandardButton>(confirmationDialog->exec());
@@ -303,7 +302,6 @@ void SendCoinsDialog::sendButtonClicked([[maybe_unused]] bool checked)
         return;
     }
 
-    assert(!model->wallet().privateKeysDisabled());
     model->sendCoins(*m_current_transaction);
     Q_EMIT coinsSent(m_current_transaction->getWtx()->GetHash());
     accept();

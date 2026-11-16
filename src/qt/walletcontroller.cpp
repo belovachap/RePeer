@@ -29,10 +29,6 @@
 #include <QTimer>
 #include <QWindow>
 
-using wallet::WALLET_FLAG_BLANK_WALLET;
-using wallet::WALLET_FLAG_DESCRIPTORS;
-using wallet::WALLET_FLAG_DISABLE_PRIVATE_KEYS;
-
 WalletController::WalletController(ClientModel& client_model, const PlatformStyle* platform_style, QObject* parent)
     : QObject(parent)
     , m_activity_thread(new QThread(this))
@@ -244,19 +240,9 @@ void CreateWalletActivity::createWallet()
         tr("Creating Wallet <b>%1</b>…").arg(m_create_wallet_dialog->walletName().toHtmlEscaped()));
 
     std::string name = m_create_wallet_dialog->walletName().toStdString();
-    uint64_t flags = 0;
-    if (m_create_wallet_dialog->isDisablePrivateKeysChecked()) {
-        flags |= WALLET_FLAG_DISABLE_PRIVATE_KEYS;
-    }
-    if (m_create_wallet_dialog->isMakeBlankWalletChecked()) {
-        flags |= WALLET_FLAG_BLANK_WALLET;
-    }
-    if (m_create_wallet_dialog->isDescriptorWalletChecked()) {
-        flags |= WALLET_FLAG_DESCRIPTORS;
-    }
 
-    QTimer::singleShot(500ms, worker(), [this, name, flags] {
-        auto wallet{node().walletLoader().createWallet(name, m_passphrase, flags, m_warning_message)};
+    QTimer::singleShot(500ms, worker(), [this, name] {
+        auto wallet{node().walletLoader().createWallet(name, m_passphrase, m_warning_message)};
 
         if (wallet) {
             m_wallet_model = m_wallet_controller->getOrCreateWallet(std::move(*wallet));

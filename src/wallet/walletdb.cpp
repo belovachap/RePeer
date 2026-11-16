@@ -328,11 +328,6 @@ ReadKeyValue(CWallet* pwallet, DataStream& ssKey, CDataStream& ssValue,
         if (filter_fn && !filter_fn(strType)) {
             return true;
         }
-        // Legacy entries in descriptor wallets are not allowed, abort immediately
-        if (pwallet->IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS) && DBKeys::LEGACY_TYPES.count(strType) > 0) {
-            wss.unexpected_legacy_entry = true;
-            return false;
-        }
         if (strType == DBKeys::NAME) {
             std::string strAddress;
             ssKey >> strAddress;
@@ -593,29 +588,7 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
 
     LOCK(pwallet->cs_wallet);
 
-    // Last client version to open this wallet
-    int last_client = CLIENT_VERSION;
-    bool has_last_client = m_batch->Read(DBKeys::VERSION, last_client);
-    pwallet->WalletLogPrintf("Wallet file version = %d, last client version = %d\n", pwallet->GetVersion(), last_client);
-
     try {
-        int nMinVersion = 0;
-        if (m_batch->Read(DBKeys::MINVERSION, nMinVersion)) {
-            if (nMinVersion > FEATURE_LATEST)
-                return DBErrors::TOO_NEW;
-            pwallet->LoadMinVersion(nMinVersion);
-        }
-
-        // Load wallet flags, so they are known when processing other records.
-        // The FLAGS key is absent during wallet creation.
-        uint64_t flags;
-        if (m_batch->Read(DBKeys::FLAGS, flags)) {
-            if (!pwallet->LoadWalletFlags(flags)) {
-                pwallet->WalletLogPrintf("Error reading wallet database: Unknown non-tolerable wallet flags found\n");
-                return DBErrors::CORRUPT;
-            }
-        }
-
         // Get cursor
         std::unique_ptr<DatabaseCursor> cursor = m_batch->GetNewCursor();
         if (!cursor)
@@ -662,9 +635,6 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
                     result = DBErrors::CORRUPT;
                 } else if (wss.descriptor_unknown) {
                     strErr = strprintf("Error: Unrecognized descriptor found in wallet %s. ", pwallet->GetName());
-                    strErr += (last_client > CLIENT_VERSION) ? "The wallet might had been created on a newer version. " :
-                            "The database might be corrupted or the software version is not compatible with one of your wallet descriptors. ";
-                    strErr += "Please try running the latest software version";
                     pwallet->WalletLogPrintf("%s\n", strErr);
                     return DBErrors::UNKNOWN_DESCRIPTOR;
                 } else {
@@ -724,31 +694,8 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
     for (const uint256& hash : wss.vWalletUpgrade)
         WriteTx(pwallet->mapWallet.at(hash));
 
-    // Rewrite encrypted wallets of versions 0.4.0 and 0.5.0rc:
-    if (wss.fIsEncrypted && (last_client == 40000 || last_client == 50000))
-        return DBErrors::NEED_REWRITE;
-
-    if (!has_last_client || last_client != CLIENT_VERSION) // Update
-        m_batch->Write(DBKeys::VERSION, CLIENT_VERSION);
-
     if (wss.fAnyUnordered)
         result = pwallet->ReorderTransactions();
-
-    // Upgrade all of the wallet keymetadata to have the hd master key id
-    // This operation is not atomic, but if it fails, updated entries are still backwards compatible with older software
-    try {
-        pwallet->UpgradeKeyMetadata();
-    } catch (...) {
-        result = DBErrors::CORRUPT;
-    }
-
-    // Upgrade all of the descriptor caches to cache the last hardened xpub
-    // This operation is not atomic, but if it fails, only new entries are added so it is backwards compatible
-    try {
-        pwallet->UpgradeDescriptorCache();
-    } catch (...) {
-        result = DBErrors::CORRUPT;
-    }
 
     // Set the inactive chain
     if (wss.m_hd_chains.size() > 0) {
@@ -764,12 +711,6 @@ DBErrors WalletBatch::FindWalletTxHashes(std::vector<uint256>& tx_hashes)
     DBErrors result = DBErrors::LOAD_OK;
 
     try {
-        int nMinVersion = 0;
-        if (m_batch->Read(DBKeys::MINVERSION, nMinVersion)) {
-            if (nMinVersion > FEATURE_LATEST)
-                return DBErrors::TOO_NEW;
-        }
-
         // Get cursor
         std::unique_ptr<DatabaseCursor> cursor = m_batch->GetNewCursor();
         if (!cursor)
@@ -884,11 +825,6 @@ bool WalletBatch::EraseDestData(const std::string &address, const std::string &k
 bool WalletBatch::WriteHDChain(const CHDChain& chain)
 {
     return WriteIC(DBKeys::HDCHAIN, chain);
-}
-
-bool WalletBatch::WriteWalletFlags(const uint64_t flags)
-{
-    return WriteIC(DBKeys::FLAGS, flags);
 }
 
 bool WalletBatch::EraseRecords(const std::unordered_set<std::string>& types)
