@@ -413,11 +413,6 @@ std::shared_ptr<CWallet> CreateWallet(WalletContext& context, const std::string&
             return nullptr;
         }
 
-        {
-            LOCK(wallet->cs_wallet);
-            wallet->SetupDescriptorScriptPubKeyMans();
-        }
-
         // Relock the wallet
         wallet->Lock();
 
