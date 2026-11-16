@@ -324,7 +324,6 @@ void DescriptorScriptPubKeyMan::AddDescriptorKey(const CKey& key, const CPubKey 
 bool DescriptorScriptPubKeyMan::AddDescriptorKeyWithDB(WalletBatch& batch, const CKey& key, const CPubKey &pubkey)
 {
     AssertLockHeld(cs_desc_man);
-    assert(!m_storage.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS));
 
     // Check if provided key already exists
     if (m_map_keys.find(pubkey.GetID()) != m_map_keys.end() ||
@@ -354,7 +353,6 @@ bool DescriptorScriptPubKeyMan::AddDescriptorKeyWithDB(WalletBatch& batch, const
 bool DescriptorScriptPubKeyMan::SetupDescriptorGeneration(const CExtKey& master_key, OutputType addr_type, bool internal)
 {
     LOCK(cs_desc_man);
-    assert(m_storage.IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS));
 
     // Ignore when there is already a descriptor
     if (m_wallet_descriptor.descriptor) {
@@ -423,7 +421,6 @@ bool DescriptorScriptPubKeyMan::SetupDescriptorGeneration(const CExtKey& master_
     // TopUp
     TopUp();
 
-    m_storage.UnsetBlankWalletFlag(batch);
     return true;
 }
 
@@ -706,35 +703,6 @@ bool DescriptorScriptPubKeyMan::GetDescriptorString(std::string& out, const bool
     }
 
     return m_wallet_descriptor.descriptor->ToNormalizedString(provider, out, &m_wallet_descriptor.cache);
-}
-
-void DescriptorScriptPubKeyMan::UpgradeDescriptorCache()
-{
-    LOCK(cs_desc_man);
-    if (m_storage.IsLocked() || m_storage.IsWalletFlagSet(WALLET_FLAG_LAST_HARDENED_XPUB_CACHED)) {
-        return;
-    }
-
-    // Skip if we have the last hardened xpub cache
-    if (m_wallet_descriptor.cache.GetCachedLastHardenedExtPubKeys().size() > 0) {
-        return;
-    }
-
-    // Expand the descriptor
-    FlatSigningProvider provider;
-    provider.keys = GetKeys();
-    FlatSigningProvider out_keys;
-    std::vector<CScript> scripts_temp;
-    DescriptorCache temp_cache;
-    if (!m_wallet_descriptor.descriptor->Expand(0, provider, scripts_temp, out_keys, &temp_cache)){
-        throw std::runtime_error("Unable to expand descriptor");
-    }
-
-    // Cache the last hardened xpubs
-    DescriptorCache diff = m_wallet_descriptor.cache.MergeAndDiff(temp_cache);
-    if (!WalletBatch(m_storage.GetDatabase()).WriteDescriptorCacheItems(GetID(), diff)) {
-        throw std::runtime_error(std::string(__func__) + ": writing cache items failed");
-    }
 }
 
 void DescriptorScriptPubKeyMan::UpdateWalletDescriptor(WalletDescriptor& descriptor)
