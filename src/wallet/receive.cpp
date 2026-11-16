@@ -160,8 +160,7 @@ CAmount CachedTxGetAvailableCredit(const CWallet& wallet, const CWalletTx& wtx, 
 {
     AssertLockHeld(wallet.cs_wallet);
 
-    // Avoid caching ismine for NO or ALL cases (could remove this check and simplify in the future).
-    bool allow_cache = (filter & ISMINE_SPENDABLE) && (filter & ISMINE_SPENDABLE) != ISMINE_SPENDABLE;
+    bool allow_cache = true;
 
     // Must wait until coinbase is safely deep enough in the chain before valuing it
     if (wallet.IsTxImmatureCoinBase(wtx))
