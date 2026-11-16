@@ -4957,11 +4957,9 @@ bool SignBlock(CBlock& block, const CWallet& keystore)
         return false;
 
     // Sign
-    CTxDestination address;
     CPubKey pubKey(vSolutions[0]);
-    address = PKHash(pubKey);
-    PKHash* pkhash = std::get_if<PKHash>(&address);
-    SigningResult res = keystore.SignBlockHash(block.GetHash(), *pkhash, block.vchBlockSig);
+    PKHash pkhash(pubKey);
+    SigningResult res = keystore.SignBlockHash(block.GetHash(), pkhash, block.vchBlockSig);
     if (res == SigningResult::OK)
         return true;
     return false;
