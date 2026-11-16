@@ -34,18 +34,3 @@ bool CreateWalletDialog::isEncryptWalletChecked() const
 {
     return ui->encrypt_wallet_checkbox->isChecked();
 }
-
-bool CreateWalletDialog::isDisablePrivateKeysChecked() const
-{
-    return false;
-}
-
-bool CreateWalletDialog::isMakeBlankWalletChecked() const
-{
-    return false;
-}
-
-bool CreateWalletDialog::isDescriptorWalletChecked() const
-{
-    return true;
-}
