@@ -212,7 +212,10 @@ void WalletView::decryptForMinting(bool status, bool completely)
         if (walletModel->getEncryptionStatus() != WalletModel::Unlocked)
             return;
 
-        wallet::fWalletUnlockMintOnly = !completely;
+        {
+            LOCK(walletModel->wallet().wallet()->cs_wallet);
+            walletModel->wallet().wallet()->m_mint_only_unlocked = !completely;
+        }
     }
     else
     {
@@ -220,7 +223,10 @@ void WalletView::decryptForMinting(bool status, bool completely)
             return;
 
         walletModel->setWalletLocked(true);
-        wallet::fWalletUnlockMintOnly = false;
+        {
+            LOCK(walletModel->wallet().wallet()->cs_wallet);
+            walletModel->wallet().wallet()->m_mint_only_unlocked = false;
+        }
     }
 }
 void WalletView::backupWallet()

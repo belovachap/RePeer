@@ -954,6 +954,14 @@ bool BitcoinGUI::eventFilter(QObject *object, QEvent *event)
 
 void BitcoinGUI::setEncryptionStatus(int status)
 {
+    bool mint_only = false;
+    if (walletFrame) {
+        WalletModel* wallet_model = walletFrame->currentWalletModel();
+        if (wallet_model) {
+            mint_only = wallet_model->wallet().isMintOnlyUnlocked();
+        }
+    }
+
     switch(status)
     {
     case WalletModel::Unencrypted:
@@ -969,14 +977,14 @@ void BitcoinGUI::setEncryptionStatus(int status)
     case WalletModel::Unlocked:
         labelWalletEncryptionIcon->show();
         labelWalletEncryptionIcon->setThemedPixmap(QStringLiteral(":/icons/lock_open"), STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE);
-        labelWalletEncryptionIcon->setToolTip(wallet::fWalletUnlockMintOnly? tr("Wallet is <b>encrypted</b> and currently <b>unlocked for block minting only</b>") : tr("Wallet is <b>encrypted</b> and currently <b>unlocked</b>"));
+        labelWalletEncryptionIcon->setToolTip(mint_only ? tr("Wallet is <b>encrypted</b> and currently <b>unlocked for block minting only</b>") : tr("Wallet is <b>encrypted</b> and currently <b>unlocked</b>"));
         encryptWalletAction->setChecked(true);
         changePassphraseAction->setEnabled(true);
         encryptWalletAction->setEnabled(false);
-        decryptForMintingAction->setEnabled(wallet::fWalletUnlockMintOnly);
-        decryptForMintingAction->setChecked(wallet::fWalletUnlockMintOnly);
+        decryptForMintingAction->setEnabled(mint_only);
+        decryptForMintingAction->setChecked(mint_only);
         decryptCompletelyAction->setEnabled(true);
-        decryptCompletelyAction->setChecked(!wallet::fWalletUnlockMintOnly);
+        decryptCompletelyAction->setChecked(!mint_only);
         break;
     case WalletModel::Locked:
         labelWalletEncryptionIcon->show();
