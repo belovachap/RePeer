@@ -138,6 +138,11 @@ public:
     bool lock() override { return m_wallet->Lock(); }
     bool unlock(const SecureString& wallet_passphrase) override { return m_wallet->Unlock(wallet_passphrase); }
     bool isLocked() override { return m_wallet->IsLocked(); }
+    bool isMintOnlyUnlocked() override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return m_wallet->m_mint_only_unlocked;
+    }
     bool changeWalletPassphrase(const SecureString& old_wallet_passphrase,
         const SecureString& new_wallet_passphrase) override
     {

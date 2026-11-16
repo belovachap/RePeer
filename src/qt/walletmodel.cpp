@@ -149,7 +149,7 @@ bool WalletModel::validateAddress(const QString& address) const
 
 WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransaction &transaction, const CCoinControl& coinControl)
 {
-    if (wallet::fWalletUnlockMintOnly)
+    if (m_wallet->isMintOnlyUnlocked())
         return MintOnlyMode;
 
     CAmount total = 0;
@@ -341,7 +341,10 @@ bool WalletModel::setWalletLocked(bool locked, const SecureString &passPhrase, i
         if (!m_wallet->unlock(passPhrase))
             return false;
 
-        wallet::fWalletUnlockMintOnly = fMintOnly;
+        {
+            LOCK(m_wallet->wallet()->cs_wallet);
+            m_wallet->wallet()->m_mint_only_unlocked = fMintOnly;
+        }
 
         if (nSeconds > 0 && nSeconds < std::numeric_limits<int>::max())  // seconds
             m_wallet->relockWalletAfterDuration(nSeconds);
@@ -437,9 +440,9 @@ void WalletModel::unsubscribeFromCoreSignals()
 WalletModel::UnlockContext WalletModel::requestUnlock()
 {
     bool was_locked = getEncryptionStatus() == Locked;
-    bool was_minting = wallet::fWalletUnlockMintOnly;
+    bool was_minting = m_wallet->isMintOnlyUnlocked();
 
-    if ((!was_locked) && wallet::fWalletUnlockMintOnly)
+    if ((!was_locked) && m_wallet->isMintOnlyUnlocked())
     {
         setWalletLocked(true);
         was_locked = getEncryptionStatus() == Locked;
@@ -452,7 +455,7 @@ WalletModel::UnlockContext WalletModel::requestUnlock()
     // If wallet is still locked, unlock was failed or cancelled, mark context as invalid
     bool valid = getEncryptionStatus() != Locked;
 
-    return UnlockContext(this, valid, was_locked && !wallet::fWalletUnlockMintOnly, was_minting);
+    return UnlockContext(this, valid, was_locked && !m_wallet->isMintOnlyUnlocked(), was_minting);
 }
 
 WalletModel::UnlockContext::UnlockContext(WalletModel *_wallet, bool _valid, bool _relock, bool _minter):
@@ -470,7 +473,10 @@ WalletModel::UnlockContext::~UnlockContext()
         wallet->setWalletLocked(true);
     }
 
-    wallet::fWalletUnlockMintOnly = minter;
+    {
+        LOCK(wallet->wallet().wallet()->cs_wallet);
+        wallet->wallet().wallet()->m_mint_only_unlocked = minter;
+    }
 }
 
 bool WalletModel::isWalletEnabled()

@@ -74,6 +74,9 @@ public:
     //! Return whether wallet is locked.
     virtual bool isLocked() = 0;
 
+    //! Return whether wallet is unlocked in mint-only mode.
+    virtual bool isMintOnlyUnlocked() = 0;
+
     //! Change wallet passphrase.
     virtual bool changeWalletPassphrase(const SecureString& old_wallet_passphrase,
         const SecureString& new_wallet_passphrase) = 0;
