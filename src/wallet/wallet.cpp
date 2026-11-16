@@ -3024,6 +3024,8 @@ bool CWallet::CreateCoinStake(ChainstateManager& chainman, const CWallet* pwalle
         uint32_t nTime = GetTime();
         if (bDebug)
             LogPrintf("there are imported coinstakes, time is %d, nSearchInterval %d\n", nTime, nSearchInterval);
+        // Collect keys to erase to avoid invalidating iterators during iteration
+        std::vector<uint32_t> keys_to_erase;
         for (const auto& [timestamp, txn] : m_coinstakes) {
             // check timestamp
             if (nTime > timestamp) {
@@ -3032,16 +3034,18 @@ bool CWallet::CreateCoinStake(ChainstateManager& chainman, const CWallet* pwalle
                         LogPrintf("timestamp within nSearchInterval, using coinstake\n");
                     CMutableTransaction presigned(*txn);
                     txNew = presigned;
+                    // Erase stale entries before returning
+                    for (uint32_t k : keys_to_erase) m_coinstakes.erase(k);
                     return true;
-                }
-                else {
+                } else {
                     if (bDebug)
                         LogPrintf("timestamp too old, removing coinstake\n");
-                    m_coinstakes.erase(timestamp);
+                    keys_to_erase.push_back(timestamp);
                     break;
                 }
             }
         }
+        for (uint32_t k : keys_to_erase) m_coinstakes.erase(k);
     }
 
     CBigNum bnTargetPerCoinDay;
