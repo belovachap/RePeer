@@ -2795,6 +2795,7 @@ bool CWallet::Lock()
             memory_cleanse(vMasterKey.data(), vMasterKey.size() * sizeof(decltype(vMasterKey)::value_type));
             vMasterKey.clear();
         }
+        m_mint_only_unlocked = false;
     }
 
     NotifyStatusChanged(this);
