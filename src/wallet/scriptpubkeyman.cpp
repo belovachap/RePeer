@@ -505,9 +505,12 @@ std::unique_ptr<FlatSigningProvider> DescriptorScriptPubKeyMan::GetSigningProvid
     if (it != m_map_signing_providers.end()) {
         out_keys->Merge(FlatSigningProvider{it->second});
     } else {
-        // Get the scripts, keys, and key origins for this script
+        // Always do full expansion to derive keys from master key,
+        // avoiding dependency on pre-populated descriptor cache
         std::vector<CScript> scripts_temp;
-        if (!m_wallet_descriptor.descriptor->ExpandFromCache(index, m_wallet_descriptor.cache, scripts_temp, *out_keys)) return nullptr;
+        FlatSigningProvider provider;
+        provider.keys = GetKeys();
+        if (!m_wallet_descriptor.descriptor->Expand(index, provider, scripts_temp, *out_keys, nullptr)) return nullptr;
 
         // Cache SigningProvider so we don't need to re-derive if we need this SigningProvider again
         m_map_signing_providers[index] = *out_keys;
