@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_CASE(mint_only_unlock_is_per_wallet)
     // Create two encrypted wallets
     WalletContext context;
     context.chain = m_node.chain.get();
-    context.args = &m_node.args;
+    context.args = m_node.args;
 
     DatabaseOptions options;
     DatabaseStatus status;
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(lock_resets_mint_only_unlocked)
 {
     WalletContext context;
     context.chain = m_node.chain.get();
-    context.args = &m_node.args;
+    context.args = m_node.args;
 
     DatabaseOptions options;
     DatabaseStatus status;
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(unencrypted_wallet_not_mint_only_unlocked)
 {
     WalletContext context;
     context.chain = m_node.chain.get();
-    context.args = &m_node.args;
+    context.args = m_node.args;
 
     DatabaseOptions options;
     DatabaseStatus status;
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(mint_only_unlock_survives_relock_cycle)
 {
     WalletContext context;
     context.chain = m_node.chain.get();
-    context.args = &m_node.args;
+    context.args = m_node.args;
 
     DatabaseOptions options;
     DatabaseStatus status;
