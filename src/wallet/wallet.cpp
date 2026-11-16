@@ -2639,9 +2639,11 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
     if (fFirstRun && generate_keys) {
         LOCK(walletInstance->cs_wallet);
         walletInstance->SetupDescriptorScriptPubKeyMans();
-        if (chain) {
-            walletInstance->chainStateFlushed(chain->getTipLocator());
-        }
+    }
+
+    // Always record the starting block so we don't rescan from genesis
+    if (chain) {
+        walletInstance->chainStateFlushed(chain->getTipLocator());
     }
 
     if (!args.GetArg("-addresstype", "").empty()) {
