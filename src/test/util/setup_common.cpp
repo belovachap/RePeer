@@ -42,6 +42,7 @@
 #include <validation.h>
 #include <validationinterface.h>
 #include <walletinitinterface.h>
+#include <wallet/sqlite.h>
 
 #include <algorithm>
 #include <functional>
@@ -252,10 +253,11 @@ TestingSetup::TestingSetup(
         m_node.connman->Init(options);
     }
 
-    // DatabaseOptions options;
-    // options.require_existing = false;
-    // options.require_create = true;
-    // DatabaseStatus status;
-    // bilingual_str database_error_string;
-    // sqlite_database = MakeSQLiteDatabase("sqlite_testing.db", options, status, database_error_string)
+    DatabaseOptions db_options;
+    db_options.require_existing = false;
+    db_options.require_create = true;
+    DatabaseStatus db_status;
+    bilingual_str db_error;
+    m_sqlite_db = MakeSQLiteDatabase(m_args.GetDataDirBase() / "sqlite_testing.db", db_options, db_status, db_error);
+    assert(m_sqlite_db != nullptr);
 }

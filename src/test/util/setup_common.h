@@ -14,8 +14,11 @@
 #include <util/string.h>
 #include <util/system.h>
 #include <util/vector.h>
+#include <wallet/db.h>
+#include <wallet/sqlite.h>
 
 #include <functional>
+#include <memory>
 #include <type_traits>
 #include <vector>
 
@@ -92,7 +95,7 @@ struct ChainTestingSetup : public BasicTestingSetup {
 struct TestingSetup : public ChainTestingSetup {
     bool m_coins_db_in_memory{true};
     bool m_block_tree_db_in_memory{true};
-    // CWallet* sqlite_databse;
+    std::unique_ptr<SQLiteDatabase> m_sqlite_db;
 
     void LoadVerifyActivateChainstate();
 
