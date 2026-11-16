@@ -3041,7 +3041,7 @@ bool CWallet::CreateCoinStake(ChainstateManager& chainman, const CWallet* pwalle
                     if (bDebug)
                         LogPrintf("timestamp too old, removing coinstake\n");
                     keys_to_erase.push_back(timestamp);
-                    break;
+                    continue;
                 }
             }
         }
