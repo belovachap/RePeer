@@ -119,9 +119,6 @@ WalletView::WalletView(WalletModel* wallet_model, const PlatformStyle* _platform
 
     // Show progress dialog
     connect(walletModel, &WalletModel::showProgress, this, &WalletView::showProgress);
-
-    if (wallet_model->getEncryptionStatus() == WalletModel::Locked)
-        this->decryptForMinting(true);
 }
 
 WalletView::~WalletView() = default;
