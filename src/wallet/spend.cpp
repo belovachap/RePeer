@@ -207,7 +207,6 @@ CoinsResult AvailableCoins(const CWallet& wallet,
     AssertLockHeld(wallet.cs_wallet);
 
     CoinsResult result;
-    bool allow_used_addresses = true;
     const int min_depth = {coinControl ? coinControl->m_min_depth : DEFAULT_MIN_DEPTH};
     const int max_depth = {coinControl ? coinControl->m_max_depth : DEFAULT_MAX_DEPTH};
     const bool only_safe = {coinControl ? !coinControl->m_include_unsafe_inputs : true};
@@ -262,10 +261,6 @@ CoinsResult AvailableCoins(const CWallet& wallet,
             isminetype mine = wallet.IsMine(output);
 
             if (mine == ISMINE_NO) {
-                continue;
-            }
-
-            if (!allow_used_addresses && wallet.IsSpentKey(output.scriptPubKey)) {
                 continue;
             }
 

@@ -2273,20 +2273,6 @@ std::optional<int64_t> CWallet::GetOldestKeyPoolTime() const
     return oldest_key;
 }
 
-void CWallet::MarkDestinationsDirty(const std::set<CTxDestination>& destinations) {
-    for (auto& entry : mapWallet) {
-        CWalletTx& wtx = entry.second;
-        if (wtx.m_is_cache_empty) continue;
-        for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
-            CTxDestination dst;
-            if (ExtractDestination(wtx.tx->vout[i].scriptPubKey, dst) && destinations.count(dst)) {
-                wtx.MarkDirty();
-                break;
-            }
-        }
-    }
-}
-
 void CWallet::ForEachAddrBookEntry(const ListAddrBookFunc& func) const
 {
     AssertLockHeld(cs_wallet);
@@ -2487,40 +2473,9 @@ unsigned int CWallet::ComputeTimeSmart(const CWalletTx& wtx, bool rescanning_old
     return nTimeSmart;
 }
 
-bool CWallet::SetAddressUsed(WalletBatch& batch, const CTxDestination& dest, bool used)
-{
-    const std::string key{"used"};
-    if (std::get_if<CNoDestination>(&dest))
-        return false;
-
-    if (!used) {
-        if (auto* data = util::FindKey(m_address_book, dest)) data->destdata.erase(key);
-        return batch.EraseDestData(EncodeDestination(dest), key);
-    }
-
-    const std::string value{"1"};
-    m_address_book[dest].destdata.insert(std::make_pair(key, value));
-    return batch.WriteDestData(EncodeDestination(dest), key, value);
-}
-
 void CWallet::LoadDestData(const CTxDestination &dest, const std::string &key, const std::string &value)
 {
     m_address_book[dest].destdata.insert(std::make_pair(key, value));
-}
-
-bool CWallet::IsAddressUsed(const CTxDestination& dest) const
-{
-    const std::string key{"used"};
-    std::map<CTxDestination, CAddressBookData>::const_iterator i = m_address_book.find(dest);
-    if(i != m_address_book.end())
-    {
-        CAddressBookData::StringMap::const_iterator j = i->second.destdata.find(key);
-        if(j != i->second.destdata.end())
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 std::vector<std::string> CWallet::GetAddressReceiveRequests() const
