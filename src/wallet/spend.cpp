@@ -207,9 +207,7 @@ CoinsResult AvailableCoins(const CWallet& wallet,
     AssertLockHeld(wallet.cs_wallet);
 
     CoinsResult result;
-    // Either the WALLET_FLAG_AVOID_REUSE flag is not set (in which case we always allow), or we default to avoiding, and only in the case where
-    // a coin control object is provided, and has the avoid address reuse flag set to false, do we allow already used addresses
-    bool allow_used_addresses = !wallet.IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE) || (coinControl && !coinControl->m_avoid_address_reuse);
+    bool allow_used_addresses = true;
     const int min_depth = {coinControl ? coinControl->m_min_depth : DEFAULT_MIN_DEPTH};
     const int max_depth = {coinControl ? coinControl->m_max_depth : DEFAULT_MAX_DEPTH};
     const bool only_safe = {coinControl ? !coinControl->m_include_unsafe_inputs : true};
@@ -355,7 +353,7 @@ std::map<CTxDestination, std::vector<COutput>> ListCoins(const CWallet& wallet)
     coins_params.skip_locked = false;
     for (const COutput& coin : AvailableCoins(wallet, &coin_control, /*feerate=*/std::nullopt, coins_params).All()) {
         CTxDestination address;
-        if ((coin.spendable || (wallet.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS) && coin.solvable)) &&
+        if ((coin.spendable) &&
             ExtractDestination(FindNonChangeParentOutput(wallet, coin.outpoint).scriptPubKey, address)) {
             result[address].emplace_back(coin);
         }
@@ -786,8 +784,8 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
         CWallet& wallet,
         const std::vector<CRecipient>& vecSend,
         int change_pos,
-        const CCoinControl& coin_control,
-        bool sign) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
+        const CCoinControl& coin_control)
+        EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
 {
     AssertLockHeld(wallet.cs_wallet);
 
@@ -1033,7 +1031,7 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
         return util::Error{error};
     }
 
-    if (sign && !wallet.SignTransaction(txNew)) {
+    if (!wallet.SignTransaction(txNew)) {
         return util::Error{_("Signing transaction failed")};
     }
 
@@ -1041,8 +1039,7 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
     CTransactionRef tx = MakeTransactionRef(std::move(txNew));
 
     // Limit size
-    if ((sign && GetTransactionWeight(*tx) > MAX_STANDARD_TX_WEIGHT) ||
-        (!sign && tx_sizes.weight > MAX_STANDARD_TX_WEIGHT))
+    if (GetTransactionWeight(*tx) > MAX_STANDARD_TX_WEIGHT)
     {
         return util::Error{_("Transaction too large")};
     }
@@ -1067,8 +1064,7 @@ util::Result<CreatedTransactionResult> CreateTransaction(
         CWallet& wallet,
         const std::vector<CRecipient>& vecSend,
         int change_pos,
-        const CCoinControl& coin_control,
-        bool sign)
+        const CCoinControl& coin_control)
 {
     if (vecSend.empty()) {
         return util::Error{_("Transaction must have at least one recipient")};
@@ -1080,7 +1076,7 @@ util::Result<CreatedTransactionResult> CreateTransaction(
 
     LOCK(wallet.cs_wallet);
 
-    auto res = CreateTransactionInternal(wallet, vecSend, change_pos, coin_control, sign);
+    auto res = CreateTransactionInternal(wallet, vecSend, change_pos, coin_control);
     if (!res) return res;
     const auto& txr_ungrouped = *res;
     // try with avoidpartialspends unless it's enabled already
@@ -1094,7 +1090,7 @@ util::Result<CreatedTransactionResult> CreateTransaction(
             ExtractDestination(txr_ungrouped.tx->vout[ungrouped_change_pos].scriptPubKey, tmp_cc.destChange);
         }
 
-        auto txr_grouped = CreateTransactionInternal(wallet, vecSend, change_pos, tmp_cc, sign);
+        auto txr_grouped = CreateTransactionInternal(wallet, vecSend, change_pos, tmp_cc);
         // if fee of this alternative one is within the range of the max fee, we use this one
         const bool use_aps{txr_grouped.has_value() ? (txr_grouped->fee <= txr_ungrouped.fee + wallet.m_max_aps_fee) : false};
         if (txr_grouped) {
@@ -1104,77 +1100,5 @@ util::Result<CreatedTransactionResult> CreateTransaction(
         }
     }
     return res;
-}
-
-bool FundTransaction(CWallet& wallet, CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl coinControl)
-{
-    std::vector<CRecipient> vecSend;
-
-    // Turn the txout set into a CRecipient vector.
-    for (size_t idx = 0; idx < tx.vout.size(); idx++) {
-        const CTxOut& txOut = tx.vout[idx];
-        CRecipient recipient = {txOut.scriptPubKey, txOut.nValue, setSubtractFeeFromOutputs.count(idx) == 1};
-        vecSend.push_back(recipient);
-    }
-
-    // Acquire the locks to prevent races to the new locked unspents between the
-    // CreateTransaction call and LockCoin calls (when lockUnspents is true).
-    LOCK(wallet.cs_wallet);
-
-    // Fetch specified UTXOs from the UTXO set to get the scriptPubKeys and values of the outputs being selected
-    // and to match with the given solving_data. Only used for non-wallet outputs.
-    std::map<COutPoint, Coin> coins;
-    for (const CTxIn& txin : tx.vin) {
-        coins[txin.prevout]; // Create empty map entry keyed by prevout.
-    }
-    wallet.chain().findCoins(coins);
-
-    for (const CTxIn& txin : tx.vin) {
-        const auto& outPoint = txin.prevout;
-        if (wallet.IsMine(outPoint)) {
-            // The input was found in the wallet, so select as internal
-            coinControl.Select(outPoint);
-        } else if (coins[outPoint].out.IsNull()) {
-            error = _("Unable to find UTXO for external input");
-            return false;
-        } else {
-            // The input was not in the wallet, but is in the UTXO set, so select as external
-            coinControl.SelectExternal(outPoint, coins[outPoint].out);
-        }
-    }
-
-    auto res = CreateTransaction(wallet, vecSend, nChangePosInOut, coinControl, false);
-    if (!res) {
-        error = util::ErrorString(res);
-        return false;
-    }
-    const auto& txr = *res;
-    CTransactionRef tx_new = txr.tx;
-    nFeeRet = txr.fee;
-    nChangePosInOut = txr.change_pos;
-
-    if (nChangePosInOut != -1) {
-        tx.vout.insert(tx.vout.begin() + nChangePosInOut, tx_new->vout[nChangePosInOut]);
-    }
-
-    // Copy output sizes from new transaction; they may have had the fee
-    // subtracted from them.
-    for (unsigned int idx = 0; idx < tx.vout.size(); idx++) {
-        tx.vout[idx].nValue = tx_new->vout[idx].nValue;
-    }
-
-    // Add new txins while keeping original txin scriptSig/order.
-    for (const CTxIn& txin : tx_new->vin) {
-        if (!coinControl.IsSelected(txin.prevout)) {
-            tx.vin.push_back(txin);
-
-        }
-        if (lockUnspents) {
-            wallet.LockCoin(txin.prevout);
-        }
-
-    }
-
-    return true;
 }
 } // namespace wallet

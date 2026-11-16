@@ -119,26 +119,6 @@ class ReserveDestination;
 //! Default for -addresstype
 constexpr OutputType DEFAULT_ADDRESS_TYPE{OutputType::LEGACY};
 
-static constexpr uint64_t KNOWN_WALLET_FLAGS =
-        WALLET_FLAG_AVOID_REUSE
-    |   WALLET_FLAG_BLANK_WALLET
-    |   WALLET_FLAG_KEY_ORIGIN_METADATA
-    |   WALLET_FLAG_LAST_HARDENED_XPUB_CACHED
-    |   WALLET_FLAG_DISABLE_PRIVATE_KEYS
-    |   WALLET_FLAG_DESCRIPTORS;
-
-static constexpr uint64_t MUTABLE_WALLET_FLAGS =
-        WALLET_FLAG_AVOID_REUSE;
-
-static const std::map<std::string,WalletFlags> WALLET_FLAG_MAP{
-    {"avoid_reuse", WALLET_FLAG_AVOID_REUSE},
-    {"blank", WALLET_FLAG_BLANK_WALLET},
-    {"key_origin_metadata", WALLET_FLAG_KEY_ORIGIN_METADATA},
-    {"last_hardened_xpub_cached", WALLET_FLAG_LAST_HARDENED_XPUB_CACHED},
-    {"disable_private_keys", WALLET_FLAG_DISABLE_PRIVATE_KEYS},
-    {"descriptor_wallet", WALLET_FLAG_DESCRIPTORS}
-};
-
 /** A wrapper to reserve an address from a wallet
  *
  * ReserveDestination is used to reserve an address.
@@ -276,9 +256,6 @@ private:
     std::atomic<double> m_scanning_progress{0};
     friend class WalletRescanReserver;
 
-    //! the current wallet version: clients below this version are not able to load the wallet
-    int nWalletVersion GUARDED_BY(cs_wallet){FEATURE_BASE};
-
     /** The next scheduled rebroadcast of wallet transactions. */
     NodeClock::time_point m_next_resend{GetDefaultNextResend()};
     /** Whether this wallet will submit newly created transactions to the node's mempool and
@@ -325,16 +302,7 @@ private:
 
     void SyncTransaction(const CTransactionRef& tx, const SyncTxState& state, bool update_tx = true, bool rescanning_old_block = false) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    /** WalletFlags set on this wallet. */
-    std::atomic<uint64_t> m_wallet_flags{0};
-
     bool SetAddressBookWithDB(WalletBatch& batch, const CTxDestination& address, const std::string& strName, const std::optional<AddressPurpose>& strPurpose);
-
-    //! Unsets a wallet flag and saves it to disk
-    void UnsetWalletFlagWithDB(WalletBatch& batch, uint64_t flag);
-
-    //! Unset the blank wallet flag and saves it to disk
-    void UnsetBlankWalletFlag(WalletBatch& batch) override;
 
     /** Interface for accessing chain state. */
     interfaces::Chain* m_chain;
@@ -470,9 +438,6 @@ public:
     int GetTxBlocksToMaturity(const CWalletTx& wtx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     bool IsTxImmatureCoinBase(const CWalletTx& wtx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    //! check whether we support the named feature
-    bool CanSupportFeature(enum WalletFeature wf) const override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet) { AssertLockHeld(cs_wallet); return IsFeatureSupported(nWalletVersion, wf); }
-
     bool IsSpent(const COutPoint& outpoint) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     // Whether this or any known scriptPubKey with the same single key has been spent.
@@ -494,14 +459,6 @@ public:
     bool IsScanningWithPassphrase() const { return m_scanning_with_passphrase; }
     int64_t ScanningDuration() const { return fScanningWallet ? GetTimeMillis() - m_scanning_start : 0; }
     double ScanningProgress() const { return fScanningWallet ? (double) m_scanning_progress : 0; }
-
-    //! Upgrade stored CKeyMetadata objects to store key origin info as KeyOriginInfo
-    void UpgradeKeyMetadata() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-
-    //! Upgrade DescriptorCaches
-    void UpgradeDescriptorCache() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-
-    bool LoadMinVersion(int nVersion) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet) { AssertLockHeld(cs_wallet); nWalletVersion = nVersion; return true; }
 
     //! Adds a destination data tuple to the store, without saving it to disk
     void LoadDestData(const CTxDestination& dest, const std::string& key, const std::string& value) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
@@ -704,12 +661,6 @@ public:
 
     unsigned int GetKeyPoolSize() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    //! signify that a particular wallet feature is now used.
-    void SetMinVersion(enum WalletFeature, WalletBatch* batch_in = nullptr) override;
-
-    //! get the current wallet format (the oldest client version guaranteed to understand this wallet)
-    int GetVersion() const { LOCK(cs_wallet); return nWalletVersion; }
-
     //! Get wallet transactions that conflict with given transaction (spend same outputs)
     std::set<uint256> GetConflicts(const uint256& txid) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
@@ -768,8 +719,9 @@ public:
 
 
     /* Initializes the wallet, returns a new CWallet instance or a null pointer in case of an error */
-    static std::shared_ptr<CWallet> Create(WalletContext& context, const std::string& name, std::unique_ptr<WalletDatabase> database, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings);
-
+    static std::shared_ptr<CWallet> Create(WalletContext& context, const std::string& name,
+        std::unique_ptr<WalletDatabase> database, bool generate_keys,
+        bilingual_str& error, std::vector<bilingual_str>& warnings);
     /**
      * Wallet post-init setup
      * Gives the wallet a chance to register repetitive tasks and complete post-init tasks
@@ -791,25 +743,6 @@ public:
      * deadlock
      */
     void BlockUntilSyncedToCurrentChain() const LOCKS_EXCLUDED(::cs_main) EXCLUSIVE_LOCKS_REQUIRED(!cs_wallet);
-
-    /** set a single wallet flag */
-    void SetWalletFlag(uint64_t flags);
-
-    /** Unsets a single wallet flag */
-    void UnsetWalletFlag(uint64_t flag);
-
-    /** check if a certain wallet flag is set */
-    bool IsWalletFlagSet(uint64_t flag) const override;
-
-    /** overwrite all flags by the given uint64_t
-       flags must be uninitialised (or 0)
-       only known flags may be present */
-    void InitWalletFlags(uint64_t flags);
-    /** Loads the flags into the wallet. (used by LoadWallet) */
-    bool LoadWalletFlags(uint64_t flags);
-
-    /** Determine if we are a legacy wallet */
-    bool IsLegacy() const;
 
     /** Returns a bracketed wallet name for displaying in logs, will return [default wallet] if the wallet has no name */
     std::string GetDisplayName() const override

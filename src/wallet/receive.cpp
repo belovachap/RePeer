@@ -171,7 +171,7 @@ CAmount CachedTxGetAvailableCredit(const CWallet& wallet, const CWalletTx& wtx, 
         return wtx.m_amounts[CWalletTx::AVAILABLE_CREDIT].m_value[filter];
     }
 
-    bool allow_used_addresses = (filter & ISMINE_USED) || !wallet.IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE);
+    bool allow_used_addresses = true;
     CAmount nCredit = 0;
     uint256 hashTx = wtx.GetHash();
     for (unsigned int i = 0; i < wtx.tx->vout.size(); i++) {
