@@ -19,21 +19,13 @@ BOOST_AUTO_TEST_CASE(create_wallet_no_keys_when_will_encrypt)
     // Create a WalletContext with a mock chain
     WalletContext context;
     context.args = m_node.args;
-
-    DatabaseOptions options;
-    options.require_existing = false;
-    options.require_create = true;
-    options.create_passphrase = "testpassphrase";
-
-    DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    bilingual_str database_error_string;
 
     // Create wallet with will_encrypt_wallet = true
     // This should NOT call SetupDescriptorScriptPubKeyMans(), so no keys are created
     std::shared_ptr<CWallet> wallet = CWallet::Create(context, "test_wallet_encrypt",
-                                                      MakeSQLiteDatabase("sqlite_testing.db", options, status, database_error_string),
+                                                      std::move(m_sqlite_db),
                                                       /*will_encrypt_wallet=*/true, error, warnings);
     BOOST_REQUIRE(wallet != nullptr);
     BOOST_REQUIRE(error.empty());
@@ -52,20 +44,13 @@ BOOST_AUTO_TEST_CASE(create_wallet_creates_keys_when_not_will_encrypt)
     // Create a WalletContext with a mock chain
     WalletContext context;
     context.args = m_node.args;
-
-    DatabaseOptions options;
-    options.require_existing = false;
-    options.require_create = true;
-
-    DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    bilingual_str database_error_string;
 
     // Create wallet with will_encrypt_wallet = false
     // This SHOULD call SetupDescriptorScriptPubKeyMans(), so keys ARE created
     std::shared_ptr<CWallet> wallet = CWallet::Create(context, "test_wallet_no_encrypt",
-                                                      MakeSQLiteDatabase("sqlite_testing.db", options, status, database_error_string),
+                                                      std::move(m_sqlite_db),
                                                       /*will_encrypt_wallet=*/false, error, warnings);
     BOOST_REQUIRE(wallet != nullptr);
     BOOST_REQUIRE(error.empty());
@@ -81,20 +66,12 @@ BOOST_AUTO_TEST_CASE(create_wallet_encrypt_then_encrypt_creates_keys)
     // keys are then set up via SetupDescriptorScriptPubKeyMans inside EncryptWallet
     WalletContext context;
     context.args = m_node.args;
-
-    DatabaseOptions options;
-    options.require_existing = false;
-    options.require_create = true;
-    options.create_passphrase = "testpassphrase";
-
-    DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    bilingual_str database_error_string;
 
     // Create wallet with will_encrypt_wallet = true (no keys yet)
     std::shared_ptr<CWallet> wallet = CWallet::Create(context, "test_wallet_encrypt_then",
-                                                      MakeSQLiteDatabase("sqlite_testing.db", options, status, database_error_string),
+                                                      std::move(m_sqlite_db),
                                                       /*will_encrypt_wallet=*/true, error, warnings);
     BOOST_REQUIRE(wallet != nullptr);
     BOOST_REQUIRE(wallet->GetAllScriptPubKeyMans().empty());

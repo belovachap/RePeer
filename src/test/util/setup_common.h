@@ -22,6 +22,8 @@
 #include <type_traits>
 #include <vector>
 
+using namespace wallet;
+
 class Chainstate;
 
 // Enable BOOST_CHECK_EQUAL for enum class types
@@ -95,7 +97,7 @@ struct ChainTestingSetup : public BasicTestingSetup {
 struct TestingSetup : public ChainTestingSetup {
     bool m_coins_db_in_memory{true};
     bool m_block_tree_db_in_memory{true};
-    std::unique_ptr<SQLiteDatabase> m_sqlite_db;
+    std::unique_ptr<WalletDatabase> m_sqlite_db;
 
     void LoadVerifyActivateChainstate();
 
