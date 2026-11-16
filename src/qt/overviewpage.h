@@ -39,7 +39,6 @@ public:
 
 public Q_SLOTS:
     void setBalance(const interfaces::WalletBalances& balances);
-    void updateLockStatus(const int status);
 
 Q_SIGNALS:
     void transactionClicked(const QModelIndex &index);

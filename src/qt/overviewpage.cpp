@@ -179,14 +179,6 @@ void OverviewPage::setBalance(const interfaces::WalletBalances& balances)
     ui->labelImmatureText->setVisible(showImmature);
 }
 
-void OverviewPage::updateLockStatus(const int status)
-{
-    if (status == WalletModel::Locked)
-        updateAlerts("Info: Minting suspended due to locked wallet.");
-    else
-        updateAlerts("");
-}
-
 void OverviewPage::setClientModel(ClientModel *model)
 {
     this->clientModel = model;
