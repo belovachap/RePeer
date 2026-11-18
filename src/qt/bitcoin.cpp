@@ -407,6 +407,12 @@ int GuiMain(int argc, char* argv[])
     // - Do not call Params() before this step
     // - QSettings() will use the new application name after this, resulting in network-specific settings
     // - Needs to be done before createOptionsModel
+    SetupServerArgs(gArgs);
+    std::string parse_error;
+    if (!gArgs.ParseParameters(argc, argv, parse_error)) {
+        InitError(Untranslated(strprintf("Error parsing command line arguments: %s", parse_error)));
+        return EXIT_FAILURE;
+    }
     if (auto error = common::InitConfig(gArgs, ErrorSettingsRead)) {
         InitError(error->message, error->details);
         if (error->status == common::ConfigStatus::FAILED_WRITE) {
@@ -420,12 +426,6 @@ int GuiMain(int argc, char* argv[])
         }
         return EXIT_FAILURE;
     }
-    std::string parse_error;
-    if (!gArgs.ParseParameters(argc, argv, parse_error)) {
-        InitError(Untranslated(strprintf("Error parsing command line arguments: %s", parse_error)));
-        return EXIT_FAILURE;
-    }
-    SetupServerArgs(gArgs);
 
     QScopedPointer<const NetworkStyle> networkStyle(NetworkStyle::instantiate(Params().NetworkIDString()));
     assert(!networkStyle.isNull());
