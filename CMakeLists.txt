@@ -191,8 +191,6 @@ set(REPEER-SHARED_SOURCE_FILES
   src/version.h
   src/versionbits.h
   src/walletinitinterface.h
-  src/warnings.cpp
-  src/warnings.h
 
   src/common/bloom.cpp
   src/common/bloom.h

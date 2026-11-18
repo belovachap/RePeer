@@ -34,7 +34,6 @@
 #include <validation.h>
 
 #include <wallet/wallet.h>
-#include <warnings.h>
 #include <regex>
 
 #include <QAction>

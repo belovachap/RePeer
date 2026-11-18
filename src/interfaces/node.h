@@ -70,9 +70,6 @@ public:
     //! Init parameter interaction.
     virtual void initParameterInteraction() = 0;
 
-    //! Get warnings.
-    virtual bilingual_str getWarnings() = 0;
-
     // Get log flags.
     virtual uint32_t getLogCategories() = 0;
 
@@ -213,10 +210,6 @@ public:
     //! Register handler for network active messages.
     using NotifyNetworkActiveChangedFn = std::function<void(bool network_active)>;
     virtual std::unique_ptr<Handler> handleNotifyNetworkActiveChanged(NotifyNetworkActiveChangedFn fn) = 0;
-
-    //! Register handler for notify alert messages.
-    using NotifyAlertChangedFn = std::function<void()>;
-    virtual std::unique_ptr<Handler> handleNotifyAlertChanged(NotifyAlertChangedFn fn) = 0;
 
     //! Register handler for ban list messages.
     using BannedListChangedFn = std::function<void()>;

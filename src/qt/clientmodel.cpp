@@ -17,7 +17,6 @@
 #include <util/threadnames.h>
 #include <util/time.h>
 #include <validation.h>
-#include <warnings.h>
 
 #include <uint256.h>
 
@@ -151,21 +150,11 @@ void ClientModel::updateNetworkActive(bool networkActive)
     Q_EMIT networkActiveChanged(networkActive);
 }
 
-void ClientModel::updateAlert(const QString &hash, int status)
-{
-    Q_EMIT alertsChanged(getStatusBarWarnings());
-}
-
 enum BlockSource ClientModel::getBlockSource() const
 {
     if (m_node.isLoadingBlocks()) return BlockSource::DISK;
     if (getNumConnections() > 0) return BlockSource::NETWORK;
     return BlockSource::NONE;
-}
-
-QString ClientModel::getStatusBarWarnings() const
-{
-    return QString::fromStdString(m_node.getWarnings().translated);
 }
 
 OptionsModel *ClientModel::getOptionsModel()
@@ -234,11 +223,6 @@ void ClientModel::subscribeToCoreSignals()
     m_handler_notify_network_active_changed = m_node.handleNotifyNetworkActiveChanged(
         [this](bool network_active) {
             Q_EMIT networkActiveChanged(network_active);
-        });
-    m_handler_notify_alert_changed = m_node.handleNotifyAlertChanged(
-        [this]() {
-           qDebug() << "ClientModel: NotifyAlertChanged";
-            Q_EMIT alertsChanged(getStatusBarWarnings());
         });
     m_handler_notify_block_tip = m_node.handleNotifyBlockTip(
         [this](SynchronizationState sync_state, interfaces::BlockTip tip, double verification_progress) {

@@ -36,7 +36,6 @@
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
-#include <warnings.h>
 
 #include <any>
 #include <memory>
@@ -65,7 +64,6 @@ public:
     explicit NodeImpl(NodeContext& context) { setContext(&context); }
     void initLogging() override { InitLogging(args()); }
     void initParameterInteraction() override { InitParameterInteraction(args()); }
-    bilingual_str getWarnings() override { return GetWarnings(true); }
     uint32_t getLogCategories() override { return LogInstance().GetCategoryMask(); }
     bool baseInitialize() override
     {
@@ -292,10 +290,6 @@ public:
     std::unique_ptr<Handler> handleNotifyNetworkActiveChanged(NotifyNetworkActiveChangedFn fn) override
     {
         return MakeSignalHandler(::uiInterface.NotifyNetworkActiveChanged_connect(fn));
-    }
-    std::unique_ptr<Handler> handleNotifyAlertChanged(NotifyAlertChangedFn fn) override
-    {
-        return MakeSignalHandler(::uiInterface.NotifyAlertChanged_connect(fn));
     }
     std::unique_ptr<Handler> handleBannedListChanged(BannedListChangedFn fn) override
     {

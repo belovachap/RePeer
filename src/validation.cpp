@@ -56,7 +56,6 @@
 #include <util/time.h>
 #include <util/translation.h>
 #include <validationinterface.h>
-#include <warnings.h>
 
 #include <algorithm>
 #include <cassert>
@@ -255,8 +254,6 @@ bool CheckSequenceLocksAtTip(CBlockIndex* tip,
 
     return EvaluateSequenceLocks(index, {lock_points.height, lock_points.time});
 }
-
-static std::array<ThresholdConditionCache, VERSIONBITS_NUM_BITS> warningcache GUARDED_BY(cs_main);
 
 // Returns the script flags which should be checked for a given block
 static unsigned int GetBlockScriptFlags(const CBlockIndex& block_index, const ChainstateManager& chainman);
@@ -1522,41 +1519,18 @@ bool Chainstate::IsInitialBlockDownload() const
     return false;
 }
 
-static void AlertNotify(const std::string& strMessage)
-{
-    uiInterface.NotifyAlertChanged();
-#if HAVE_SYSTEM
-    std::string strCmd = gArgs.GetArg("-alertnotify", "");
-    if (strCmd.empty()) return;
-
-    // Alert text should be plain ascii coming from a trusted source, but to
-    // be safe we first strip anything not in safeChars, then add single quotes around
-    // the whole string before passing it to the shell:
-    std::string singleQuote("'");
-    std::string safeStatus = SanitizeString(strMessage);
-    safeStatus = singleQuote+safeStatus+singleQuote;
-    ReplaceAll(strCmd, "%s", safeStatus);
-
-    std::thread t(runCommand, strCmd);
-    t.detach(); // thread runs free
-#endif
-}
-
 void Chainstate::CheckForkWarningConditions()
 {
-    AssertLockHeld(cs_main);
-
     // Before we get past initial download, we cannot reliably alert about forks
     // (we assume we don't get stuck on a fork before finishing our initial sync)
     if (IsInitialBlockDownload()) {
         return;
     }
 
+    AssertLockHeld(cs_main);
+
     if (m_chainman.m_best_invalid && m_chainman.m_best_invalid->nChainTrust > m_chain.Tip()->nChainTrust + (GetBlockTrust(*m_chain.Tip()) * 6)) {
         LogPrintf("%s: Warning: Found invalid chain at least ~6 blocks longer than our best chain.\nChain state database corruption likely.\n", __func__);
-        SetfLargeWorkInvalidChainFound(true);
-    } else {
-        SetfLargeWorkInvalidChainFound(false);
     }
 }
 
@@ -2391,30 +2365,13 @@ void Chainstate::ForceFlushStateToDisk()
     }
 }
 
-static void DoWarning(const bilingual_str& warning)
-{
-    static bool fWarned = false;
-    SetMiscWarning(warning);
-    if (!fWarned) {
-        AlertNotify(warning.original);
-        fWarned = true;
-    }
-}
-
-/** Private helper function that concatenates warning messages. */
-static void AppendWarning(bilingual_str& res, const bilingual_str& warn)
-{
-    if (!res.empty()) res += Untranslated(", ");
-    res += warn;
-}
-
 static void UpdateTipLog(
     const CCoinsViewCache& coins_tip,
     const CBlockIndex* tip,
     const CChainParams& params,
     const std::string& func_name,
     const std::string& prefix,
-    const std::string& warning_messages) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
+    const std::string& warning_message) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
 {
 
     AssertLockHeld(::cs_main);
@@ -2426,7 +2383,7 @@ static void UpdateTipLog(
         GuessVerificationProgress(params.TxData(), tip),
         coins_tip.DynamicMemoryUsage() * (1.0 / (1 << 20)),
         coins_tip.GetCacheSize(),
-        !warning_messages.empty() ? strprintf(" warning='%s'", warning_messages) : "");
+        warning_message);
 }
 
 void Chainstate::UpdateTip(const CBlockIndex* pindexNew)
@@ -2458,7 +2415,7 @@ void Chainstate::UpdateTip(const CBlockIndex* pindexNew)
         g_best_block_cv.notify_all();
     }
 
-    bilingual_str warning_messages;
+    string warning_message;
     if (!this->IsInitialBlockDownload()) {
         int nUpgraded = 0;
         const CBlockIndex* pindex = pindexNew;
@@ -2471,15 +2428,11 @@ void Chainstate::UpdateTip(const CBlockIndex* pindexNew)
             pindex = pindex->pprev;
         }
         if (nUpgraded > 0)
-            AppendWarning(warning_messages, strprintf(_("%d of last 100 blocks have unexpected version"), nUpgraded));
-        if (nUpgraded > 100/2)
-        {
-            const bilingual_str strWarning = _("Warning: Unknown block versions being mined! It's possible unknown rules are in effect");
-            // notify GetWarnings(), called by Qt and the JSON-RPC code to warn the user:
-            DoWarning(strWarning);
+        {            
+            warning_message = strprintf("%d of last 100 blocks have unexpected version", nUpgraded);
         }
     }
-    UpdateTipLog(coins_tip, pindexNew, params, __func__, "", warning_messages.original);
+    UpdateTipLog(coins_tip, pindexNew, params, __func__, "", warning_message);
 }
 
 /** Disconnect m_chain's tip.
@@ -5614,16 +5567,6 @@ static ChainstateManager::Options&& Flatten(ChainstateManager::Options&& opts)
 ChainstateManager::ChainstateManager(Options options, node::BlockManager::Options blockman_options)
     : m_options{Flatten(std::move(options))},
       m_blockman{std::move(blockman_options)} {}
-
-ChainstateManager::~ChainstateManager()
-{
-    LOCK(::cs_main);
-
-    // TODO: The warning cache should probably become non-global
-    for (auto& i : warningcache) {
-        i.clear();
-    }
-}
 
 bool ChainstateManager::DetectSnapshotChainstate(CTxMemPool* mempool)
 {

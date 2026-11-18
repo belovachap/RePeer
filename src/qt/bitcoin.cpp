@@ -468,11 +468,11 @@ int GuiMain(int argc, char* argv[])
             rv = EXIT_FAILURE;
         }
     } catch (const std::exception& e) {
-        PrintExceptionContinue(&e, "Runaway exception");
-        app.handleRunawayException(QString::fromStdString(app.node().getWarnings().translated));
+        PrintExceptionContinue(&e, "Qt Application thread");
+        app.handleRunawayException(e.what());
     } catch (...) {
-        PrintExceptionContinue(nullptr, "Runaway exception");
-        app.handleRunawayException(QString::fromStdString(app.node().getWarnings().translated));
+        PrintExceptionContinue(nullptr, "Qt Application thread");
+        app.handleRunawayException("Unknown non-standard exception caught.");
     }
     return rv;
 }

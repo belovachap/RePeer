@@ -32,7 +32,6 @@
 #include <validation.h>
 #include <wallet/wallet.h>
 #include <wallet/coincontrol.h>
-#include <warnings.h>
 #include <wallet/spend.h>
 #include <wallet/wallet.h>
 
@@ -528,19 +527,6 @@ static bool ProcessBlockFound(const CBlock* pblock, const CChainParams& chainpar
 
 void PoSMiner(NodeContext& m_node, CWallet* pwallet)
 {
-    std::string strMintMessage = _("Info: Minting suspended due to locked wallet.").translated;
-    std::string strMintSyncMessage = _("Info: Minting suspended while synchronizing wallet.").translated;
-    std::string strMintDisabledMessage = _("Info: Minting disabled by 'nominting' option.").translated;
-    std::string strMintBlockMessage = _("Info: Minting suspended due to block creation failure.").translated;
-    std::string strMintEmpty = "";
-
-    if (!gArgs.GetBoolArg("-minting", true) || !gArgs.GetBoolArg("-staking", true))
-    {
-        strMintWarning = strMintDisabledMessage;
-        LogPrintf("proof-of-stake minter disabled\n");
-        return;
-    }
-
     CConnman* connman = m_node.connman.get();
 
     LogPrintf("CPUMiner started for proof-of-stake (wallet: %s)\n", pwallet->GetName());
@@ -576,15 +562,9 @@ void PoSMiner(NodeContext& m_node, CWallet* pwallet)
     }
 
     try {
-        bool fNeedToClear = false;
         while (!pwallet->m_should_stop_minting) {
             while (pwallet->IsLocked()) {
                 if (pwallet->m_should_stop_minting) return;
-                if (strMintWarning != strMintMessage) {
-                    strMintWarning = strMintMessage;
-                    uiInterface.NotifyAlertChanged();
-                }
-                fNeedToClear = true;
                 if (!connman->interruptNet.sleep_for(std::chrono::seconds(3)))
                     return;
             }
@@ -608,19 +588,9 @@ void PoSMiner(NodeContext& m_node, CWallet* pwallet)
                 {
                     if (pwallet->m_should_stop_minting) return;
                     LogPrintf("Minter thread sleeps while sync at %f\n", GuessVerificationProgress(Params().TxData(), pindexPrev));
-                    if (strMintWarning != strMintSyncMessage) {
-                        strMintWarning = strMintSyncMessage;
-                        uiInterface.NotifyAlertChanged();
-                    }
-                    fNeedToClear = true;
                     if (!connman->interruptNet.sleep_for(std::chrono::seconds(10)))
                             return;
                 }
-            }
-            if (fNeedToClear) {
-                strMintWarning = strMintEmpty;
-                uiInterface.NotifyAlertChanged();
-                fNeedToClear = false;
             }
 
             //
@@ -650,8 +620,6 @@ void PoSMiner(NodeContext& m_node, CWallet* pwallet)
                         return;
                     continue;
                 }
-                strMintWarning = strMintBlockMessage;
-                uiInterface.NotifyAlertChanged();
                 LogPrintf("Error in PeercoinMiner: Keypool ran out, please call keypoolrefill before restarting the mining thread\n");
                 if (!connman->interruptNet.sleep_for(std::chrono::seconds(10)))
                    return;

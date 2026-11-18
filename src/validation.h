@@ -1190,8 +1190,6 @@ public:
     //!
     //! @sa node/chainstate:LoadChainstate()
     bool ValidatedSnapshotCleanup() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
-
-    ~ChainstateManager();
 };
 
 /** Deployment* info via ChainstateManager */

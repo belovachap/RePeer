@@ -69,8 +69,6 @@ public:
 
     //! Returns the block source of the current importing/syncing state
     BlockSource getBlockSource() const;
-    //! Return warnings to be displayed in status bar
-    QString getStatusBarWarnings() const;
 
     QString formatFullVersion() const;
     QString formatSubVersion() const;
@@ -110,7 +108,6 @@ Q_SIGNALS:
     void numBlocksChanged(int count, const QDateTime& blockDate, double nVerificationProgress, SyncType header, SynchronizationState sync_state);
     void mempoolSizeChanged(long count, size_t mempoolSizeInBytes);
     void networkActiveChanged(bool networkActive);
-    void alertsChanged(const QString &warnings);
     void bytesChanged(quint64 totalBytesIn, quint64 totalBytesOut);
 
     //! Fired when a message should be reported to the user
@@ -121,7 +118,6 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     void updateNetworkActive(bool networkActive);
-    void updateAlert(const QString &hash, int status);
 };
 
 #endif // BITCOIN_QT_CLIENTMODEL_H

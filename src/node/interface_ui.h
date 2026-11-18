@@ -93,11 +93,6 @@ public:
     ADD_SIGNALS_DECL_WRAPPER(NotifyNetworkActiveChanged, void, bool networkActive);
 
     /**
-     * Status bar alerts changed.
-     */
-    ADD_SIGNALS_DECL_WRAPPER(NotifyAlertChanged, void, );
-
-    /**
      * Show progress e.g. for verifychain.
      * resume_possible indicates shutting down now will result in the current progress action resuming upon restart.
      */

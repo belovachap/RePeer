@@ -7,7 +7,6 @@
 #include <tinyformat.h>
 #include <util/system.h>
 #include <util/translation.h>
-#include <warnings.h>
 
 static GlobalMutex g_timeoffset_mutex;
 static int64_t nTimeOffset GUARDED_BY(g_timeoffset_mutex) = 0;
@@ -86,7 +85,6 @@ void AddTimeData(const CNetAddr& ip, int64_t nOffsetSample)
                 if (!fMatch) {
                     g_warning_emitted = true;
                     bilingual_str strMessage = strprintf(_("Please check that your computer's date and time are correct! If your clock is wrong, %s will not work properly."), PACKAGE_NAME);
-                    SetMiscWarning(strMessage);
                     uiInterface.ThreadSafeMessageBox(strMessage, "", CClientUIInterface::MSG_WARNING);
                 }
             }

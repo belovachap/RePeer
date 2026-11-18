@@ -3,14 +3,12 @@
 #include <logging.h>
 #include <node/interface_ui.h>
 #include <util/tokenpipe.h>
-#include <warnings.h>
 
 #include <assert.h>
 #include <atomic>
 
 bool AbortNode(const std::string& strMessage, bilingual_str user_message)
 {
-    SetMiscWarning(Untranslated(strMessage));
     LogPrintf("*** %s\n", strMessage);
     if (user_message.empty()) {
         user_message = _("A fatal internal error occurred, see debug.log for details");
