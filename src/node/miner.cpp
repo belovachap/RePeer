@@ -35,6 +35,8 @@
 #include <wallet/spend.h>
 #include <wallet/wallet.h>
 
+#include <atomic>
+#include <thread>
 #include <algorithm>
 #include <utility>
 
@@ -47,6 +49,8 @@ using wallet::ReserveDestination;
 
 int64_t nLastCoinStakeSearchInterval = 0;
 std::map<std::string, std::thread> m_minter_threads;
+static std::atomic<bool> g_mining_active{false};
+static std::thread g_mining_thread;
 
 namespace node {
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev)
@@ -698,6 +702,98 @@ void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet)
             ThreadStakeMinter(m_node, wallet.get());
         });
     });
+}
+
+bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate, uint64_t nMaxTries)
+{
+    int nHeightEnd = 0;
+    int nHeight = 0;
+
+    {   // Don't keep cs_main locked
+        LOCK(cs_main);
+        nHeight = chainstate.m_chain.Height();
+        nHeightEnd = nHeight + nGenerate;
+    }
+
+    unsigned int nExtraNonce = 0;
+    int nBlockTries = 0;
+    while (chainstate.m_chain.Height() < nHeightEnd) {
+        if (ShutdownRequested()) return false;
+
+        const CChainParams& chainparams = params;
+        CBlockIndex* pindexPrev;
+        {
+            LOCK(cs_main);
+            pindexPrev = chainstate.m_chain.Tip();
+        }
+
+        std::unique_ptr<CBlockTemplate> pblocktemplate;
+        try {
+            LOCK(cs_main);
+            pblocktemplate = BlockAssembler(chainstate, mempool).CreateNewBlock(CScript() << OP_TRUE);
+        } catch (const std::runtime_error& e) {
+            LogPrintf("GenerateBlocks: %s\n", e.what());
+            return false;
+        }
+
+        if (!pblocktemplate.get()) {
+            LogPrintf("GenerateBlocks: failed to create block template\n");
+            return false;
+        }
+
+        CBlock* pblock = &pblocktemplate->block;
+        IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
+
+        while (nBlockTries < nMaxTries) {
+            ++nBlockTries;
+            if (ShutdownRequested()) return false;
+
+            pblock->nNonce++;
+            if (CheckProofOfWork(pblock->GetHash(), pblock->nBits, params.GetConsensus())) {
+                break;
+            }
+        }
+
+        if (nBlockTries >= nMaxTries) {
+            LogPrintf("GenerateBlocks: exceeded max tries\n");
+            return false;
+        }
+
+        std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
+        if (!chainstate.m_chainman.ProcessNewBlock(shared_pblock, true, true, nullptr)) {
+            LogPrintf("GenerateBlocks: ProcessNewBlock failed\n");
+            return false;
+        }
+    }
+    return true;
+}
+
+static void ThreadCPUminer(NodeContext& m_node)
+{
+    util::ThreadRename("miner");
+    LogPrintf("CPU miner started\n");
+
+    while (g_mining_active.load(std::memory_order_relaxed)) {
+        if (!GenerateBlocks(Params(), m_node.chainman->ActiveChainstate(), m_node.mempool.get(), 1, 1000000)) {
+            break;
+        }
+    }
+
+    LogPrintf("CPU miner stopped\n");
+}
+
+void StartMining(NodeContext& m_node)
+{
+    g_mining_active.store(true, std::memory_order_relaxed);
+    g_mining_thread = std::thread([&m_node]() { ThreadCPUminer(m_node); });
+}
+
+void StopMining()
+{
+    g_mining_active.store(false, std::memory_order_relaxed);
+    if (g_mining_thread.joinable()) {
+        g_mining_thread.join();
+    }
 }
 
 void StopMintStake(const std::string& wallet_name)

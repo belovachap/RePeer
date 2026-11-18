@@ -215,6 +215,11 @@ namespace boost {
 void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet);
 void StopMintStake(const std::string& wallet_name);
 
+/** Generate blocks (proof-of-work mining) */
+bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate, uint64_t nMaxTries);
+void StartMining(NodeContext& m_node);
+void StopMining();
+
 /** Update an old GenerateCoinbaseCommitment from CreateNewBlock after the block txs have changed */
 void RegenerateCommitments(CBlock& block, ChainstateManager& chainman);
 
