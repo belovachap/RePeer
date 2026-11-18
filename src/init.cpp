@@ -279,7 +279,7 @@ void Shutdown(NodeContext& node)
     node.chainman.reset();
     node.scheduler.reset();
 
-    StopMining();
+    node::StopMining();
     for (auto& [name, t] : m_minter_threads) {
         if (t.joinable()) {
             t.join();
