@@ -1,3 +1,8 @@
+// GCC 14 false positive: -Wstringop-overread from std::lexicographical_compare_three_way
+// on std::vector<unsigned char> comparisons.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overread"
+
 #include <net.h>
 
 #include <addrdb.h>
@@ -2898,3 +2903,5 @@ std::function<void(const CAddress& addr,
                    Span<const unsigned char> data,
                    bool is_incoming)>
     CaptureMessage = CaptureMessageToFile;
+
+#pragma GCC diagnostic pop

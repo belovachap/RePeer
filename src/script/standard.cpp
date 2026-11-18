@@ -1,3 +1,8 @@
+// GCC 14 false positive: -Wstringop-overread from std::lexicographical_compare_three_way
+// on std::pair<std::vector<unsigned char>, int> comparisons.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overread"
+
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2022 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
@@ -653,3 +658,5 @@ std::vector<std::tuple<uint8_t, uint8_t, std::vector<unsigned char>>> TaprootBui
     }
     return tuples;
 }
+
+#pragma GCC diagnostic pop
