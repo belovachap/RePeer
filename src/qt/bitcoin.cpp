@@ -420,6 +420,7 @@ int GuiMain(int argc, char* argv[])
         }
         return EXIT_FAILURE;
     }
+    SetupServerArgs(gArgs);
 
     QScopedPointer<const NetworkStyle> networkStyle(NetworkStyle::instantiate(Params().NetworkIDString()));
     assert(!networkStyle.isNull());
