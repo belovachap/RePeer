@@ -239,7 +239,6 @@ void ClientModel::unsubscribeFromCoreSignals()
     m_handler_show_progress->disconnect();
     m_handler_notify_num_connections_changed->disconnect();
     m_handler_notify_network_active_changed->disconnect();
-    m_handler_notify_alert_changed->disconnect();
     m_handler_notify_block_tip->disconnect();
     m_handler_notify_header_tip->disconnect();
 }
