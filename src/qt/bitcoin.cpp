@@ -420,6 +420,11 @@ int GuiMain(int argc, char* argv[])
         }
         return EXIT_FAILURE;
     }
+    std::string parse_error;
+    if (!gArgs.ParseParameters(argc, argv, parse_error)) {
+        InitError(Untranslated(strprintf("Error parsing command line arguments: %s", parse_error)));
+        return EXIT_FAILURE;
+    }
     SetupServerArgs(gArgs);
 
     QScopedPointer<const NetworkStyle> networkStyle(NetworkStyle::instantiate(Params().NetworkIDString()));
