@@ -408,6 +408,8 @@ int GuiMain(int argc, char* argv[])
     // - QSettings() will use the new application name after this, resulting in network-specific settings
     // - Needs to be done before createOptionsModel
     SetupServerArgs(gArgs);
+    // Qt-only: register -generate so only the GUI can enable CPU mining
+    gArgs.AddArg("-generate", strprintf("Generate blocks (default: %d, regtest: %d)", false, Params().GetConsensus().nPowAllowMinDifficultyBlocks), ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
     std::string parse_error;
     if (!gArgs.ParseParameters(argc, argv, parse_error)) {
         InitError(Untranslated(strprintf("Error parsing command line arguments: %s", parse_error)));

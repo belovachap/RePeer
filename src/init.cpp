@@ -476,8 +476,6 @@ void SetupServerArgs(ArgsManager& argsman)
     gArgs.AddArg("-reservebalance=<amt>", "Reserve this many coins", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     gArgs.AddArg("-minting", "Enable minting (default: true)", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
 
-    gArgs.AddArg("-generate", strprintf("Generate blocks (default: %d, regtest: %d)", false, regtestChainParams->DefaultConsistencyChecks()), ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
-
     // Add the hidden options
     argsman.AddHiddenArgs(hidden_args);
 }
