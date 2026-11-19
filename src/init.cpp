@@ -280,11 +280,7 @@ void Shutdown(NodeContext& node)
     node.scheduler.reset();
 
     node::StopMining();
-    for (auto& [name, t] : m_minter_threads) {
-        if (t.joinable()) {
-            t.join();
-        }
-    }
+    node::StopAllMintStakes();
 
     try {
         if (!fs::remove(GetPidFile(*node.args))) {
