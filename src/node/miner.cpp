@@ -705,7 +705,7 @@ void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet)
     m_minter_threads[name] = std::make_pair(wallet, std::move(thread));
 }
 
-bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate, uint64_t nMaxTries)
+bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate)
 {
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -717,7 +717,6 @@ bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPo
     }
 
     unsigned int nExtraNonce = 0;
-    int nBlockTries = 0;
     while (chainstate.m_chain.Height() < nHeightEnd) {
         if (ShutdownRequested()) return false;
 
@@ -745,20 +744,14 @@ bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPo
         CBlock* pblock = &pblocktemplate->block;
         IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
 
-        while (nBlockTries < nMaxTries) {
-            ++nBlockTries;
-            if (ShutdownRequested()) return false;
-
+        while (!ShutdownRequested()) {
             pblock->nNonce++;
             if (CheckProofOfWork(pblock->GetHash(), pblock->nBits, params.GetConsensus())) {
                 break;
             }
         }
 
-        if (nBlockTries >= nMaxTries) {
-            LogPrintf("GenerateBlocks: exceeded max tries\n");
-            return false;
-        }
+        if (ShutdownRequested()) return false;
 
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
         if (!chainstate.m_chainman.ProcessNewBlock(shared_pblock, true, true, nullptr)) {
@@ -775,7 +768,7 @@ static void ThreadCPUminer(NodeContext& m_node)
     LogPrintf("CPU miner started\n");
 
     while (g_mining_active.load(std::memory_order_relaxed)) {
-        if (!GenerateBlocks(Params(), m_node.chainman->ActiveChainstate(), m_node.mempool.get(), 1, 1000000)) {
+        if (!GenerateBlocks(Params(), m_node.chainman->ActiveChainstate(), m_node.mempool.get(), 1)) {
             break;
         }
     }
