@@ -624,6 +624,8 @@ add_executable(repeer-test
   src/test/main.cpp
   src/test/wallet_create_tests.cpp
   src/test/wallet_unlocking_tests.cpp
+  src/test/validation_block_tests.cpp
+  src/test/validation_signblock_tests.cpp
   
   src/test/util/setup_common.cpp
   src/test/util/setup_common.h

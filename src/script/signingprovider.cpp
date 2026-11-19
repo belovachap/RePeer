@@ -5,6 +5,7 @@
 
 #include <script/keyorigin.h>
 #include <script/signingprovider.h>
+#include <pubkey.h>
 #include <script/standard.h>
 
 #include <logging.h>
@@ -62,7 +63,10 @@ bool FlatSigningProvider::GetKeyOrigin(const CKeyID& keyid, KeyOriginInfo& info)
     if (ret) info = std::move(out.second);
     return ret;
 }
-bool FlatSigningProvider::GetKey(const CKeyID& keyid, CKey& key) const { return LookupHelper(keys, keyid, key); }
+bool FlatSigningProvider::GetKey(const CKeyID& keyid, CKey& key) const
+{
+    return LookupHelper(keys, keyid, key);
+}
 bool FlatSigningProvider::GetTaprootSpendData(const XOnlyPubKey& output_key, TaprootSpendData& spenddata) const
 {
     TaprootBuilder builder;

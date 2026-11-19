@@ -1547,7 +1547,7 @@ void Chainstate::InvalidChainFound(CBlockIndex* pindexNew)
 
     LogPrintf("%s: invalid block=%s  height=%d  log2_trust=%.8g  moneysupply=%s  date=%s  moneysupply=%s\n", __func__,
       pindexNew->GetBlockHash().ToString(), pindexNew->nHeight,
-      log(pindexNew->nChainTrust.getdouble())/log(2.0), 
+      log(pindexNew->nChainTrust.getdouble())/log(2.0),
       FormatMoney(m_chain.Tip()->nMoneySupply),
       FormatISO8601DateTime(pindexNew->GetBlockTime()),
       FormatMoney(pindexNew->nMoneySupply));
@@ -2428,7 +2428,7 @@ void Chainstate::UpdateTip(const CBlockIndex* pindexNew)
             pindex = pindex->pprev;
         }
         if (nUpgraded > 0)
-        {            
+        {
             warning_message = strprintf("%d of last 100 blocks have unexpected version", nUpgraded);
         }
     }
@@ -4905,16 +4905,49 @@ bool SignBlock(CBlock& block, const CWallet& keystore)
 {
     std::vector<valtype> vSolutions;
     const CTxOut& txout = block.IsProofOfStake()? block.vtx[1]->vout[1] : block.vtx[0]->vout[0];
+    TxoutType type = Solver(txout.scriptPubKey, vSolutions);
 
-    if (Solver(txout.scriptPubKey, vSolutions) != TxoutType::PUBKEY)
-        return false;
+    if (type == TxoutType::PUBKEY) {
+        CPubKey pubKey(vSolutions[0]);
+        PKHash pkhash(pubKey);
+        SigningResult res = keystore.SignBlockHash(block.GetHash(), pkhash, block.vchBlockSig);
+        return res == SigningResult::OK;
+    } else if (type == TxoutType::WITNESS_V0_KEYHASH) {
+        PKHash pkhash{uint160(vSolutions[0])};
+        SigningResult res = keystore.SignBlockHash(block.GetHash(), pkhash, block.vchBlockSig);
+        return res == SigningResult::OK;
+    } else if (type == TxoutType::WITNESS_V1_TAPROOT) {
+        XOnlyPubKey output_key(vSolutions[0]);
+        if (!output_key.IsFullyValid())
+            return false;
 
-    // Sign
-    CPubKey pubKey(vSolutions[0]);
-    PKHash pkhash(pubKey);
-    SigningResult res = keystore.SignBlockHash(block.GetHash(), pkhash, block.vchBlockSig);
-    if (res == SigningResult::OK)
+        auto provider = keystore.GetSolvingProvider(txout.scriptPubKey);
+        if (!provider)
+            return false;
+
+        // The scriptPubKey contains the output key (tweaked). Retrieve the
+        // TaprootSpendData to get the internal key and merkle root so we can
+        // sign with the internal private key and apply the correct tweak.
+        TaprootSpendData spenddata;
+        if (!provider->GetTaprootSpendData(output_key, spenddata))
+            return false;
+
+        if (!spenddata.internal_key.IsFullyValid())
+            return false;
+
+        CKey key;
+        if (!provider->GetKeyByXOnly(spenddata.internal_key, key))
+            return false;
+
+        std::vector<unsigned char> sig;
+        sig.resize(64);
+        if (!key.SignSchnorr(block.GetHash(), sig, &spenddata.merkle_root, {}))
+            return false;
+
+        block.vchBlockSig = sig;
         return true;
+    }
+
     return false;
 }
 
@@ -4926,15 +4959,39 @@ bool CheckBlockSignature(const CBlock& block)
 
     std::vector<valtype> vSolutions;
     const CTxOut& txout = block.IsProofOfStake()? block.vtx[1]->vout[1] : block.vtx[0]->vout[0];
+    TxoutType type = Solver(txout.scriptPubKey, vSolutions);
 
-    if (Solver(txout.scriptPubKey, vSolutions) != TxoutType::PUBKEY)
-        return false;
+    if (type == TxoutType::PUBKEY) {
+        const valtype& vchPubKey = vSolutions[0];
+        CPubKey key(vchPubKey);
+        if (block.vchBlockSig.empty())
+            return false;
+        return key.Verify(block.GetHash(), block.vchBlockSig);
+    } else if (type == TxoutType::WITNESS_V0_KEYHASH) {
+        const CScriptWitness& witness = block.IsProofOfStake()
+            ? block.vtx[1]->vin[0].scriptWitness
+            : block.vtx[0]->vin[0].scriptWitness;
+        if (witness.stack.size() < 2)
+            return false;
+        CPubKey pubkey(witness.stack[1]);
+        if (!pubkey.IsValid())
+            return false;
+        // Verify the pubkey from witness matches the hash in the scriptPubKey
+        if (vSolutions[0] != ToByteVector(pubkey.GetID()))
+            return false;
+        if (block.vchBlockSig.empty())
+            return false;
+        return pubkey.Verify(block.GetHash(), block.vchBlockSig);
+    } else if (type == TxoutType::WITNESS_V1_TAPROOT) {
+        if (block.vchBlockSig.empty())
+            return false;
+        XOnlyPubKey xonly(vSolutions[0]);
+        if (!xonly.IsFullyValid())
+            return false;
+        return xonly.VerifySchnorr(block.GetHash(), block.vchBlockSig);
+    }
 
-    const valtype& vchPubKey = vSolutions[0];
-    CPubKey key(vchPubKey);
-    if (block.vchBlockSig.empty())
-        return false;
-    return key.Verify(block.GetHash(), block.vchBlockSig);
+    return false;
 }
 
 std::optional<uint256> ChainstateManager::SnapshotBlockhash() const

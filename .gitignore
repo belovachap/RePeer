@@ -1,4 +1,5 @@
 build/
+sqlite_testing.db/
 src/qt/repeer-qt
 src/repeer-cli
 src/repeerd

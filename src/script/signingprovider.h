@@ -4,11 +4,13 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_SCRIPT_SIGNINGPROVIDER_H
+#include <iostream>
 #define BITCOIN_SCRIPT_SIGNINGPROVIDER_H
 
 #include <attributes.h>
 #include <key.h>
 #include <pubkey.h>
+#include <util/strencodings.h>
 #include <script/keyorigin.h>
 #include <script/script.h>
 #include <script/standard.h>
@@ -30,7 +32,8 @@ public:
 
     bool GetKeyByXOnly(const XOnlyPubKey& pubkey, CKey& key) const
     {
-        for (const auto& id : pubkey.GetKeyIDs()) {
+        auto keyids = pubkey.GetKeyIDs();
+        for (const auto& id : keyids) {
             if (GetKey(id, key)) return true;
         }
         return false;
