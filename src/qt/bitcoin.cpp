@@ -409,7 +409,7 @@ int GuiMain(int argc, char* argv[])
     // - Needs to be done before createOptionsModel
     SetupServerArgs(gArgs);
     // Qt-only: register -generate so only the GUI can enable CPU mining
-    gArgs.AddArg("-generate", strprintf("Generate blocks (default: %d, regtest: %d)", false, Params().GetConsensus().fPowAllowMinDifficultyBlocks), ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
+    gArgs.AddArg("-generate", strprintf("Generate blocks (default: %d)", false), ArgsManager::ALLOW_ANY, OptionsCategory::BLOCK_CREATION);
     std::string parse_error;
     if (!gArgs.ParseParameters(argc, argv, parse_error)) {
         InitError(Untranslated(strprintf("Error parsing command line arguments: %s", parse_error)));
