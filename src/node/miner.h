@@ -23,7 +23,7 @@
 #include <thread>
 
 extern int64_t nLastCoinStakeSearchInterval;
-extern std::map<std::string, std::thread> m_minter_threads;
+extern std::map<std::string, std::pair<std::shared_ptr<CWallet>, std::thread>> m_minter_threads;
 
 class ChainstateManager;
 
@@ -214,6 +214,7 @@ namespace boost {
 
 void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet);
 void StopMintStake(const std::string& wallet_name);
+void StopAllMintStakes();
 
 /** Generate blocks (proof-of-work mining) */
 bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate, uint64_t nMaxTries);

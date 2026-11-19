@@ -48,7 +48,7 @@ using wallet::CCoinControl;
 using wallet::ReserveDestination;
 
 int64_t nLastCoinStakeSearchInterval = 0;
-std::map<std::string, std::thread> m_minter_threads;
+std::map<std::string, std::pair<std::shared_ptr<CWallet>, std::thread>> m_minter_threads;
 static std::atomic<bool> g_mining_active{false};
 static std::thread g_mining_thread;
 
@@ -697,11 +697,12 @@ void static ThreadStakeMinter(NodeContext& m_node, CWallet* pwallet)
 void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet)
 {
     std::string name = wallet->GetName();
-    m_minter_threads[name] = std::thread([&m_node, wallet]() {
+    auto thread = std::thread([&m_node, wallet]() {
         util::TraceThread("minter", [&m_node, wallet]() {
             ThreadStakeMinter(m_node, wallet.get());
         });
     });
+    m_minter_threads[name] = std::make_pair(wallet, std::move(thread));
 }
 
 bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate, uint64_t nMaxTries)
@@ -800,10 +801,30 @@ void StopMintStake(const std::string& wallet_name)
 {
     auto it = m_minter_threads.find(wallet_name);
     if (it != m_minter_threads.end()) {
-        if (it->second.joinable()) {
-            it->second.join();
+        auto& [wallet, thread] = it->second;
+        {
+            LOCK(wallet->cs_wallet);
+            wallet->m_should_stop_minting = true;
+        }
+        if (thread.joinable()) {
+            thread.join();
         }
         m_minter_threads.erase(it);
     }
+}
+
+void StopAllMintStakes()
+{
+    for (auto& [name, entry] : m_minter_threads) {
+        auto& [wallet, thread] = entry;
+        {
+            LOCK(wallet->cs_wallet);
+            wallet->m_should_stop_minting = true;
+        }
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+    m_minter_threads.clear();
 }
 } // namespace node

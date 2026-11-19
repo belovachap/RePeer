@@ -188,6 +188,7 @@ ChainTestingSetup::ChainTestingSetup(const std::string& chainName, const std::ve
 
 ChainTestingSetup::~ChainTestingSetup()
 {
+    node::StopAllMintStakes();
     if (m_node.scheduler) m_node.scheduler->stop();
     StopScriptCheckWorkerThreads();
     GetMainSignals().FlushBackgroundCallbacks();
