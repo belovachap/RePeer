@@ -217,7 +217,7 @@ void StopMintStake(const std::string& wallet_name);
 void StopAllMintStakes();
 
 /** Generate blocks (proof-of-work mining) */
-bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate);
+bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate, const CScript& coinbase_script);
 void StartMining(NodeContext& m_node);
 void StopMining();
 

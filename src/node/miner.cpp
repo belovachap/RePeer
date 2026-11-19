@@ -705,7 +705,7 @@ void StartMintStake(NodeContext& m_node, std::shared_ptr<CWallet> wallet)
     m_minter_threads[name] = std::make_pair(wallet, std::move(thread));
 }
 
-bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate)
+bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPool* mempool, int nGenerate, const CScript& coinbase_script)
 {
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -730,7 +730,7 @@ bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPo
         std::unique_ptr<CBlockTemplate> pblocktemplate;
         try {
             LOCK(cs_main);
-            pblocktemplate = BlockAssembler(chainstate, mempool).CreateNewBlock(CScript() << OP_TRUE);
+            pblocktemplate = BlockAssembler(chainstate, mempool).CreateNewBlock(coinbase_script);
         } catch (const std::runtime_error& e) {
             LogPrintf("GenerateBlocks: %s\n", e.what());
             return false;
@@ -768,7 +768,32 @@ static void ThreadCPUminer(NodeContext& m_node)
     LogPrintf("CPU miner started\n");
 
     while (g_mining_active.load(std::memory_order_relaxed)) {
-        if (!GenerateBlocks(Params(), m_node.chainman->ActiveChainstate(), m_node.mempool.get(), 1)) {
+        // Find an unencrypted wallet and get a random address for the coinbase
+        CScript coinbase_script;
+        bool found_wallet = false;
+
+        for (const auto& client : m_node.chain_clients) {
+            CWallet* wallet = client->wallet();
+            if (!wallet) continue;
+            if (wallet->IsLocked()) continue;
+
+            // Get a random address from this wallet
+            auto op_dest = wallet->GetNewDestination(OutputType::LEGACY, "miner");
+            if (op_dest) {
+                coinbase_script = GetScriptForDestination(*op_dest);
+                found_wallet = true;
+                break;
+            }
+        }
+
+        if (!found_wallet) {
+            // No unencrypted wallets available; sleep and retry
+            LogPrintf("CPU miner: no unencrypted wallets available, sleeping\n");
+            UninterruptibleSleep(std::chrono::seconds(10));
+            continue;
+        }
+
+        if (!GenerateBlocks(Params(), m_node.chainman->ActiveChainstate(), m_node.mempool.get(), 1, coinbase_script)) {
             break;
         }
     }
