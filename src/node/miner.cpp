@@ -772,8 +772,8 @@ static void ThreadCPUminer(NodeContext& m_node)
         CScript coinbase_script;
         bool found_wallet = false;
 
-        for (const auto& client : m_node.chain_clients) {
-            CWallet* wallet = client->wallet();
+        for (const auto& [name, entry] : m_minter_threads) {
+            const auto& [wallet, thread] = entry;
             if (!wallet) continue;
             if (wallet->IsLocked()) continue;
 
