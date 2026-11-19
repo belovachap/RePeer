@@ -259,6 +259,6 @@ TestingSetup::TestingSetup(
     db_options.require_create = true;
     DatabaseStatus db_status;
     bilingual_str db_error;
-    m_sqlite_db = MakeSQLiteDatabase(m_args.GetDataDirBase() / "sqlite_testing.db", db_options, db_status, db_error);
+    m_sqlite_db = MakeSQLiteDatabase(m_args.GetDataDirBase() / "sqlite_testing.db", db_options, db_status, db_error, /*mock=*/true);
     assert(m_sqlite_db != nullptr);
 }

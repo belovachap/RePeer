@@ -132,7 +132,7 @@ public:
     bool m_use_unsafe_sync;
 };
 
-std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, bool mock = false);
 
 std::string SQLiteDatabaseVersion();
 } // namespace wallet

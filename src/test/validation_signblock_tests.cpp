@@ -44,7 +44,7 @@ static std::shared_ptr<wallet::CWallet> MakeTestTaprootWallet(interfaces::Chain*
     wallet::DatabaseOptions options;
     wallet::DatabaseStatus status;
     bilingual_str error_string;
-    auto wallet = std::make_shared<wallet::CWallet>(chain, "test", wallet::MakeSQLiteDatabase("sqlite_testing.db", options, status, error_string));
+    auto wallet = std::make_shared<wallet::CWallet>(chain, "test", wallet::MakeSQLiteDatabase("sqlite_testing.db", options, status, error_string, /*mock=*/true));
     LOCK(wallet->cs_wallet);
     wallet->SetupDescriptorScriptPubKeyMans();
 
