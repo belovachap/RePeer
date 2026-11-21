@@ -1388,8 +1388,11 @@ void PeerManagerImpl::FindNextBlocksToDownload(const Peer& peer, unsigned int co
             if (pindex->nStatus & BLOCK_HAVE_DATA || m_chainman.ActiveChain().Contains(pindex)) {
                 if (pindex->HaveTxsDownloaded())
                     state->pindexLastCommonBlock = pindex;
-            } else if (!IsBlockRequested(pindex->GetBlockHash())) {
-                // The block is not already downloaded, and not yet in flight.
+            } else if (mapBlocksInFlight.count(pindex->GetBlockHash()) < MAX_CMPCTBLOCKS_INFLIGHT_PER_BLOCK) {
+                // The block is not already downloaded, and not yet in flight from
+                // MAX_CMPCTBLOCKS_INFLIGHT_PER_BLOCK peers. Allow requesting it from
+                // this peer as well to enable concurrent downloads and mitigate
+                // stalling peers (CVE-2024-52922).
                 if (pindex->nHeight > nWindowEnd) {
                     // We reached the end of the window.
                     if (vBlocks.size() == 0 && waitingfor != peer.m_id) {
@@ -1403,7 +1406,7 @@ void PeerManagerImpl::FindNextBlocksToDownload(const Peer& peer, unsigned int co
                     return;
                 }
             } else if (waitingfor == -1) {
-                // This is the first already-in-flight block.
+                // This is the first block that is in flight from MAX_CMPCTBLOCKS_INFLIGHT_PER_BLOCK peers.
                 waitingfor = mapBlocksInFlight.lower_bound(pindex->GetBlockHash())->second.first;
             }
         }
