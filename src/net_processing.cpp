@@ -4575,7 +4575,13 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                 // though the block was successfully read, and rely on the
                 // handling in ProcessNewBlock to ensure the block index is
                 // updated, etc.
-                RemoveBlockRequest(resp.blockhash, pfrom.GetId()); // it is now an empty pointer
+                // Do NOT call RemoveBlockRequest here. We must not clear the
+                // download state until after ProcessBlock has validated the
+                // block (including the witness malleation check). If the block
+                // turns out to be mutated, the block must remain in-flight so
+                // we do not re-request it from the same (malicious) peer.
+                // ProcessBlock will call RemoveBlockRequest only if the block
+                // is valid. See CVE-2025-62859.
                 fBlockRead = true;
                 // mapBlockSource is used for potentially punishing peers and
                 // updating which peers send us compact blocks, so the race
