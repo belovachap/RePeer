@@ -93,6 +93,9 @@ static const unsigned int MAX_DISCONNECTED_TX_POOL_SIZE = 20000;
 static constexpr std::chrono::hours DATABASE_WRITE_INTERVAL{1};
 /** Time to wait between flushing chainstate to disk. */
 static constexpr std::chrono::hours DATABASE_FLUSH_INTERVAL{24};
+/** Maximum number of inputs in a standard transaction to prevent quadratic
+ *  sighash computation in legacy script context (CVE-2025-46598 mitigation). */
+static constexpr unsigned int MAX_STANDARD_TX_INPUTS = 1000;
 const std::vector<std::string> CHECKLEVEL_DOC {
     "level 0 reads the blocks from disk",
     "level 1 verifies block validity",
@@ -660,6 +663,16 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     if (!CheckTransaction(tx, state)) {
         return false; // state filled in by CheckTransaction
     }
+
+    // Reject transactions with too many inputs to prevent quadratic sighash
+    // computation in legacy script context (CVE-2025-46598 mitigation).
+    // Without this limit, a transaction with N inputs each containing a
+    // CHECKSIG requires N sighash computations each serializing all N inputs,
+    // resulting in O(N²) work that can be exploited for CPU DoS.
+    if (tx.vin.size() > MAX_STANDARD_TX_INPUTS) {
+        return state.Invalid(TxValidationResult::TX_NOT_STANDARD, "too-many-inputs");
+    }
+
     // Time (prevent mempool memory exhaustion attack)
     // moved from CheckTransaction() to here, because it makes no sense to make GetAdjustedTime() a part of the consensus rules - user can set his clock to whatever he wishes.
     unsigned int nTime = TicksSinceEpoch<std::chrono::seconds>(GetAdjustedTime());
