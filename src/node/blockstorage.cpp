@@ -302,11 +302,11 @@ static bool UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const
     fileout << messageStart << nSize;
 
     // Write undo data
-    long fileOutPos = ftell(fileout.Get());
+    off_t fileOutPos = ftello(fileout.Get());
     if (fileOutPos < 0) {
-        return error("%s: ftell failed", __func__);
+        return error("%s: ftello failed", __func__);
     }
-    pos.nPos = (unsigned int)fileOutPos;
+    pos.nPos = static_cast<uint64_t>(fileOutPos);
     fileout << blockundo;
 
     // calculate & write checksum
@@ -418,7 +418,7 @@ fs::path GetBlockPosFilename(const FlatFilePos& pos)
     return BlockFileSeq().FileName(pos);
 }
 
-bool BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, CChain& active_chain, uint64_t nTime, bool fKnown)
+bool BlockManager::FindBlockPos(FlatFilePos& pos, uint64_t nAddSize, unsigned int nHeight, CChain& active_chain, uint64_t nTime, bool fKnown)
 {
     LOCK(cs_LastBlockFile);
 
@@ -470,7 +470,7 @@ bool BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigne
     return true;
 }
 
-bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize)
+bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, uint64_t nAddSize)
 {
     pos.nFile = nFile;
 
@@ -502,11 +502,11 @@ static bool WriteBlockToDisk(const CBlock& block, FlatFilePos& pos, const CMessa
     fileout << messageStart << nSize;
 
     // Write block
-    long fileOutPos = ftell(fileout.Get());
+    off_t fileOutPos = ftello(fileout.Get());
     if (fileOutPos < 0) {
-        return error("WriteBlockToDisk: ftell failed");
+        return error("WriteBlockToDisk: ftello failed");
     }
-    pos.nPos = (unsigned int)fileOutPos;
+    pos.nPos = static_cast<uint64_t>(fileOutPos);
     fileout << block;
 
     return true;
@@ -518,7 +518,7 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
     // Write undo information to disk
     if (pindex->GetUndoPos().IsNull()) {
         FlatFilePos _pos;
-        if (!FindUndoPos(state, pindex->nFile, _pos, ::GetSerializeSize(blockundo, CLIENT_VERSION) + 40)) {
+        if (!FindUndoPos(state, pindex->nFile, _pos, static_cast<uint64_t>(::GetSerializeSize(blockundo, CLIENT_VERSION) + 40))) {
             return error("ConnectBlock(): FindUndoPos failed");
         }
         if (!UndoWriteToDisk(blockundo, _pos, pindex->pprev->GetBlockHash(), chainparams.MessageStart())) {
@@ -627,7 +627,7 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatFilePos& pos, c
 
 FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight, CChain& active_chain, const CChainParams& chainparams, const FlatFilePos* dbp)
 {
-    unsigned int nBlockSize = ::GetSerializeSize(block, CLIENT_VERSION);
+    uint64_t nBlockSize = ::GetSerializeSize(block, CLIENT_VERSION);
     FlatFilePos blockPos;
     const auto position_known {dbp != nullptr};
     if (position_known) {
@@ -636,7 +636,7 @@ FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight, CCha
         // when known, blockPos.nPos points at the offset of the block data in the blk file. that already accounts for
         // the serialization header present in the file (the 4 magic message start bytes + the 4 length bytes = 8 bytes = BLOCK_SERIALIZATION_HEADER_SIZE).
         // we add BLOCK_SERIALIZATION_HEADER_SIZE only for new blocks since they will have the serialization header added when written to disk.
-        nBlockSize += static_cast<unsigned int>(BLOCK_SERIALIZATION_HEADER_SIZE);
+        nBlockSize += static_cast<uint64_t>(BLOCK_SERIALIZATION_HEADER_SIZE);
     }
     if (!FindBlockPos(blockPos, nBlockSize, nHeight, active_chain, block.GetBlockTime(), position_known)) {
         error("%s: FindBlockPos failed", __func__);
