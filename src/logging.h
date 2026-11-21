@@ -111,7 +111,7 @@ namespace BCLog {
         /** Rate limiting for log messages (CVE-2025-54604 mitigation).
          *  Prevents disk-filling via spoofed self-connections or other
          *  high-frequency log triggers. */
-        static constexpr int64_t LOG_RATE_LIMIT_PER_SECOND{100};
+        static constexpr int64_t LOG_RATE_LIMIT_PER_SECOND{10000};
         int64_t m_log_tokens GUARDED_BY(m_cs){LOG_RATE_LIMIT_PER_SECOND};
         std::chrono::microseconds m_log_token_timestamp GUARDED_BY(m_cs){GetTime<std::chrono::microseconds>()};
         uint64_t m_dropped_messages GUARDED_BY(m_cs){0};
