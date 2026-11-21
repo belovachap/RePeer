@@ -9,6 +9,7 @@
 #include <threadsafety.h>
 #include <tinyformat.h>
 #include <util/fs.h>
+#include <util/time.h>
 #include <util/string.h>
 
 #include <atomic>
@@ -106,6 +107,15 @@ namespace BCLog {
 
         /** Slots that connect to the print signal */
         std::list<std::function<void(const std::string&)>> m_print_callbacks GUARDED_BY(m_cs) {};
+
+        /** Rate limiting for log messages (CVE-2025-54604 mitigation).
+         *  Prevents disk-filling via spoofed self-connections or other
+         *  high-frequency log triggers. */
+        static constexpr int64_t LOG_RATE_LIMIT_PER_SECOND{100};
+        int64_t m_log_tokens GUARDED_BY(m_cs){LOG_RATE_LIMIT_PER_SECOND};
+        std::chrono::microseconds m_log_token_timestamp GUARDED_BY(m_cs){GetTime<std::chrono::microseconds>()};
+        uint64_t m_dropped_messages GUARDED_BY(m_cs){0};
+        bool m_dropped_logged GUARDED_BY(m_cs){false};
 
     public:
         bool m_print_to_console = false;

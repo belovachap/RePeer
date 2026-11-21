@@ -380,6 +380,50 @@ namespace BCLog {
 void BCLog::Logger::LogPrintStr(const std::string& str, const std::string& logging_function, const std::string& source_file, int source_line, BCLog::LogFlags category, BCLog::Level level)
 {
     StdLockGuard scoped_lock(m_cs);
+
+    // --- Rate limiting (CVE-2025-54604 mitigation) ---
+    const auto current_time{GetTime<std::chrono::microseconds>()};
+    const auto elapsed = current_time - m_log_token_timestamp;
+    const int64_t refill = Ticks<std::chrono::seconds>(elapsed) * LOG_RATE_LIMIT_PER_SECOND;
+    if (refill > 0) {
+        m_log_tokens = std::min<int64_t>(m_log_tokens + refill, LOG_RATE_LIMIT_PER_SECOND);
+        m_log_token_timestamp = current_time;
+    }
+
+    if (m_log_tokens <= 0) {
+        ++m_dropped_messages;
+        if (!m_dropped_logged) {
+            m_dropped_logged = true;
+            std::string notice = strprintf("[net:warning] Log rate limit exceeded, dropping messages.\n");
+            std::string str_prefixed_notice = LogEscapeMessage(notice);
+            str_prefixed_notice = LogTimestampStr(str_prefixed_notice);
+            if (m_print_to_console) {
+                fwrite(str_prefixed_notice.data(), 1, str_prefixed_notice.size(), stdout);
+                fflush(stdout);
+            }
+            if (m_print_to_file && m_fileout) {
+                FileWriteStr(str_prefixed_notice, m_fileout);
+            }
+        }
+        return;
+    }
+    --m_log_tokens;
+    if (m_dropped_logged) {
+        m_dropped_logged = false;
+        std::string notice = strprintf("[net:info] Log rate limit recovered, %lu messages were dropped.\n", m_dropped_messages);
+        m_dropped_messages = 0;
+        std::string str_prefixed_notice = LogEscapeMessage(notice);
+        str_prefixed_notice = LogTimestampStr(str_prefixed_notice);
+        if (m_print_to_console) {
+            fwrite(str_prefixed_notice.data(), 1, str_prefixed_notice.size(), stdout);
+            fflush(stdout);
+        }
+        if (m_print_to_file && m_fileout) {
+            FileWriteStr(str_prefixed_notice, m_fileout);
+        }
+    }
+    // --- End rate limiting ---
+
     std::string str_prefixed = LogEscapeMessage(str);
 
     if ((category != LogFlags::NONE || level != Level::None) && m_started_new_line) {
