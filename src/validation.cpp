@@ -2096,6 +2096,8 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
     int nInputs = 0;
     int64_t nSigOpsCost = 0;
     blockundo.vtxundo.reserve(block.vtx.size() - 1);
+    bool fEarlyReturn = false;
+    TxValidationState tx_state;
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
         const CTransaction &tx = *(block.vtx[i]);
@@ -2107,12 +2109,9 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
         else
         {
             CAmount txfee = 0;
-            TxValidationState tx_state;
             if (!Consensus::CheckTxInputs(tx, tx_state, view, pindex->nHeight, txfee, Params().GetConsensus(), tx.nTime ? tx.nTime : block.nTime, (pindex->pprev? pindex->pprev->nMoneySupply : 0))) {
-                // Any transaction validation failure in ConnectBlock is a block consensus failure
-                state.Invalid(BlockValidationResult::BLOCK_CONSENSUS,
-                            tx_state.GetRejectReason(), tx_state.GetDebugMessage());
-                return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), state.ToString());
+                fEarlyReturn = true;
+                break;
             }
             for (unsigned int i = 0; i < tx.vin.size(); i++)
                 nValueIn += view.AccessCoin(tx.vin[i].prevout).out.nValue;
@@ -2121,7 +2120,8 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
                 nFees += txfee;
             if (!MoneyRange(nFees)) {
                 LogPrintf("ERROR: %s: accumulated fee in the block out of range.\n", __func__);
-                return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-accumulated-fee-outofrange");
+                fEarlyReturn = true;
+                break;
             }
 
             // Check that transaction is BIP68 final
@@ -2134,7 +2134,8 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
 
             if (!SequenceLocks(tx, nLockTimeFlags, prevheights, *pindex)) {
                 LogPrintf("ERROR: %s: contains a non-BIP68-final transaction\n", __func__);
-                return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-nonfinal");
+                fEarlyReturn = true;
+                break;
             }
         }
 
@@ -2145,20 +2146,17 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
         nSigOpsCost += GetTransactionSigOpCost(tx, view, flags);
         if (nSigOpsCost > MAX_BLOCK_SIGOPS_COST) {
             LogPrintf("ERROR: ConnectBlock(): too many sigops\n");
-            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-blk-sigops");
+            fEarlyReturn = true;
+            break;
         }
 
         if (!tx.IsCoinBase())
         {
             std::vector<CScriptCheck> vChecks;
             bool fCacheResults = fJustCheck; /* Don't cache results if we're actually connecting blocks (still consult the cache, though) */
-            TxValidationState tx_state;
             if (fScriptChecks && !CheckInputScripts(tx, tx_state, view, flags, fCacheResults, fCacheResults, txsdata[i], parallel_script_checks ? &vChecks : nullptr)) {
-                // Any transaction validation failure in ConnectBlock is a block consensus failure
-                state.Invalid(BlockValidationResult::BLOCK_CONSENSUS,
-                              tx_state.GetRejectReason(), tx_state.GetDebugMessage());
-                return error("ConnectBlock(): CheckInputScripts on %s failed with %s",
-                    tx.GetHash().ToString(), state.ToString());
+                fEarlyReturn = true;
+                break;
             }
             control.Add(std::move(vChecks));
         }
@@ -2183,6 +2181,14 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
         LogPrintf("ERROR: %s: CheckQueue failed\n", __func__);
         return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "block-validation-failed");
     }
+
+    if (fEarlyReturn) {
+        // Any transaction validation failure in ConnectBlock is a block consensus failure
+        state.Invalid(BlockValidationResult::BLOCK_CONSENSUS,
+                      tx_state.GetRejectReason(), tx_state.GetDebugMessage());
+        return error("%s: ConnectBlock failed with %s", __func__, state.ToString());
+    }
+
     const auto time_4{SteadyClock::now()};
     time_verify += time_4 - time_2;
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1,
