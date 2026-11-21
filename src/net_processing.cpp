@@ -1388,11 +1388,8 @@ void PeerManagerImpl::FindNextBlocksToDownload(const Peer& peer, unsigned int co
             if (pindex->nStatus & BLOCK_HAVE_DATA || m_chainman.ActiveChain().Contains(pindex)) {
                 if (pindex->HaveTxsDownloaded())
                     state->pindexLastCommonBlock = pindex;
-            } else if (mapBlocksInFlight.count(pindex->GetBlockHash()) < MAX_CMPCTBLOCKS_INFLIGHT_PER_BLOCK) {
-                // The block is not already downloaded, and not yet in flight from
-                // MAX_CMPCTBLOCKS_INFLIGHT_PER_BLOCK peers. Allow requesting it from
-                // this peer as well to enable concurrent downloads and mitigate
-                // stalling peers (CVE-2024-52922).
+            } else if (!IsBlockRequested(pindex->GetBlockHash())) {
+                // The block is not already downloaded, and not yet in flight.
                 if (pindex->nHeight > nWindowEnd) {
                     // We reached the end of the window.
                     if (vBlocks.size() == 0 && waitingfor != peer.m_id) {
@@ -1406,7 +1403,7 @@ void PeerManagerImpl::FindNextBlocksToDownload(const Peer& peer, unsigned int co
                     return;
                 }
             } else if (waitingfor == -1) {
-                // This is the first block that is in flight from MAX_CMPCTBLOCKS_INFLIGHT_PER_BLOCK peers.
+                // This is the first already-in-flight block.
                 waitingfor = mapBlocksInFlight.lower_bound(pindex->GetBlockHash())->second.first;
             }
         }
@@ -3203,6 +3200,7 @@ void PeerManagerImpl::ProcessBlock(CNode& node, const std::shared_ptr<const CBlo
     } else {
         LOCK(cs_main);
         mapBlockSource.erase(block->GetHash());
+        RemoveBlockRequest(block->GetHash(), std::nullopt);
     }
 }
 
@@ -4578,13 +4576,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                 // though the block was successfully read, and rely on the
                 // handling in ProcessNewBlock to ensure the block index is
                 // updated, etc.
-                // Do NOT call RemoveBlockRequest here. We must not clear the
-                // download state until after ProcessBlock has validated the
-                // block (including the witness malleation check). If the block
-                // turns out to be mutated, the block must remain in-flight so
-                // we do not re-request it from the same (malicious) peer.
-                // ProcessBlock will call RemoveBlockRequest only if the block
-                // is valid. See CVE-2025-62859.
+                RemoveBlockRequest(resp.blockhash, pfrom.GetId());
                 fBlockRead = true;
                 // mapBlockSource is used for potentially punishing peers and
                 // updating which peers send us compact blocks, so the race
