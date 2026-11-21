@@ -3730,6 +3730,10 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         const auto current_time{GetTime<std::chrono::microseconds>()};
         uint256* best_block{nullptr};
 
+        // Track txhashes already processed in this inv message to avoid
+        // redundant processing of duplicate entries (CVE-2026-117348).
+        std::set<uint256> seen_txhashes;
+
         for (CInv& inv : vInv) {
             if (interruptMsgProc) return;
 
@@ -3762,6 +3766,10 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                     pfrom.fDisconnect = true;
                     return;
                 }
+                // Skip duplicate txhashes within this inv message to prevent
+                // stalling the node with redundant processing (CVE-2026-117348).
+                if (!seen_txhashes.insert(inv.hash).second) continue;
+
                 const GenTxid gtxid = ToGenTxid(inv);
                 const bool fAlreadyHave = AlreadyHaveTx(gtxid);
                 LogPrint(BCLog::NET, "got inv: %s  %s peer=%d\n", inv.ToString(), fAlreadyHave ? "have" : "new", pfrom.GetId());
