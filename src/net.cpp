@@ -1304,7 +1304,7 @@ void CConnman::SocketHandlerConnected(const std::vector<CNode*>& nodes,
                 errorSet = it->second.occurred & Sock::ERR;
             }
         }
-        if (recvSet || errorSet)
+        if (recvSet)
         {
             // typical socket buffer is 8K-64K
             uint8_t pchBuf[0x10000];
