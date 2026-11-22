@@ -761,7 +761,6 @@ bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPo
             }
             if (current_tip != prev_tip_hash) {
                 LogPrintf("GenerateBlocks: chain tip changed, rebuilding block template\n");
-                prev_tip_hash = current_tip;
                 break;
             }
         }
