@@ -768,30 +768,32 @@ static void ThreadCPUminer(NodeContext& m_node)
     LogPrintf("CPU miner started\n");
 
     while (g_mining_active.load(std::memory_order_relaxed)) {
-        // Find an unencrypted wallet and get a random address for the coinbase
-        CScript coinbase_script;
-        bool found_wallet = false;
-
+        // Collect all unlocked wallets
+        std::vector<std::shared_ptr<CWallet>> unlocked_wallets;
         for (const auto& [name, entry] : m_minter_threads) {
             const auto& [wallet, thread] = entry;
             if (!wallet) continue;
             if (wallet->IsLocked()) continue;
-
-            // Get a random address from this wallet
-            auto op_dest = wallet->GetNewDestination(OutputType::LEGACY, "miner");
-            if (op_dest) {
-                coinbase_script = GetScriptForDestination(*op_dest);
-                found_wallet = true;
-                break;
-            }
+            unlocked_wallets.push_back(wallet);
         }
 
-        if (!found_wallet) {
-            // No unencrypted wallets available; sleep and retry
+        if (unlocked_wallets.empty()) {
             LogPrintf("CPU miner: no unencrypted wallets available, sleeping\n");
             UninterruptibleSleep(std::chrono::seconds(10));
             continue;
         }
+
+        // Randomly select one unlocked wallet
+        size_t idx = GetRand(unlocked_wallets.size());
+        const auto& selected_wallet = unlocked_wallets[idx];
+
+        auto op_dest = selected_wallet->GetNewDestination(OutputType::LEGACY, "miner");
+        if (!op_dest) {
+            LogPrintf("CPU miner: failed to get destination from selected wallet\n");
+            UninterruptibleSleep(std::chrono::seconds(10));
+            continue;
+        }
+        CScript coinbase_script = GetScriptForDestination(*op_dest);
 
         if (!GenerateBlocks(Params(), m_node.chainman->ActiveChainstate(), m_node.mempool.get(), 1, coinbase_script)) {
             break;
