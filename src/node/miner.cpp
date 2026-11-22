@@ -787,7 +787,13 @@ static void ThreadCPUminer(NodeContext& m_node)
         size_t idx = GetRand(unlocked_wallets.size());
         const auto& selected_wallet = unlocked_wallets[idx];
 
-        auto op_dest = selected_wallet->GetNewDestination(OutputType::LEGACY, "miner");
+        // Randomly select an output type
+        static const std::vector<OutputType> output_types = {
+            OutputType::LEGACY, OutputType::BECH32, OutputType::BECH32M
+        };
+        OutputType random_type = output_types[GetRand(output_types.size())];
+
+        auto op_dest = selected_wallet->GetNewDestination(random_type, "miner");
         if (!op_dest) {
             LogPrintf("CPU miner: failed to get destination from selected wallet\n");
             UninterruptibleSleep(std::chrono::seconds(10));
