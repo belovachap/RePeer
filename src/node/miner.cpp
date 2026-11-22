@@ -709,11 +709,13 @@ bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPo
 {
     int nHeightEnd = 0;
     int nHeight = 0;
+    uint256 prev_tip_hash;
 
     {   // Don't keep cs_main locked
         LOCK(cs_main);
         nHeight = chainstate.m_chain.Height();
         nHeightEnd = nHeight + nGenerate;
+        prev_tip_hash = chainstate.m_chain.Tip()->GetBlockHash();
     }
 
     unsigned int nExtraNonce = 0;
@@ -749,9 +751,30 @@ bool GenerateBlocks(const CChainParams& params, Chainstate& chainstate, CTxMemPo
             if (CheckProofOfWork(pblock->GetHash(), pblock->nBits, params.GetConsensus())) {
                 break;
             }
+
+            // Check if the chain tip has changed; if so, abandon this block
+            // and rebuild from the new tip.
+            uint256 current_tip;
+            {
+                LOCK(cs_main);
+                current_tip = chainstate.m_chain.Tip()->GetBlockHash();
+            }
+            if (current_tip != prev_tip_hash) {
+                LogPrintf("GenerateBlocks: chain tip changed, rebuilding block template\n");
+                prev_tip_hash = current_tip;
+                break;
+            }
         }
 
         if (ShutdownRequested()) return false;
+
+        // If tip changed, skip submitting this stale block and loop to rebuild
+        {
+            LOCK(cs_main);
+            if (chainstate.m_chain.Tip()->GetBlockHash() != prev_tip_hash) {
+                continue;
+            }
+        }
 
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
         if (!chainstate.m_chainman.ProcessNewBlock(shared_pblock, true, true, nullptr)) {
