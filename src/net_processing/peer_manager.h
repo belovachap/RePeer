@@ -3,16 +3,25 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_NET_PROCESSING_H
-#define BITCOIN_NET_PROCESSING_H
+#ifndef BITCOIN_NET_PROCESSING_PEER_MANAGER_H
+#define BITCOIN_NET_PROCESSING_PEER_MANAGER_H
 
 #include <net.h>
 #include <validationinterface.h>
+
+#include <atomic>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 class AddrMan;
 class CChainParams;
 class CTxMemPool;
 class ChainstateManager;
+class CScheduler;
 
 /** Default for -maxorphantx, maximum number of orphan transactions kept in memory */
 static const unsigned int DEFAULT_MAX_ORPHAN_TRANSACTIONS = 100;
@@ -92,4 +101,4 @@ public:
     virtual void UpdateLastBlockAnnounceTime(NodeId node, int64_t time_in_seconds) = 0;
 };
 
-#endif // BITCOIN_NET_PROCESSING_H
+#endif // BITCOIN_NET_PROCESSING_PEER_MANAGER_H

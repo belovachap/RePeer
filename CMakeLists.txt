@@ -130,8 +130,6 @@ set(REPEER-SHARED_SOURCE_FILES
   src/merkleblock.h
   src/net_permissions.cpp
   src/net_permissions.h
-  src/net_processing.cpp
-  src/net_processing.h
   src/net_types.cpp
   src/net_types.h
   src/net.cpp
@@ -276,6 +274,24 @@ set(REPEER-SHARED_SOURCE_FILES
   src/kernel/validation_cache_sizes.h
 
   src/logging/timer.h
+
+  src/net_processing/addr_relay.cpp
+  src/net_processing/block_relay.cpp
+  src/net_processing/compact_block.cpp
+  src/net_processing/constants.h
+  src/net_processing/filter_handling.cpp
+  src/net_processing/headers_sync.cpp
+  src/net_processing/message_dispatch.cpp
+  src/net_processing/node_state.h
+  src/net_processing/peer_lifecycle.cpp
+  src/net_processing/peer_manager_impl.cpp
+  src/net_processing/peer_manager_impl.h
+  src/net_processing/peer_manager.h
+  src/net_processing/peer_version.cpp
+  src/net_processing/peer.h
+  src/net_processing/send_messages.cpp
+  src/net_processing/stale_tip.cpp
+  src/net_processing/tx_relay.cpp
 
   src/node/blockmanager_args.cpp
   src/node/blockmanager_args.h
@@ -624,7 +640,7 @@ add_executable(repeer-test
   src/test/main.cpp
   src/test/wallet_create_tests.cpp
   src/test/wallet_unlocking_tests.cpp
-  
+
   src/test/util/setup_common.cpp
   src/test/util/setup_common.h
 )

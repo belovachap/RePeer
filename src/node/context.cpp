@@ -4,12 +4,12 @@
 
 #include <node/context.h>
 
+#include <net_processing/peer_manager_impl.h>
 #include <addrman.h>
 #include <banman.h>
 #include <interfaces/chain.h>
 #include <kernel/context.h>
 #include <net.h>
-#include <net_processing.h>
 #include <netgroup.h>
 #include <policy/fees.h>
 #include <scheduler.h>

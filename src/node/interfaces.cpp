@@ -1,6 +1,7 @@
 #include <addrdb.h>
 #include <banman.h>
 #include <blockfilter.h>
+#include <net_processing/peer_manager_impl.h>
 #include <chain.h>
 #include <chainparams.h>
 #include <deploymentstatus.h>
@@ -13,7 +14,6 @@
 #include <kernel/chain.h>
 #include <kernel/mempool_entry.h>
 #include <net.h>
-#include <net_processing.h>
 #include <netaddress.h>
 #include <netbase.h>
 #include <node/blockstorage.h>

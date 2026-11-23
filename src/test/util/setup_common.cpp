@@ -1,6 +1,7 @@
 #include <test/util/setup_common.h>
 
 #include <kernel/validation_cache_sizes.h>
+#include <net_processing/peer_manager.h>
 
 #include <addrman.h>
 #include <banman.h>
@@ -14,7 +15,6 @@
 #include <interfaces/chain.h>
 #include <kernel/mempool_entry.h>
 #include <net.h>
-#include <net_processing.h>
 #include <node/blockstorage.h>
 #include <node/chainstate.h>
 #include <node/context.h>

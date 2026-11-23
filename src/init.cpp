@@ -1,6 +1,7 @@
 #include <init.h>
 
 #include <kernel/checks.h>
+#include <net_processing/peer_manager_impl.h>
 #include <kernel/mempool_persist.h>
 #include <kernel/validation_cache_sizes.h>
 
@@ -21,7 +22,6 @@
 #include <interfaces/node.h>
 #include <net.h>
 #include <net_permissions.h>
-#include <net_processing.h>
 #include <netbase.h>
 #include <netgroup.h>
 #include <node/blockmanager_args.h>
