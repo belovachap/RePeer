@@ -82,8 +82,6 @@ public:
     void FinalizeNode(const CNode& node) override EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex);
     bool ProcessMessages(CNode* pfrom, std::atomic<bool>& interrupt) override
         EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
-    bool SendMessages(CNode* pto) override
-        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, g_msgproc_mutex);
 
     /** Implement PeerManager */
     void StartScheduledTasks(CScheduler& scheduler) override;
@@ -96,12 +94,76 @@ public:
     void RelayTransaction(const uint256& txid, const uint256& wtxid) override EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex);
     void SetBestHeight(int height) override { m_best_height = height; };
     void UnitTestMisbehaving(NodeId peer_id, int howmuch) override EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex) { Misbehaving(*Assert(GetPeerRef(peer_id)), howmuch, ""); };
+    bool SendMessages(CNode* pto) override
+        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, g_msgproc_mutex);
     void ProcessMessage(CNode& pfrom, const std::string& msg_type, CDataStream& vRecv,
                         const std::chrono::microseconds time_received, const std::atomic<bool>& interruptMsgProc) override
         EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
     void UpdateLastBlockAnnounceTime(NodeId node, int64_t time_in_seconds) override;
 
 private:
+    // --- Phase dispatcher ---
+    enum class Phase { PRESYNC, HEADERS_SYNC, IBD, NORMAL };
+    Phase GetCurrentPhase();
+    void DispatchPresync(CNode& pfrom, Peer& peer, const std::string& msg_type,
+                         CDataStream& vRecv, const std::chrono::microseconds time_received,
+                         const std::atomic<bool>& interruptMsgProc)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void DispatchHeadersSync(CNode& pfrom, Peer& peer, const std::string& msg_type,
+                             CDataStream& vRecv, const std::chrono::microseconds time_received,
+                             const std::atomic<bool>& interruptMsgProc)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void DispatchIBD(CNode& pfrom, Peer& peer, const std::string& msg_type,
+                     CDataStream& vRecv, const std::chrono::microseconds time_received,
+                     const std::atomic<bool>& interruptMsgProc)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void DispatchNormal(CNode& pfrom, Peer& peer, const std::string& msg_type,
+                        CDataStream& vRecv, const std::chrono::microseconds time_received,
+                        const std::atomic<bool>& interruptMsgProc)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void SendHeadersSyncMessages(CNode* pto, Peer& peer, std::chrono::microseconds current_time)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void SendNormalMessages(CNode* pto, Peer& peer, std::chrono::microseconds current_time)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    bool IsPresyncPhase(const CNode& pfrom) const EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex);
+    bool IsIBDPhase() const;
+    bool IsNormalPhase() const;
+    bool ProcessPresyncHeaders(CNode& pfrom, Peer& peer, std::vector<CBlockHeader>&& headers)
+        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
+    void ProcessPhase3Block(CNode& pfrom, Peer& peer, CDataStream& vRecv)
+        EXCLUSIVE_LOCKS_REQUIRED(!m_most_recent_block_mutex, g_msgproc_mutex);
+    void ProcessPhase3CMPCTBlock(CNode& pfrom, Peer& peer, CDataStream& vRecv,
+                                  const std::chrono::microseconds time_received,
+                                  const std::atomic<bool>& interruptMsgProc)
+        EXCLUSIVE_LOCKS_REQUIRED(!m_most_recent_block_mutex, !m_peer_mutex, g_msgproc_mutex);
+    void ProcessPhase3GetData(CNode& pfrom, Peer& peer, const CInv& inv)
+        EXCLUSIVE_LOCKS_REQUIRED(!m_most_recent_block_mutex, g_msgproc_mutex);
+    void Phase3SendMessages(CNode* pto)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+
+    // --- Message handlers ---
+    void ProcessVersionMessage(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessVerackMessage(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessWtxidRelay(CNode& pfrom, Peer& peer) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessSendAddrV2(CNode& pfrom, Peer& peer) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessSendTxRcncl(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessGetHeaders(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessGetBlocks(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessInvMessage(CNode& pfrom, Peer& peer, CDataStream& vRecv, const std::atomic<bool>& interruptMsgProc) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessGetDataMessage(CNode& pfrom, Peer& peer, CDataStream& vRecv, const std::atomic<bool>& interruptMsgProc) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessTxMessage(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessGetBlockTxn(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessMempool(CNode& pfrom, Peer& peer) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessPing(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessPong(CNode& pfrom, Peer& peer, CDataStream& vRecv, const std::chrono::microseconds time_received) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessAddrMessage(CNode& pfrom, Peer& peer, CDataStream& vRecv, const std::atomic<bool>& interruptMsgProc, const std::string& msg_type) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessFeeFilter(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessFilterLoad(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessFilterAdd(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessFilterClear(CNode& pfrom, Peer& peer) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessNotFound(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    void ProcessSendCmpct(CNode& pfrom, Peer& peer, CDataStream& vRecv) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+
     /** Consider evicting an outbound peer based on the amount of time they've been behind our tip */
     void ConsiderEviction(CNode& pto, Peer& peer, std::chrono::seconds time_in_seconds) EXCLUSIVE_LOCKS_REQUIRED(cs_main, g_msgproc_mutex);
 

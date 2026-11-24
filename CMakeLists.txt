@@ -277,11 +277,8 @@ set(REPEER-SHARED_SOURCE_FILES
 
   src/net_processing/addr_relay.cpp
   src/net_processing/block_relay.cpp
-  src/net_processing/compact_block.cpp
   src/net_processing/constants.h
   src/net_processing/filter_handling.cpp
-  src/net_processing/headers_sync.cpp
-  src/net_processing/message_dispatch.cpp
   src/net_processing/node_state.h
   src/net_processing/peer_lifecycle.cpp
   src/net_processing/peer_manager_impl.cpp
@@ -289,9 +286,12 @@ set(REPEER-SHARED_SOURCE_FILES
   src/net_processing/peer_manager.h
   src/net_processing/peer_version.cpp
   src/net_processing/peer.h
-  src/net_processing/send_messages.cpp
+  src/net_processing/phase_dispatcher.cpp
+  src/net_processing/phase_headers_sync.cpp
+  src/net_processing/phase_ibd.cpp
+  src/net_processing/phase_normal.cpp
+  src/net_processing/phase_presync.cpp
   src/net_processing/stale_tip.cpp
-  src/net_processing/tx_relay.cpp
 
   src/node/blockmanager_args.cpp
   src/node/blockmanager_args.h

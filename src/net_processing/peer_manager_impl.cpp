@@ -6,9 +6,6 @@
 #include <net_processing/peer_manager_impl.h>
 #include <net_processing/constants.h>
 
-using node::ReadBlockFromDisk;
-using node::ReadRawBlockFromDisk;
-
 const CNodeState* PeerManagerImpl::State(NodeId pnode) const EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     std::map<NodeId, CNodeState>::const_iterator it = m_node_states.find(pnode);
