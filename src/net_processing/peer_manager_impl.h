@@ -103,7 +103,7 @@ public:
 
 private:
     // --- Phase dispatcher ---
-    enum class Phase { PRESYNC, HEADERS_SYNC, IBD, NORMAL };
+    enum class Phase { HEADERS_PRESYNC, HEADERS_SYNC, IBD, NORMAL };
     Phase GetCurrentPhase();
     void DispatchPresync(CNode& pfrom, Peer& peer, const std::string& msg_type,
                          CDataStream& vRecv, const std::chrono::microseconds time_received,
@@ -128,7 +128,20 @@ private:
     bool IsPresyncPhase(const CNode& pfrom) const EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex);
     bool IsIBDPhase() const;
     bool IsNormalPhase() const;
-    bool ProcessPresyncHeaders(CNode& pfrom, Peer& peer, std::vector<CBlockHeader>&& headers)
+    void ProcessPresyncValidatedHeaders(CNode& pfrom, Peer& peer,
+                                        const std::vector<CBlockHeader>& headers)
+        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
+    void CheckPresyncCompletion(CNode& pfrom, Peer& peer)
+        EXCLUSIVE_LOCKS_REQUIRED(m_headers_presync_mutex);
+    void HandlePresyncFailure(CNode& pfrom, Peer& peer, const std::string& reason)
+        EXCLUSIVE_LOCKS_REQUIRED(m_headers_presync_mutex);
+    void ReassignFailedRequests(CNode& pfrom, Peer& peer)
+        EXCLUSIVE_LOCKS_REQUIRED(m_headers_presync_mutex);
+    void DistributePresyncRequests(CNode& pfrom, Peer& peer)
+        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
+    void CheckPresyncRetries()
+        EXCLUSIVE_LOCKS_REQUIRED(!m_headers_presync_mutex);
+    bool ProcessPresyncHeaders(CNode& pfrom, Peer& peer, const std::vector<CBlockHeader>& headers)
         EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
     void ProcessPhase3Block(CNode& pfrom, Peer& peer, CDataStream& vRecv)
         EXCLUSIVE_LOCKS_REQUIRED(!m_most_recent_block_mutex, g_msgproc_mutex);
@@ -487,7 +500,7 @@ private:
 
     // Data about the low-work headers synchronization, aggregated from all peers' HeadersSyncStates.
     /** Mutex guarding the other m_headers_presync_* variables. */
-    Mutex m_headers_presync_mutex;
+    mutable Mutex m_headers_presync_mutex;
     /** A type to represent statistics about a peer's low-work headers sync.
      *
      * - The first field is the total verified amount of work in that synchronization.

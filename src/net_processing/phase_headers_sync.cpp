@@ -6,6 +6,8 @@
 #include <net_processing/peer_manager_impl.h>
 #include <net_processing/constants.h>
 
+extern std::atomic<bool> g_headers_presync_complete;
+
 // ============================================================================
 // PHASE 2: SYNC BLOCKHEADERS
 //
@@ -272,6 +274,14 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
     // anti-DoS logic (this saves bandwidth when we connect to a trusted peer
     // on startup).
     if (pfrom.HasPermission(NetPermissionFlags::NoBan)) {
+        already_validated_work = true;
+    }
+
+    // If presync is already globally complete, skip the low-work headers sync
+    // check entirely. The presync mechanism has served its purpose; headers
+    // should be processed normally from here on without re-activating the
+    // presync state machine on every batch.
+    if (g_headers_presync_complete.load(std::memory_order_acquire)) {
         already_validated_work = true;
     }
 

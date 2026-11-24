@@ -8,6 +8,8 @@
 #include <kernel.h>
 #include <policy/settings.h>
 
+extern std::atomic<bool> g_headers_presync_complete;
+
 using node::ReadBlockFromDisk;
 using node::ReadRawBlockFromDisk;
 
@@ -43,8 +45,8 @@ public:
 //
 // Routes incoming and outgoing messages to the appropriate phase handler.
 //
-// Phase 1: PRESYNC  - Anti-DoS for low-work headers chains
-// Phase 2: HEADERS  - Initial headers sync (getheaders exchange)
+// Phase 1: HEADERS_PRESYNC  - Anti-DoS for low-work headers chains
+// Phase 2: HEADERS_SYNC  - Initial headers sync (getheaders exchange)
 // Phase 3: IBD      - Initial block download (full block fetching)
 // Phase 4: NORMAL   - Steady-state operation (tx relay, addr relay, etc.)
 //
@@ -74,14 +76,13 @@ PeerManagerImpl::Phase PeerManagerImpl::GetCurrentPhase()
         return Phase::IBD;
     }
 
-    // Phase 2: Headers sync (have headers with sufficient work, but not close to tip)
-    if (WITH_LOCK(cs_main, return m_chainman.m_best_header != nullptr &&
-        m_chainman.m_best_header->nChainTrust >= m_chainman.MinimumChainWork())) {
+    // Phase 2: Headers sync (presync complete, syncing headers to tip)
+    if (g_headers_presync_complete.load(std::memory_order_acquire)) {
         return Phase::HEADERS_SYNC;
     }
 
     // Phase 1: Presync (no headers with sufficient work yet)
-    return Phase::PRESYNC;
+    return Phase::HEADERS_PRESYNC;
 }
 
 void PeerManagerImpl::UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload)
@@ -234,7 +235,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
     const Phase phase = GetCurrentPhase();
 
     switch (phase) {
-    case Phase::PRESYNC:
+    case Phase::HEADERS_PRESYNC:
         DispatchPresync(pfrom, *peer, msg_type, vRecv, time_received, interruptMsgProc);
         break;
     case Phase::HEADERS_SYNC:
@@ -1194,8 +1195,12 @@ void PeerManagerImpl::DispatchPresync(CNode& pfrom, Peer& peer, const std::strin
                                        CDataStream& vRecv, const std::chrono::microseconds time_received,
                                        const std::atomic<bool>& interruptMsgProc)
 {
-    // Phase 1: Only handle headers and basic protocol messages
+    std::cout << "[DEBUG] DispatchPresync: msg_type=" << msg_type << " peer=" << pfrom.GetId() << std::endl;
+    // Phase 1: Gate header processing behind presync work check.
+    // If work is insufficient, headers are ignored and presync continues.
+    // If work is sufficient, g_headers_presync_complete is set and we process normally.
     if (msg_type == NetMsgType::HEADERS) {
+        peer.m_last_getheaders_timestamp = {};
         std::vector<CBlockHeader> headers;
         unsigned int nCount = ReadCompactSize(vRecv);
         if (nCount > MAX_HEADERS_RESULTS) {
@@ -1225,7 +1230,47 @@ void PeerManagerImpl::DispatchPresync(CNode& pfrom, Peer& peer, const std::strin
                 }
             }
         }
+
+        // Use presync-aware check: if work is insufficient, headers are ignored
+        // and presync continues. If work is sufficient, g_headers_presync_complete
+        // is set to true and we fall through to normal processing.
+        std::cout << "[DEBUG] DispatchPresync: received HEADERS, nCount=" << nCount << " peer=" << pfrom.GetId() << std::endl;
+        if (ProcessPresyncHeaders(pfrom, peer, headers)) {
+            // Work was insufficient — headers were ignored, presync continues
+            std::cout << "[DEBUG] DispatchPresync: ProcessPresyncHeaders returned true (insufficient work), ignoring headers peer=" << pfrom.GetId() << std::endl;
+            return;
+        }
+
+        // Work is sufficient — presync is complete. Process headers normally.
+        std::cout << "[DEBUG] DispatchPresync: ProcessPresyncHeaders returned false (sufficient work), processing headers normally peer=" << pfrom.GetId() << std::endl;
         ProcessHeadersMessage(pfrom, peer, std::move(headers), /*via_compact_block=*/false);
+        return;
+    }
+
+    if (msg_type == NetMsgType::INV) {
+        std::vector<CInv> vInv;
+        vRecv >> vInv;
+        std::cout << "[DEBUG] DispatchPresync: received INV with " << vInv.size() << " entries peer=" << pfrom.GetId() << std::endl;
+        if (vInv.size() > MAX_INV_SZ) {
+            Misbehaving(peer, 20, strprintf("inv message size = %u", vInv.size()));
+            return;
+        }
+
+        LOCK(cs_main);
+        for (CInv& inv : vInv) {
+            if (inv.IsMsgBlk()) {
+                const bool fAlreadyHave = AlreadyHaveBlock(inv.hash);
+                UpdateBlockAvailability(pfrom.GetId(), inv.hash);
+                if (!fAlreadyHave && !m_chainman.m_blockman.LoadingBlocks() && !IsBlockRequested(inv.hash)) {
+                    std::cout << "[DEBUG] DispatchPresync: INV block not known, sending getheaders peer=" << pfrom.GetId() << " hash=" << inv.hash.ToString().substr(0,16) << "..." << std::endl;
+                    if (MaybeSendGetHeaders(pfrom, GetLocator(m_chainman.m_best_header), peer)) {
+                        LogPrint(BCLog::NET, "getheaders (%d) %s to peer=%d\n",
+                                m_chainman.m_best_header->nHeight, inv.hash.ToString(),
+                                pfrom.GetId());
+                    }
+                }
+            }
+        }
         return;
     }
 
@@ -1279,7 +1324,47 @@ void PeerManagerImpl::DispatchHeadersSync(CNode& pfrom, Peer& peer, const std::s
                 }
             }
         }
+
+        // Use presync-aware check: if work is insufficient, headers are ignored
+        // and presync continues. If work is sufficient, g_headers_presync_complete
+        // is set to true and we fall through to normal processing.
+        std::cout << "[DEBUG] DispatchPresync: received HEADERS, nCount=" << nCount << " peer=" << pfrom.GetId() << std::endl;
+        if (ProcessPresyncHeaders(pfrom, peer, headers)) {
+            // Work was insufficient — headers were ignored, presync continues
+            std::cout << "[DEBUG] DispatchPresync: ProcessPresyncHeaders returned true (insufficient work), ignoring headers peer=" << pfrom.GetId() << std::endl;
+            return;
+        }
+
+        // Work is sufficient — presync is complete. Process headers normally.
+        std::cout << "[DEBUG] DispatchPresync: ProcessPresyncHeaders returned false (sufficient work), processing headers normally peer=" << pfrom.GetId() << std::endl;
         ProcessHeadersMessage(pfrom, peer, std::move(headers), /*via_compact_block=*/false);
+        return;
+    }
+
+    if (msg_type == NetMsgType::INV) {
+        std::vector<CInv> vInv;
+        vRecv >> vInv;
+        std::cout << "[DEBUG] DispatchPresync: received INV with " << vInv.size() << " entries peer=" << pfrom.GetId() << std::endl;
+        if (vInv.size() > MAX_INV_SZ) {
+            Misbehaving(peer, 20, strprintf("inv message size = %u", vInv.size()));
+            return;
+        }
+
+        LOCK(cs_main);
+        for (CInv& inv : vInv) {
+            if (inv.IsMsgBlk()) {
+                const bool fAlreadyHave = AlreadyHaveBlock(inv.hash);
+                UpdateBlockAvailability(pfrom.GetId(), inv.hash);
+                if (!fAlreadyHave && !m_chainman.m_blockman.LoadingBlocks() && !IsBlockRequested(inv.hash)) {
+                    std::cout << "[DEBUG] DispatchPresync: INV block not known, sending getheaders peer=" << pfrom.GetId() << " hash=" << inv.hash.ToString().substr(0,16) << "..." << std::endl;
+                    if (MaybeSendGetHeaders(pfrom, GetLocator(m_chainman.m_best_header), peer)) {
+                        LogPrint(BCLog::NET, "getheaders (%d) %s to peer=%d\n",
+                                m_chainman.m_best_header->nHeight, inv.hash.ToString(),
+                                pfrom.GetId());
+                    }
+                }
+            }
+        }
         return;
     }
 
@@ -1387,6 +1472,33 @@ void PeerManagerImpl::DispatchIBD(CNode& pfrom, Peer& peer, const std::string& m
         return;
     }
 
+    if (msg_type == NetMsgType::INV) {
+        std::vector<CInv> vInv;
+        vRecv >> vInv;
+        std::cout << "[DEBUG] DispatchPresync: received INV with " << vInv.size() << " entries peer=" << pfrom.GetId() << std::endl;
+        if (vInv.size() > MAX_INV_SZ) {
+            Misbehaving(peer, 20, strprintf("inv message size = %u", vInv.size()));
+            return;
+        }
+
+        LOCK(cs_main);
+        for (CInv& inv : vInv) {
+            if (inv.IsMsgBlk()) {
+                const bool fAlreadyHave = AlreadyHaveBlock(inv.hash);
+                UpdateBlockAvailability(pfrom.GetId(), inv.hash);
+                if (!fAlreadyHave && !m_chainman.m_blockman.LoadingBlocks() && !IsBlockRequested(inv.hash)) {
+                    std::cout << "[DEBUG] DispatchPresync: INV block not known, sending getheaders peer=" << pfrom.GetId() << " hash=" << inv.hash.ToString().substr(0,16) << "..." << std::endl;
+                    if (MaybeSendGetHeaders(pfrom, GetLocator(m_chainman.m_best_header), peer)) {
+                        LogPrint(BCLog::NET, "getheaders (%d) %s to peer=%d\n",
+                                m_chainman.m_best_header->nHeight, inv.hash.ToString(),
+                                pfrom.GetId());
+                    }
+                }
+            }
+        }
+        return;
+    }
+
     if (msg_type == NetMsgType::GETHEADERS) {
         ProcessGetHeaders(pfrom, peer, vRecv);
         return;
@@ -1487,6 +1599,33 @@ void PeerManagerImpl::DispatchNormal(CNode& pfrom, Peer& peer, const std::string
 
     if (msg_type == NetMsgType::GETBLOCKTXN) {
         ProcessGetBlockTxn(pfrom, peer, vRecv);
+        return;
+    }
+
+    if (msg_type == NetMsgType::INV) {
+        std::vector<CInv> vInv;
+        vRecv >> vInv;
+        std::cout << "[DEBUG] DispatchPresync: received INV with " << vInv.size() << " entries peer=" << pfrom.GetId() << std::endl;
+        if (vInv.size() > MAX_INV_SZ) {
+            Misbehaving(peer, 20, strprintf("inv message size = %u", vInv.size()));
+            return;
+        }
+
+        LOCK(cs_main);
+        for (CInv& inv : vInv) {
+            if (inv.IsMsgBlk()) {
+                const bool fAlreadyHave = AlreadyHaveBlock(inv.hash);
+                UpdateBlockAvailability(pfrom.GetId(), inv.hash);
+                if (!fAlreadyHave && !m_chainman.m_blockman.LoadingBlocks() && !IsBlockRequested(inv.hash)) {
+                    std::cout << "[DEBUG] DispatchPresync: INV block not known, sending getheaders peer=" << pfrom.GetId() << " hash=" << inv.hash.ToString().substr(0,16) << "..." << std::endl;
+                    if (MaybeSendGetHeaders(pfrom, GetLocator(m_chainman.m_best_header), peer)) {
+                        LogPrint(BCLog::NET, "getheaders (%d) %s to peer=%d\n",
+                                m_chainman.m_best_header->nHeight, inv.hash.ToString(),
+                                pfrom.GetId());
+                    }
+                }
+            }
+        }
         return;
     }
 
@@ -1601,7 +1740,7 @@ bool PeerManagerImpl::SendMessages(CNode* pto)
     const Phase phase = GetCurrentPhase();
 
     switch (phase) {
-    case Phase::PRESYNC:
+    case Phase::HEADERS_PRESYNC:
     case Phase::HEADERS_SYNC:
         // During presync/headers-sync, only send getheaders
         SendHeadersSyncMessages(pto, *peer, current_time);

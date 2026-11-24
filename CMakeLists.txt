@@ -287,10 +287,10 @@ set(REPEER-SHARED_SOURCE_FILES
   src/net_processing/peer_version.cpp
   src/net_processing/peer.h
   src/net_processing/phase_dispatcher.cpp
+  src/net_processing/phase_headers_presync.cpp
   src/net_processing/phase_headers_sync.cpp
   src/net_processing/phase_ibd.cpp
   src/net_processing/phase_normal.cpp
-  src/net_processing/phase_presync.cpp
   src/net_processing/stale_tip.cpp
 
   src/node/blockmanager_args.cpp
