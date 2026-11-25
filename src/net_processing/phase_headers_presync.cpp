@@ -118,12 +118,20 @@ bool PeerManagerImpl::ProcessPresyncHeaders(CNode& pfrom, Peer& peer,
 
     // Check if the peer has more headers to give us.
     // If they sent a full batch (MAX_HEADERS_RESULTS), they likely have more.
-    // If they sent fewer, they are at their tip — presync is complete.
+    // If they sent fewer, they claim to be at their tip. However, we cannot
+    // trust a single peer's claim that they are at the tip — they could be on
+    // a different fork or maliciously truncating. Only mark presync complete
+    // if the peer's tip actually matches our m_best_header, confirming we have
+    // genuinely reached the tip of the chain we are syncing.
     if (headers.size() < MAX_HEADERS_RESULTS) {
-        // Peer sent a non-full batch — they have no more headers.
-        // Presync is complete: we have all headers to the tip.
-        g_headers_presync_complete.store(true, std::memory_order_release);
-        std::cout << "[DEBUG] ProcessPresyncHeaders: peer at tip (sent " << headers.size() << " < " << MAX_HEADERS_RESULTS << "), marking presync complete peer=" << pfrom.GetId() << std::endl;
+        const CBlockIndex* peer_tip = WITH_LOCK(cs_main, return m_chainman.m_blockman.LookupBlockIndex(headers.back().GetHash()));
+        if (peer_tip && peer_tip == m_chainman.m_best_header) {
+            // Peer's tip matches our best header — we have all headers to the tip.
+            g_headers_presync_complete.store(true, std::memory_order_release);
+            std::cout << "[DEBUG] ProcessPresyncHeaders: peer tip matches m_best_header (height=" << peer_tip->nHeight << "), marking presync complete peer=" << pfrom.GetId() << std::endl;
+        } else {
+            std::cout << "[DEBUG] ProcessPresyncHeaders: peer sent non-full batch but tip does NOT match m_best_header, NOT marking complete peer=" << pfrom.GetId() << std::endl;
+        }
         return false;
     }
 
@@ -433,9 +441,16 @@ bool PeerManagerImpl::TryLowWorkHeadersSync(Peer& peer, CNode& pfrom,
         ProcessPresyncValidatedHeaders(pfrom, peer, headers);
         DistributePresyncRequests(pfrom, peer);
     } else {
-        // Non-full batch: peer is at their tip. Mark presync complete.
-        g_headers_presync_complete.store(true, std::memory_order_release);
-        std::cout << "[DEBUG] TryLowWorkHeadersSync: non-full batch, marking presync complete peer=" << pfrom.GetId() << std::endl;
+        // Non-full batch: peer claims to be at their tip. Only mark presync
+        // complete if their tip matches our m_best_header — we cannot trust
+        // a single peer's claim that they are at the tip.
+        const CBlockIndex* peer_tip = WITH_LOCK(cs_main, return m_chainman.m_blockman.LookupBlockIndex(headers.back().GetHash()));
+        if (peer_tip && peer_tip == m_chainman.m_best_header) {
+            g_headers_presync_complete.store(true, std::memory_order_release);
+            std::cout << "[DEBUG] TryLowWorkHeadersSync: non-full batch AND tip matches m_best_header, marking presync complete peer=" << pfrom.GetId() << std::endl;
+        } else {
+            std::cout << "[DEBUG] TryLowWorkHeadersSync: non-full batch but tip does NOT match m_best_header, NOT marking complete peer=" << pfrom.GetId() << std::endl;
+        }
     }
     headers = {};
     return true;
