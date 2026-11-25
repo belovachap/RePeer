@@ -8,6 +8,8 @@
 #include <kernel.h>
 #include <policy/settings.h>
 
+extern std::atomic<bool> g_headers_sync_complete;
+
 using node::ReadBlockFromDisk;
 using node::ReadRawBlockFromDisk;
 
@@ -69,7 +71,9 @@ PeerManagerImpl::Phase PeerManagerImpl::GetCurrentPhase()
     }
 
     // Phase 2: IBD (headers near tip, downloading blocks)
-    if (WITH_LOCK(cs_main, return CanDirectFetch())) {
+    // Only transition to IBD once headers sync is explicitly complete.
+    if (g_headers_sync_complete.load(std::memory_order_acquire) &&
+        WITH_LOCK(cs_main, return CanDirectFetch())) {
         return Phase::IBD;
     }
 

@@ -6,6 +6,10 @@
 #include <net_processing/peer_manager_impl.h>
 #include <net_processing/constants.h>
 
+// Set to true once headers sync is complete (all peers have sent their full
+// header chains to the tip). Block downloading is gated on this flag.
+std::atomic<bool> g_headers_sync_complete{false};
+
 // ============================================================================
 // PHASE 1: SYNC BLOCKHEADERS
 //
@@ -255,6 +259,18 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
 
     // At this point, the headers connect to something in our block index.
     // Process them directly.
+
+    // If the peer sent a non-full batch, they are at their tip.
+    // If their tip matches our m_best_header, headers sync is complete.
+    if (nCount < MAX_HEADERS_RESULTS) {
+        const CBlockIndex* peer_tip = WITH_LOCK(cs_main, return m_chainman.m_blockman.LookupBlockIndex(headers.back().GetHash()));
+        if (peer_tip && peer_tip == m_chainman.m_best_header) {
+            g_headers_sync_complete.store(true, std::memory_order_release);
+            LogPrint(BCLog::NET, "Headers sync complete: peer tip matches m_best_header (height=%d) peer=%d\n",
+                     peer_tip->nHeight, pfrom.GetId());
+        }
+        return;
+    }
 
     // If we don't have the last header, then this peer will have given us
     // something new (if these headers are valid).
