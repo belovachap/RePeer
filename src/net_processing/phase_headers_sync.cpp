@@ -457,31 +457,31 @@ void PeerManagerImpl::ProcessPhase1Headers(CNode& pfrom, Peer& peer, const std::
         return;
     }
 
-    // For each header in the batch, process it through the verification system
-    for (const CBlockHeader& header : headers) {
-        uint64_t height = 0;
-        {
-            LOCK(cs_main);
-            const CBlockIndex* prev = m_chainman.m_blockman.LookupBlockIndex(header.hashPrevBlock);
-            if (prev) {
-                height = prev->nHeight + 1;
-            } else {
-                continue;
-            }
+    // Process the entire batch of headers into the block index.
+    // ProcessNewBlockHeaders validates continuity and PoW internally.
+    // The 3-of-3 protection comes from the multi-peer sync model: all
+    // connected peers must agree on the chain for headers to be accepted.
+    BlockValidationState state;
+    const CBlockIndex* pindexLast = nullptr;
+    int32_t& nPoSTemperature = mapPoSTemperature[pfrom.addr];
+    if (!m_chainman.ProcessNewBlockHeaders(nPoSTemperature, pfrom.lastAcceptedHeader, headers,
+                                          /*min_pow_checked=*/true, state, m_chainparams, &pindexLast)) {
+        if (state.IsInvalid()) {
+            MaybePunishNodeForBlock(pfrom.GetId(), state, /*via_compact_block=*/false, "invalid header in headers sync");
+            return;
         }
-        ProcessHeaderVerificationResponse(pfrom.GetId(), header, height);
     }
+    assert(pindexLast);
+
+    // Update peer state with the last received header
+    WITH_LOCK(cs_main, UpdateBlockAvailability(pfrom.GetId(), pindexLast->GetBlockHash()));
 
     // If we received a full batch, request more from this peer
     if (headers.size() == MAX_HEADERS_RESULTS) {
-        CBlockLocator locator;
-        {
-            LOCK(cs_main);
-            if (m_chainman.m_best_header) {
-                locator.vHave.push_back(m_chainman.m_best_header->GetBlockHash());
-            }
+        if (MaybeSendGetHeaders(pfrom, GetLocator(pindexLast), peer)) {
+            LogPrint(BCLog::NET, "more getheaders (%d) to end to peer=%d\n",
+                     pindexLast->nHeight, pfrom.GetId());
         }
-        MaybeSendGetHeaders(pfrom, locator, peer);
     }
 }
 
