@@ -345,22 +345,34 @@ void PeerManagerImpl::ProcessHeaderVerificationResponse(NodeId peer_id, const CB
     }
 
     if (all_match) {
-        // All peers agree — accept this header
-        hv.verified = true;
-        LogPrint(BCLog::NET, "Header verification: height %d verified by %d peers (hash=%s)\n",
-                 height, m_header_verify_quorum, hv.responses[0].GetHash().ToString().substr(0, 16));
-
-        // Process the verified header into the block index
+        // All peers agree — try to accept this header into the chain.
+        // If it cannot be applied, punish all peers who provided it.
         BlockValidationState state;
         const CBlockIndex* pindexLast = nullptr;
         int32_t nPoSTemperature = MAX_CONSECUTIVE_POS_HEADERS / 4;
         if (!m_chainman.ProcessNewBlockHeaders(nPoSTemperature, pindexLast ? pindexLast->GetBlockHash() : uint256::ZERO,
                                               {hv.responses[0]}, /*min_pow_checked=*/true, state, m_chainparams, &pindexLast)) {
             if (state.IsInvalid()) {
-                LogPrint(BCLog::NET, "Header verification: invalid header at height %d from peer=%d\n",
-                         height, peer_id);
+                // Peers agreed on a header but it cannot be applied to the chain.
+                // Punish ALL peers who provided this invalid header.
+                LogPrint(BCLog::NET, "Header verification: height %d header invalid, punishing all %zu assigned peers\n",
+                         height, hv.assigned_peers.size());
+                for (NodeId pid : hv.assigned_peers) {
+                    PeerRef p = GetPeerRef(pid);
+                    if (p) {
+                        Misbehaving(*p, 100, strprintf("agreed on invalid header at height %d", height));
+                    }
+                }
                 hv.failed = true;
+            } else {
+                hv.verified = true;
+                LogPrint(BCLog::NET, "Header verification: height %d verified by %d peers (hash=%s)\n",
+                         height, m_header_verify_quorum, hv.responses[0].GetHash().ToString().substr(0, 16));
             }
+        } else {
+            hv.verified = true;
+            LogPrint(BCLog::NET, "Header verification: height %d verified by %d peers (hash=%s)\n",
+                     height, m_header_verify_quorum, hv.responses[0].GetHash().ToString().substr(0, 16));
         }
 
         // Remove from queue
@@ -371,61 +383,26 @@ void PeerManagerImpl::ProcessHeaderVerificationResponse(NodeId peer_id, const CB
 
         CheckHeaderVerificationComplete();
     } else {
-        // Peers disagree — retry with 3 new random peers
-        hv.retry_count++;
-        hv.responses.clear();
-
-        if (hv.retry_count >= MAX_HEADER_VERIFY_RETRIES) {
-            hv.failed = true;
-            LogPrint(BCLog::NET, "Header verification: height %d failed after %d retries, giving up\n",
-                     height, MAX_HEADER_VERIFY_RETRIES);
-            auto qit = std::find(m_header_verify_queue.begin(), m_header_verify_queue.end(), height);
-            if (qit != m_header_verify_queue.end()) {
-                m_header_verify_queue.erase(qit);
-            }
-            CheckHeaderVerificationComplete();
-        } else {
-            // Reassign to 3 new random peers
-            std::vector<NodeId> connected_peers;
-            m_connman.ForEachNode([&](CNode* node) {
-                if (node->fSuccessfullyConnected && CanServeBlocks(*GetPeerRef(node->GetId()))) {
-                    connected_peers.push_back(node->GetId());
-                }
-            });
-
-            // Remove old assignments
-            for (NodeId pid : hv.assigned_peers) {
-                m_peer_assigned_heights[pid].erase(height);
-            }
-            hv.assigned_peers.clear();
-
-            Shuffle(connected_peers.begin(), connected_peers.end(), FastRandomContext());
-            for (int i = 0; i < m_header_verify_quorum && i < (int)connected_peers.size(); i++) {
-                hv.assigned_peers.push_back(connected_peers[i]);
-                m_peer_assigned_heights[connected_peers[i]].insert(height);
-            }
-
-            LogPrint(BCLog::NET, "Header verification: height %d mismatch, retry %d/%d with new peers\n",
-                     height, hv.retry_count, MAX_HEADER_VERIFY_RETRIES);
-
-            for (NodeId pid : hv.assigned_peers) {
-                m_connman.ForNode(pid, [&](CNode* node) {
-                    PeerRef target_peer = GetPeerRef(pid);
-                    if (target_peer) {
-                        CBlockLocator locator;
-                        {
-                            LOCK(cs_main);
-                            if (m_chainman.m_best_header) {
-                                locator.vHave.push_back(m_chainman.m_best_header->GetBlockHash());
-                            }
-                        }
-                        target_peer->m_last_getheaders_timestamp = {};
-                        MaybeSendGetHeaders(*node, locator, *target_peer);
-                    }
-                    return true;
-                });
+        // Peers disagree on this header. Punish ALL assigned peers.
+        // This ensures malicious peers are eventually banned through
+        // accumulated misbehavior scores.
+        LogPrint(BCLog::NET, "Header verification: height %d disagreement among %zu peers, punishing all\n",
+                 height, hv.assigned_peers.size());
+        for (NodeId pid : hv.assigned_peers) {
+            PeerRef p = GetPeerRef(pid);
+            if (p) {
+                Misbehaving(*p, 100, strprintf("disagreement on header at height %d", height));
             }
         }
+        hv.failed = true;
+
+        // Remove from queue
+        auto qit = std::find(m_header_verify_queue.begin(), m_header_verify_queue.end(), height);
+        if (qit != m_header_verify_queue.end()) {
+            m_header_verify_queue.erase(qit);
+        }
+
+        CheckHeaderVerificationComplete();
     }
 }
 
@@ -459,14 +436,14 @@ void PeerManagerImpl::ProcessPhase1Headers(CNode& pfrom, Peer& peer, const std::
 
     // Process the entire batch of headers into the block index.
     // ProcessNewBlockHeaders validates continuity and PoW internally.
-    // The 3-of-3 protection comes from the multi-peer sync model: all
-    // connected peers must agree on the chain for headers to be accepted.
     BlockValidationState state;
     const CBlockIndex* pindexLast = nullptr;
     int32_t& nPoSTemperature = mapPoSTemperature[pfrom.addr];
     if (!m_chainman.ProcessNewBlockHeaders(nPoSTemperature, pfrom.lastAcceptedHeader, headers,
                                           /*min_pow_checked=*/true, state, m_chainparams, &pindexLast)) {
         if (state.IsInvalid()) {
+            // Peers provided headers that cannot be applied to the chain.
+            // Punish this peer for providing invalid headers.
             MaybePunishNodeForBlock(pfrom.GetId(), state, /*via_compact_block=*/false, "invalid header in headers sync");
             return;
         }
@@ -481,6 +458,25 @@ void PeerManagerImpl::ProcessPhase1Headers(CNode& pfrom, Peer& peer, const std::
         if (MaybeSendGetHeaders(pfrom, GetLocator(pindexLast), peer)) {
             LogPrint(BCLog::NET, "more getheaders (%d) to end to peer=%d\n",
                      pindexLast->nHeight, pfrom.GetId());
+        }
+    } else {
+        // Peer sent a non-full batch — they claim to be at their tip.
+        // Check if their tip matches our m_best_header. If not, they have
+        // a shorter chain than other peers and should be punished.
+        const CBlockIndex* peer_tip = WITH_LOCK(cs_main, return m_chainman.m_blockman.LookupBlockIndex(headers.back().GetHash()));
+        const CBlockIndex* our_best = WITH_LOCK(cs_main, return m_chainman.m_best_header);
+        if (peer_tip && our_best && peer_tip->nHeight < our_best->nHeight) {
+            // This peer's chain is shorter than our best header.
+            // They are withholding valid blockheaders — punish them.
+            Misbehaving(peer, 100, strprintf("peer tip at height %d but m_best_header at height %d, withholding headers",
+                                             peer_tip->nHeight, our_best->nHeight));
+            return;
+        }
+        // If peer tip matches our best header, headers sync is complete.
+        if (peer_tip && peer_tip == our_best) {
+            g_headers_sync_complete.store(true, std::memory_order_release);
+            LogPrint(BCLog::NET, "Headers sync complete: peer tip matches m_best_header (height=%d) peer=%d\n",
+                     peer_tip->nHeight, pfrom.GetId());
         }
     }
 }
