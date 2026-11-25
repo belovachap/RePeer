@@ -9,10 +9,11 @@
 // ============================================================================
 // PHASE 1: PRESYNC BLOCKHEADERS (PARALLEL MULTI-PEER)
 //
-// Purpose: Anti-DoS protection for low-work headers chains.
-// Entry:   When headers arrive with insufficient work to meet our threshold.
-// Exit:    When accumulated work across all peers meets the threshold,
-//          or all peers are exhausted/disconnected.
+// Purpose: Download ALL block headers from peers all the way to the tip.
+// Entry:   Always the first phase. Headers are downloaded until the peer
+//          signals they have no more (sends < MAX_HEADERS_RESULTS).
+// Exit:    When the peer has sent all their headers (indicated by a
+//          non-full batch), meaning we've reached the tip.
 //
 // This phase is completely isolated from all other phases. It coordinates
 // header downloads across ALL connected peers simultaneously, tracking
@@ -21,7 +22,7 @@
 // ============================================================================
 
 // --- Global presync completion signal ---
-// Set to true once accumulated validated work >= minimum_chain_work.
+// Set to true once we have downloaded all headers to the tip.
 // All other phases check this before processing headers normally.
 std::atomic<bool> g_headers_presync_complete{false};
 
@@ -87,7 +88,11 @@ bool PeerManagerImpl::ProcessPresyncHeaders(CNode& pfrom, Peer& peer,
     }
 
     if (headers.empty()) {
-        return true;
+        // Peer sent empty headers — they have nothing more to give.
+        // Mark presync complete.
+        g_headers_presync_complete.store(true, std::memory_order_release);
+        std::cout << "[DEBUG] ProcessPresyncHeaders: empty headers, marking presync complete peer=" << pfrom.GetId() << std::endl;
+        return false;
     }
 
     if (!CheckHeadersPoW(headers, m_chainparams.GetConsensus(), peer)) {
@@ -107,37 +112,36 @@ bool PeerManagerImpl::ProcessPresyncHeaders(CNode& pfrom, Peer& peer,
         return true;
     }
 
-    // If our chain tip is at genesis (or very early), skip the presync work check
-    // entirely. The presync mechanism is designed to protect an already-synced node
-    // from being fed a fake low-work chain. When bootstrapping from scratch, we must
-    // accept all headers regardless of work. Mark presync as complete so the phase
-    // transitions to HEADERS_SYNC and headers are processed normally without the
-    // presync gate re-triggering TryLowWorkHeadersSync on every batch.
-    {
-        LOCK(cs_main);
-        if (m_chainman.ActiveChain().Tip() && m_chainman.ActiveChain().Tip()->nHeight == 0) {
-            std::cout << "[DEBUG] ProcessPresyncHeaders: tip at genesis, marking presync complete peer=" << pfrom.GetId() << std::endl;
-            g_headers_presync_complete.store(true, std::memory_order_release);
-            return false;
-        }
-    }
+    // Always process the headers into the block index so m_best_header advances.
+    // We do NOT gate on work — we download all headers to the tip.
+    ProcessPresyncValidatedHeaders(pfrom, peer, headers);
 
-    arith_uint256 total_work = chain_start_header->nChainTrust + CalculateHeadersWork(headers);
-    arith_uint256 minimum_chain_work = GetAntiDoSWorkThreshold();
-
-    std::cout << "[DEBUG] ProcessPresyncHeaders: chain_start_header height=" << chain_start_header->nHeight << " total_work=" << total_work.ToString().substr(0,20) << "..." << " minimum_chain_work=" << minimum_chain_work.ToString().substr(0,20) << "..." << " sufficient=" << (total_work >= minimum_chain_work) << std::endl;
-
-    if (total_work >= minimum_chain_work) {
-        // Work is sufficient - presync complete, caller should process headers normally
+    // Check if the peer has more headers to give us.
+    // If they sent a full batch (MAX_HEADERS_RESULTS), they likely have more.
+    // If they sent fewer, they are at their tip — presync is complete.
+    if (headers.size() < MAX_HEADERS_RESULTS) {
+        // Peer sent a non-full batch — they have no more headers.
+        // Presync is complete: we have all headers to the tip.
         g_headers_presync_complete.store(true, std::memory_order_release);
-        std::cout << "[DEBUG] ProcessPresyncHeaders: WORK SUFFICIENT, setting g_headers_presync_complete=true peer=" << pfrom.GetId() << std::endl;
+        std::cout << "[DEBUG] ProcessPresyncHeaders: peer at tip (sent " << headers.size() << " < " << MAX_HEADERS_RESULTS << "), marking presync complete peer=" << pfrom.GetId() << std::endl;
         return false;
     }
 
-    // Insufficient work: ignore these headers (anti-DoS protection)
-    std::cout << "[DEBUG] ProcessPresyncHeaders: WORK INSUFFICIENT, ignoring headers peer=" << pfrom.GetId() << std::endl;
-    LogPrint(BCLog::NET, "Ignoring low-work headers from peer=%d (height %d, work insufficient)\n",
-             pfrom.GetId(), chain_start_header->nHeight + headers.size());
+    // Peer sent a full batch — they likely have more headers.
+    // Request the next batch.
+    {
+        LOCK(cs_main);
+        const CBlockIndex* best = m_chainman.m_best_header;
+        if (best) {
+            CBlockLocator locator;
+            locator.vHave.push_back(best->GetBlockHash());
+            MaybeSendGetHeaders(pfrom, locator, peer);
+            std::cout << "[DEBUG] ProcessPresyncHeaders: full batch received, requesting more headers from peer=" << pfrom.GetId() << " at height=" << best->nHeight << std::endl;
+        }
+    }
+
+    // Still in presync — return true to indicate headers were handled here
+    // and should NOT be processed again by the caller.
     return true;
 }
 
@@ -161,15 +165,10 @@ void PeerManagerImpl::ProcessPresyncValidatedHeaders(CNode& pfrom, Peer& peer,
     // Update peer state with the last received header
     WITH_LOCK(cs_main, UpdateBlockAvailability(pfrom.GetId(), pindexLast->GetBlockHash()));
 
-    // Check if the new best_header has sufficient work to complete presync
+    // Update accumulated work (informational, not used as a stopping condition anymore)
     {
         LOCK(cs_main);
         std::cout << "[DEBUG] ProcessPresyncValidatedHeaders: m_best_header=" << (m_chainman.m_best_header ? std::to_string(m_chainman.m_best_header->nHeight) : "null") << " MinimumChainWork=" << m_chainman.MinimumChainWork().ToString().substr(0,20) << "..." << std::endl;
-        if (m_chainman.m_best_header &&
-            m_chainman.m_best_header->nChainTrust >= m_chainman.MinimumChainWork()) {
-            g_headers_presync_complete.store(true, std::memory_order_release);
-            std::cout << "[DEBUG] ProcessPresyncValidatedHeaders: WORK SUFFICIENT, setting g_headers_presync_complete=true" << std::endl;
-        }
     }
 }
 
@@ -178,14 +177,13 @@ void PeerManagerImpl::CheckPresyncCompletion(CNode& pfrom, Peer& peer)
     // Must be called with m_headers_presync_mutex held
     if (!g_presync_state.active) return;
 
-    if (g_presync_state.accumulated_work >= g_presync_state.minimum_chain_work) {
-        // SUCCESS: enough work accumulated across all peers
+    // Presync is complete when we've downloaded all headers to the tip.
+    // This is signaled by g_headers_presync_complete being set in ProcessPresyncHeaders.
+    if (g_headers_presync_complete.load(std::memory_order_acquire)) {
         g_presync_state.active = false;
         g_presync_state.in_flight.clear();
         g_presync_state.pending_ranges.clear();
-        g_headers_presync_complete.store(true, std::memory_order_release);
-        LogPrint(BCLog::NET, "Presync complete: accumulated work %s >= threshold (peer=%d)\n",
-                 g_presync_state.accumulated_work.ToString(), pfrom.GetId());
+        LogPrint(BCLog::NET, "Presync complete: reached tip (peer=%d)\n", pfrom.GetId());
         return;
     }
 
@@ -198,11 +196,11 @@ void PeerManagerImpl::CheckPresyncCompletion(CNode& pfrom, Peer& peer)
         }
     }
     if (all_exhausted && g_presync_state.in_flight.empty() && g_presync_state.pending_ranges.empty()) {
-        // No more peers to request from and work threshold not met
-        LogPrint(BCLog::NET, "Presync exhausted: no more peers, work insufficient (peer=%d)\n",
+        // No more peers to request from — treat as complete (we have what we can get)
+        LogPrint(BCLog::NET, "Presync exhausted: no more peers (peer=%d)\n",
                  pfrom.GetId());
         g_presync_state.active = false;
-        // Do NOT set g_headers_presync_complete - presync failed
+        g_headers_presync_complete.store(true, std::memory_order_release);
     }
 }
 
@@ -415,37 +413,32 @@ bool PeerManagerImpl::TryLowWorkHeadersSync(Peer& peer, CNode& pfrom,
                                               std::vector<CBlockHeader>& headers)
 {
     std::cout << "[DEBUG] TryLowWorkHeadersSync: called peer=" << pfrom.GetId() << " chain_start_header height=" << chain_start_header->nHeight << " headers.size=" << headers.size() << std::endl;
-    arith_uint256 total_work = chain_start_header->nChainTrust + CalculateHeadersWork(headers);
-    arith_uint256 minimum_chain_work = GetAntiDoSWorkThreshold();
 
-    std::cout << "[DEBUG] TryLowWorkHeadersSync: total_work=" << total_work.ToString().substr(0,20) << "... minimum_chain_work=" << minimum_chain_work.ToString().substr(0,20) << "... low_work=" << (total_work < minimum_chain_work) << std::endl;
-
-    if (total_work < minimum_chain_work) {
-        if (headers.size() == MAX_HEADERS_RESULTS) {
-            std::cout << "[DEBUG] TryLowWorkHeadersSync: headers.size()==MAX_HEADERS_RESULTS, activating presync state peer=" << pfrom.GetId() << std::endl;
-            LOCK(m_headers_presync_mutex);
-            if (!g_presync_state.active) {
-                g_presync_state.active = true;
-                g_presync_state.chain_start_header = const_cast<CBlockIndex*>(chain_start_header);
-                g_presync_state.minimum_chain_work = minimum_chain_work;
-                g_presync_state.accumulated_work = chain_start_header->nChainTrust;
-                g_presync_state.next_expected_height = chain_start_header->nHeight + 1;
-                // Estimate target height: we need enough headers to reach minimum_chain_work.
-                // Use a generous upper bound based on current difficulty.
-                // The actual completion check uses accumulated_work >= minimum_chain_work.
-                g_presync_state.target_height = chain_start_header->nHeight + MAX_HEADERS_RESULTS * 10;
-            }
-            // Process and distribute
-            ProcessPresyncValidatedHeaders(pfrom, peer, headers);
-            DistributePresyncRequests(pfrom, peer);
-        } else {
-            LogPrint(BCLog::NET, "Ignoring low-work chain (height=%u) from peer=%d\n",
-                     chain_start_header->nHeight + headers.size(), pfrom.GetId());
+    // Always activate presync — we always want to download headers to the tip.
+    // The work check is no longer a gate; we process all headers regardless.
+    if (headers.size() == MAX_HEADERS_RESULTS) {
+        std::cout << "[DEBUG] TryLowWorkHeadersSync: headers.size()==MAX_HEADERS_RESULTS, activating presync state peer=" << pfrom.GetId() << std::endl;
+        LOCK(m_headers_presync_mutex);
+        if (!g_presync_state.active) {
+            g_presync_state.active = true;
+            g_presync_state.chain_start_header = const_cast<CBlockIndex*>(chain_start_header);
+            g_presync_state.minimum_chain_work = GetAntiDoSWorkThreshold();
+            g_presync_state.accumulated_work = chain_start_header->nChainTrust;
+            g_presync_state.next_expected_height = chain_start_header->nHeight + 1;
+            // Use a generous upper bound for target height.
+            // The actual completion is determined by the peer sending < MAX_HEADERS_RESULTS.
+            g_presync_state.target_height = chain_start_header->nHeight + MAX_HEADERS_RESULTS * 10;
         }
-        headers = {};
-        return true;
+        // Process and distribute
+        ProcessPresyncValidatedHeaders(pfrom, peer, headers);
+        DistributePresyncRequests(pfrom, peer);
+    } else {
+        // Non-full batch: peer is at their tip. Mark presync complete.
+        g_headers_presync_complete.store(true, std::memory_order_release);
+        std::cout << "[DEBUG] TryLowWorkHeadersSync: non-full batch, marking presync complete peer=" << pfrom.GetId() << std::endl;
     }
-    return false;
+    headers = {};
+    return true;
 }
 
 bool PeerManagerImpl::CheckHeadersPoW(const std::vector<CBlockHeader>& headers, const Consensus::Params& consensusParams, Peer& peer)
