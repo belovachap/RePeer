@@ -353,7 +353,7 @@ void PeerManagerImpl::ProcessHeaderVerificationResponse(NodeId peer_id, const CB
         // Process the verified header into the block index
         BlockValidationState state;
         const CBlockIndex* pindexLast = nullptr;
-        int32_t& nPoSTemperature = mapPoSTemperature[m_connman.GetNodeAddr(peer_id)];
+        int32_t nPoSTemperature = MAX_CONSECUTIVE_POS_HEADERS / 4;
         if (!m_chainman.ProcessNewBlockHeaders(nPoSTemperature, pindexLast ? pindexLast->GetBlockHash() : uint256::ZERO,
                                               {hv.responses[0]}, /*min_pow_checked=*/true, state, m_chainparams, &pindexLast)) {
             if (state.IsInvalid()) {
