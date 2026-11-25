@@ -17,6 +17,49 @@
 // It does NOT download blocks. It does NOT relay transactions.
 // ============================================================================
 
+bool PeerManagerImpl::CheckHeadersPoW(const std::vector<CBlockHeader>& headers, const Consensus::Params& consensusParams, Peer& peer)
+{
+    if (!HasValidProofOfWork(headers, consensusParams)) {
+        Misbehaving(peer, 100, "header with invalid proof of work");
+        return false;
+    }
+    if (!CheckHeadersAreContinuous(headers)) {
+        Misbehaving(peer, 20, "non-continuous headers sequence");
+        return false;
+    }
+    return true;
+}
+
+bool PeerManagerImpl::CheckHeadersAreContinuous(const std::vector<CBlockHeader>& headers) const
+{
+    uint256 hashLastBlock;
+    for (const CBlockHeader& header : headers) {
+        if (!hashLastBlock.IsNull() && header.hashPrevBlock != hashLastBlock) {
+            return false;
+        }
+        hashLastBlock = header.GetHash();
+    }
+    return true;
+}
+
+void PeerManagerImpl::HandleFewUnconnectingHeaders(CNode& pfrom, Peer& peer,
+                                                    const std::vector<CBlockHeader>& headers)
+{
+    peer.m_num_unconnecting_headers_msgs++;
+    const CBlockIndex* best_header{WITH_LOCK(cs_main, return m_chainman.m_best_header)};
+    if (MaybeSendGetHeaders(pfrom, GetLocator(best_header), peer)) {
+        LogPrint(BCLog::NET, "received header %s: missing prev block %s, sending getheaders (%d) to end (peer=%d, m_num_unconnecting_headers_msgs=%d)\n",
+            headers[0].GetHash().ToString(),
+            headers[0].hashPrevBlock.ToString(),
+            best_header->nHeight,
+            pfrom.GetId(), peer.m_num_unconnecting_headers_msgs);
+    }
+    WITH_LOCK(cs_main, UpdateBlockAvailability(pfrom.GetId(), headers.back().GetHash()));
+    if (peer.m_num_unconnecting_headers_msgs % MAX_NUM_UNCONNECTING_HEADERS_MSGS == 0) {
+        Misbehaving(peer, 20, strprintf("%d non-connecting headers", peer.m_num_unconnecting_headers_msgs));
+    }
+}
+
 bool PeerManagerImpl::IsAncestorOfBestHeaderOrTip(const CBlockIndex* header)
 {
     if (header == nullptr) {
