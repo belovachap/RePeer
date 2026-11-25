@@ -79,9 +79,9 @@ public:
 
     /** Implement NetEventsInterface */
     void InitializeNode(CNode& node, ServiceFlags our_services) override EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex);
-    void FinalizeNode(const CNode& node) override EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex);
+    void FinalizeNode(const CNode& node) override EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex);
     bool ProcessMessages(CNode* pfrom, std::atomic<bool>& interrupt) override
-        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
+        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, g_msgproc_mutex);
 
     /** Implement PeerManager */
     void StartScheduledTasks(CScheduler& scheduler) override;
@@ -98,17 +98,13 @@ public:
         EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, g_msgproc_mutex);
     void ProcessMessage(CNode& pfrom, const std::string& msg_type, CDataStream& vRecv,
                         const std::chrono::microseconds time_received, const std::atomic<bool>& interruptMsgProc) override
-        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
+        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_recent_confirmed_transactions_mutex, !m_most_recent_block_mutex, g_msgproc_mutex);
     void UpdateLastBlockAnnounceTime(NodeId node, int64_t time_in_seconds) override;
 
 private:
     // --- Phase dispatcher ---
-    enum class Phase { HEADERS_PRESYNC, HEADERS_SYNC, IBD, NORMAL };
+    enum class Phase { HEADERS_SYNC, IBD, NORMAL };
     Phase GetCurrentPhase();
-    void DispatchPresync(CNode& pfrom, Peer& peer, const std::string& msg_type,
-                         CDataStream& vRecv, const std::chrono::microseconds time_received,
-                         const std::atomic<bool>& interruptMsgProc)
-        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
     void DispatchHeadersSync(CNode& pfrom, Peer& peer, const std::string& msg_type,
                              CDataStream& vRecv, const std::chrono::microseconds time_received,
                              const std::atomic<bool>& interruptMsgProc)
@@ -125,24 +121,8 @@ private:
         EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
     void SendNormalMessages(CNode* pto, Peer& peer, std::chrono::microseconds current_time)
         EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
-    bool IsPresyncPhase(const CNode& pfrom) const EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex);
     bool IsIBDPhase() const;
     bool IsNormalPhase() const;
-    void ProcessPresyncValidatedHeaders(CNode& pfrom, Peer& peer,
-                                        const std::vector<CBlockHeader>& headers)
-        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
-    void CheckPresyncCompletion(CNode& pfrom, Peer& peer)
-        EXCLUSIVE_LOCKS_REQUIRED(m_headers_presync_mutex);
-    void HandlePresyncFailure(CNode& pfrom, Peer& peer, const std::string& reason)
-        EXCLUSIVE_LOCKS_REQUIRED(m_headers_presync_mutex);
-    void ReassignFailedRequests(CNode& pfrom, Peer& peer)
-        EXCLUSIVE_LOCKS_REQUIRED(m_headers_presync_mutex);
-    void DistributePresyncRequests(CNode& pfrom, Peer& peer)
-        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
-    void CheckPresyncRetries()
-        EXCLUSIVE_LOCKS_REQUIRED(!m_headers_presync_mutex);
-    bool ProcessPresyncHeaders(CNode& pfrom, Peer& peer, const std::vector<CBlockHeader>& headers)
-        EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
     void ProcessPhase3Block(CNode& pfrom, Peer& peer, CDataStream& vRecv)
         EXCLUSIVE_LOCKS_REQUIRED(!m_most_recent_block_mutex, g_msgproc_mutex);
     void ProcessPhase3CMPCTBlock(CNode& pfrom, Peer& peer, CDataStream& vRecv,
@@ -266,42 +246,6 @@ private:
     void HandleFewUnconnectingHeaders(CNode& pfrom, Peer& peer, const std::vector<CBlockHeader>& headers) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
     /** Return true if the headers connect to each other, false otherwise */
     bool CheckHeadersAreContinuous(const std::vector<CBlockHeader>& headers) const;
-    /** Try to continue a low-work headers sync that has already begun.
-     * Assumes the caller has already verified the headers connect, and has
-     * checked that each header satisfies the proof-of-work target included in
-     * the header.
-     *  @param[in]  peer                            The peer we're syncing with.
-     *  @param[in]  pfrom                           CNode of the peer
-     *  @param[in,out] headers                      The headers to be processed.
-     *  @return     True if the passed in headers were successfully processed
-     *              as the continuation of a low-work headers sync in progress;
-     *              false otherwise.
-     *              If false, the passed in headers will be returned back to
-     *              the caller.
-     *              If true, the returned headers may be empty, indicating
-     *              there is no more work for the caller to do; or the headers
-     *              may be populated with entries that have passed anti-DoS
-     *              checks (and therefore may be validated for block index
-     *              acceptance by the caller).
-     */
-    bool IsContinuationOfLowWorkHeadersSync(Peer& peer, CNode& pfrom,
-            std::vector<CBlockHeader>& headers)
-        EXCLUSIVE_LOCKS_REQUIRED(peer.m_headers_sync_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
-    /** Check work on a headers chain to be processed, and if insufficient,
-     * initiate our anti-DoS headers sync mechanism.
-     *
-     * @param[in]   peer                The peer whose headers we're processing.
-     * @param[in]   pfrom               CNode of the peer
-     * @param[in]   chain_start_header  Where these headers connect in our index.
-     * @param[in,out]   headers             The headers to be processed.
-     *
-     * @return      True if chain was low work (headers will be empty after
-     *              calling); false otherwise.
-     */
-    bool TryLowWorkHeadersSync(Peer& peer, CNode& pfrom,
-                                  const CBlockIndex* chain_start_header,
-                                  std::vector<CBlockHeader>& headers)
-        EXCLUSIVE_LOCKS_REQUIRED(!peer.m_headers_sync_mutex, !m_peer_mutex, !m_headers_presync_mutex, g_msgproc_mutex);
 
     /** Return true if the given header is an ancestor of
      *  m_chainman.m_best_header or our current tip */
@@ -497,24 +441,6 @@ private:
     std::shared_ptr<const CBlock> m_most_recent_block GUARDED_BY(m_most_recent_block_mutex);
     std::shared_ptr<const CBlockHeaderAndShortTxIDs> m_most_recent_compact_block GUARDED_BY(m_most_recent_block_mutex);
     uint256 m_most_recent_block_hash GUARDED_BY(m_most_recent_block_mutex);
-
-    // Data about the low-work headers synchronization, aggregated from all peers' HeadersSyncStates.
-    /** Mutex guarding the other m_headers_presync_* variables. */
-    mutable Mutex m_headers_presync_mutex;
-    /** A type to represent statistics about a peer's low-work headers sync.
-     *
-     * - The first field is the total verified amount of work in that synchronization.
-     * - The second is:
-     *   - nullopt: the sync is in REDOWNLOAD phase (phase 2).
-     *   - {height, timestamp}: the sync has the specified tip height and block timestamp (phase 1).
-     */
-    using HeadersPresyncStats = std::pair<arith_uint256, std::optional<std::pair<int64_t, uint32_t>>>;
-    /** Statistics for all peers in low-work headers sync. */
-    std::map<NodeId, HeadersPresyncStats> m_headers_presync_stats GUARDED_BY(m_headers_presync_mutex) {};
-    /** The peer with the most-work entry in m_headers_presync_stats. */
-    NodeId m_headers_presync_bestpeer GUARDED_BY(m_headers_presync_mutex) {-1};
-    /** The m_headers_presync_stats improved, and needs signalling. */
-    std::atomic_bool m_headers_presync_should_signal{false};
 
     /** Height of the highest block announced using BIP 152 high-bandwidth mode. */
     int m_highest_fast_announce GUARDED_BY(::cs_main){0};

@@ -6,14 +6,11 @@
 #include <net_processing/peer_manager_impl.h>
 #include <net_processing/constants.h>
 
-extern std::atomic<bool> g_headers_presync_complete;
-
 // ============================================================================
-// PHASE 2: SYNC BLOCKHEADERS
+// PHASE 1: SYNC BLOCKHEADERS
 //
 // Purpose: Get the full chain of block headers from peers.
-// Entry:   After presync completes (sufficient work found) or immediately
-//          if headers already have sufficient work.
+// Entry:   Always the first phase. Headers are downloaded from all peers.
 // Exit:    When CanDirectFetch() becomes true (headers near tip).
 //
 // This phase handles the initial getheaders exchange and header validation.
@@ -184,15 +181,6 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
 
     if (nCount == 0) {
         // Nothing interesting. Stop asking this peers for more headers.
-        // If we were in the middle of headers sync, receiving an empty headers
-        // message suggests that the peer suddenly has nothing to give us
-        // (perhaps it reorged to our chain). Clear download state for this peer.
-        LOCK(peer.m_headers_sync_mutex);
-        if (peer.m_headers_sync) {
-            peer.m_headers_sync.reset(nullptr);
-            LOCK(m_headers_presync_mutex);
-            m_headers_presync_stats.erase(pfrom.GetId());
-        }
         return;
     }
 
@@ -208,44 +196,9 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
         return;
     }
 
-    const CBlockIndex *pindexLast = nullptr;
-
-    // We'll set already_validated_work to true if these headers are
-    // successfully processed as part of a low-work headers sync in progress
-    // (either in PRESYNC or REDOWNLOAD phase).
-    // If true, this will mean that any headers returned to us (ie during
-    // REDOWNLOAD) can be validated without further anti-DoS checks.
-    bool already_validated_work = false;
-
-    // If we're in the middle of headers sync, let it do its magic.
-    bool have_headers_sync = false;
-    {
-        LOCK(peer.m_headers_sync_mutex);
-
-        already_validated_work = IsContinuationOfLowWorkHeadersSync(peer, pfrom, headers);
-
-        // The headers we passed in may have been:
-        // - untouched, perhaps if no headers-sync was in progress, or some
-        //   failure occurred
-        // - erased, such as if the headers were successfully processed and no
-        //   additional headers processing needs to take place (such as if we
-        //   are still in PRESYNC)
-        // - replaced with headers that are now ready for validation, such as
-        //   during the REDOWNLOAD phase of a low-work headers sync.
-        // So just check whether we still have headers that we need to process,
-        // or not.
-        if (headers.empty()) {
-            return;
-        }
-
-        have_headers_sync = !!peer.m_headers_sync;
-    }
-
     // Do these headers connect to something in our block index?
     const CBlockIndex *chain_start_header{WITH_LOCK(::cs_main, return m_chainman.m_blockman.LookupBlockIndex(headers[0].hashPrevBlock))};
-    bool headers_connect_blockindex{chain_start_header != nullptr};
-
-    if (!headers_connect_blockindex) {
+    if (!chain_start_header) {
         if (nCount <= MAX_BLOCKS_TO_ANNOUNCE) {
             // If this looks like it could be a BIP 130 block announcement, use
             // special logic for handling headers that don't connect, as this
@@ -257,54 +210,21 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
         return;
     }
 
-    // If the headers we received are already in memory and an ancestor of
-    // m_best_header or our tip, skip anti-DoS checks. These headers will not
-    // use any more memory (and we are not leaking information that could be
-    // used to fingerprint us).
+    // At this point, the headers connect to something in our block index.
+    // Process them directly.
+
+    // If we don't have the last header, then this peer will have given us
+    // something new (if these headers are valid).
     const CBlockIndex *last_received_header{nullptr};
     {
         LOCK(cs_main);
         last_received_header = m_chainman.m_blockman.LookupBlockIndex(headers.back().GetHash());
-        if (IsAncestorOfBestHeaderOrTip(last_received_header)) {
-            already_validated_work = true;
-        }
     }
-
-    // If our peer has NetPermissionFlags::NoBan privileges, then bypass our
-    // anti-DoS logic (this saves bandwidth when we connect to a trusted peer
-    // on startup).
-    if (pfrom.HasPermission(NetPermissionFlags::NoBan)) {
-        already_validated_work = true;
-    }
-
-    // If presync is already globally complete, skip the low-work headers sync
-    // check entirely. The presync mechanism has served its purpose; headers
-    // should be processed normally from here on without re-activating the
-    // presync state machine on every batch.
-    if (g_headers_presync_complete.load(std::memory_order_acquire)) {
-        already_validated_work = true;
-    }
-
-    // At this point, the headers connect to something in our block index.
-    // Do anti-DoS checks to determine if we should process or store for later
-    // processing.
-    if (!already_validated_work && TryLowWorkHeadersSync(peer, pfrom,
-                chain_start_header, headers)) {
-        // If we successfully started a low-work headers sync, then there
-        // should be no headers to process any further.
-        Assume(headers.empty());
-        return;
-    }
-
-    // At this point, we have a set of headers with sufficient work on them
-    // which can be processed.
-
-    // If we don't have the last header, then this peer will have given us
-    // something new (if these headers are valid).
     bool received_new_header{last_received_header == nullptr};
 
     // Now process all the headers.
     BlockValidationState state;
+    const CBlockIndex *pindexLast = nullptr;
 
     int32_t& nPoSTemperature = mapPoSTemperature[pfrom.addr];
     if (!m_chainman.ProcessNewBlockHeaders(nPoSTemperature, pfrom.lastAcceptedHeader, headers, /*min_pow_checked=*/true, state, m_chainparams, &pindexLast)) {
@@ -315,8 +235,8 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
     }
     assert(pindexLast);
 
-    // Consider fetching more headers if we are not using our headers-sync mechanism.
-    if (nCount == MAX_HEADERS_RESULTS && !have_headers_sync) {
+    // Consider fetching more headers.
+    if (nCount == MAX_HEADERS_RESULTS) {
         // Headers message had its maximum size; the peer may have more headers.
         if (MaybeSendGetHeaders(pfrom, GetLocator(pindexLast), peer)) {
             LogPrint(BCLog::NET, "more getheaders (%d) to end to peer=%d (startheight:%d)\n",

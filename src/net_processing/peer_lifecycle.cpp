@@ -88,10 +88,6 @@ void PeerManagerImpl::FinalizeNode(const CNode& node)
         // fSuccessfullyConnected set.
         m_addrman.Connected(node.addr);
     }
-    {
-        LOCK(m_headers_presync_mutex);
-        m_headers_presync_stats.erase(nodeid);
-    }
     LogPrint(BCLog::NET, "Cleared nodestate for peer=%d\n", nodeid);
 }
 
