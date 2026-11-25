@@ -123,6 +123,8 @@ private:
         EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
     bool IsIBDPhase() const;
     bool IsNormalPhase() const;
+    void ProcessPhase1Headers(CNode& pfrom, Peer& peer, const std::vector<CBlockHeader>& headers)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
     void ProcessPhase3Block(CNode& pfrom, Peer& peer, CDataStream& vRecv)
         EXCLUSIVE_LOCKS_REQUIRED(!m_most_recent_block_mutex, g_msgproc_mutex);
     void ProcessPhase3CMPCTBlock(CNode& pfrom, Peer& peer, CDataStream& vRecv,
@@ -434,6 +436,54 @@ private:
      * determine the transaction's origin). */
     std::chrono::microseconds NextInvToInbounds(std::chrono::microseconds now,
                                                 std::chrono::seconds average_interval);
+
+    // --- Header verification state (3-of-3 consensus) ---
+
+    /** Tracks the verification state for a single header height. */
+    struct HeaderVerification {
+        uint64_t height;
+        std::vector<NodeId> assigned_peers;  // the 3 peers assigned to provide this header
+        std::vector<CBlockHeader> responses; // headers received from each assigned peer
+        int retry_count{0};
+        bool verified{false};
+        bool failed{false};
+    };
+
+    /** Queue of heights that still need verification. */
+    std::deque<uint64_t> m_header_verify_queue GUARDED_BY(m_header_verify_mutex);
+
+    /** Map of height -> verification state for in-progress verifications. */
+    std::map<uint64_t, HeaderVerification> m_header_verifications GUARDED_BY(m_header_verify_mutex);
+
+    /** Map of peer -> set of heights they are currently responsible for. */
+    std::map<NodeId, std::set<uint64_t>> m_peer_assigned_heights GUARDED_BY(m_header_verify_mutex);
+
+    /** Mutex protecting header verification state. */
+    mutable Mutex m_header_verify_mutex;
+
+    /** The next height we need to assign to peers for verification. */
+    uint64_t m_next_header_to_assign GUARDED_BY(m_header_verify_mutex){0};
+
+    /** The tip height we need to reach. */
+    uint64_t m_header_verify_target_height GUARDED_BY(m_header_verify_mutex){0};
+
+    /** Maximum retries before giving up on a header. */
+    static constexpr int MAX_HEADER_VERIFY_RETRIES = 5;
+
+    /** Number of peers that must agree on a header. */
+    static constexpr int HEADER_VERIFY_QUORUM = 3;
+
+    /** Assign a batch of headers to 3 random peers for verification. */
+    void AssignHeadersForVerification(uint64_t start_height, uint64_t end_height)
+        EXCLUSIVE_LOCKS_REQUIRED(m_header_verify_mutex);
+
+    /** Process a header response from a peer during verification. */
+    void ProcessHeaderVerificationResponse(NodeId peer_id, const CBlockHeader& header, uint64_t height)
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+
+    /** Check if all headers are verified and mark sync complete. */
+    void CheckHeaderVerificationComplete()
+        EXCLUSIVE_LOCKS_REQUIRED(m_header_verify_mutex);
 
 
     // All of the following cache a recent block, and are protected by m_most_recent_block_mutex

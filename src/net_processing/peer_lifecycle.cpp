@@ -88,6 +88,11 @@ void PeerManagerImpl::FinalizeNode(const CNode& node)
         // fSuccessfullyConnected set.
         m_addrman.Connected(node.addr);
     }
+    // Clean up header verification assignments for this peer
+    {
+        LOCK(m_header_verify_mutex);
+        m_peer_assigned_heights.erase(nodeid);
+    }
     LogPrint(BCLog::NET, "Cleared nodestate for peer=%d\n", nodeid);
 }
 

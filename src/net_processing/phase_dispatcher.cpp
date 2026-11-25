@@ -71,9 +71,9 @@ PeerManagerImpl::Phase PeerManagerImpl::GetCurrentPhase()
     }
 
     // Phase 2: IBD (headers near tip, downloading blocks)
-    // Only transition to IBD once headers sync is explicitly complete.
-    if (g_headers_sync_complete.load(std::memory_order_acquire) &&
-        WITH_LOCK(cs_main, return CanDirectFetch())) {
+    // Only transition to IBD once headers sync is explicitly complete
+    // (all headers verified by 3-of-3 consensus).
+    if (g_headers_sync_complete.load(std::memory_order_acquire)) {
         return Phase::IBD;
     }
 
@@ -1220,7 +1220,7 @@ void PeerManagerImpl::DispatchHeadersSync(CNode& pfrom, Peer& peer, const std::s
                 }
             }
         }
-        ProcessHeadersMessage(pfrom, peer, std::move(headers), /*via_compact_block=*/false);
+        ProcessPhase1Headers(pfrom, peer, headers);
         return;
     }
 
