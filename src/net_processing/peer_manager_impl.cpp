@@ -35,7 +35,8 @@ PeerManagerImpl::PeerManagerImpl(CConnman& connman, AddrMan& addrman,
       m_banman(banman),
       m_chainman(chainman),
       m_mempool(pool),
-      m_ignore_incoming_txs(ignore_incoming_txs)
+      m_ignore_incoming_txs(ignore_incoming_txs),
+      m_header_verify_quorum(chainman.GetParams().NetworkIDString() == "main" ? 5 : 3)
 {
     // While Erlay support is incomplete, it must be enabled explicitly via -txreconciliation.
     // This argument can go away after Erlay support is complete.

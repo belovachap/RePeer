@@ -238,13 +238,13 @@ void PeerManagerImpl::AssignHeadersForVerification(uint64_t start_height, uint64
         }
     });
 
-    if (connected_peers.size() < HEADER_VERIFY_QUORUM) {
+    if (connected_peers.size() < m_header_verify_quorum) {
         LogPrint(BCLog::NET, "Header verification: not enough peers (%zu < %d)\n",
-                 connected_peers.size(), HEADER_VERIFY_QUORUM);
+                 connected_peers.size(), m_header_verify_quorum);
         return;
     }
 
-    // For each height in the range, assign HEADER_VERIFY_QUORUM random peers
+    // For each height in the range, assign m_header_verify_quorum random peers
     for (uint64_t height = start_height; height <= end_height; height++) {
         HeaderVerification hv;
         hv.height = height;
@@ -252,10 +252,10 @@ void PeerManagerImpl::AssignHeadersForVerification(uint64_t start_height, uint64
         hv.failed = false;
         hv.retry_count = 0;
 
-        // Pick HEADER_VERIFY_QUORUM random distinct peers
+        // Pick m_header_verify_quorum random distinct peers
         std::vector<NodeId> shuffled = connected_peers;
         Shuffle(shuffled.begin(), shuffled.end(), FastRandomContext());
-        for (int i = 0; i < HEADER_VERIFY_QUORUM && i < (int)shuffled.size(); i++) {
+        for (int i = 0; i < m_header_verify_quorum && i < (int)shuffled.size(); i++) {
             hv.assigned_peers.push_back(shuffled[i]);
             m_peer_assigned_heights[shuffled[i]].insert(height);
         }
@@ -331,7 +331,7 @@ void PeerManagerImpl::ProcessHeaderVerificationResponse(NodeId peer_id, const CB
     m_peer_assigned_heights[peer_id].erase(height);
 
     // Check if we have enough responses
-    if ((int)hv.responses.size() < HEADER_VERIFY_QUORUM) {
+    if ((int)hv.responses.size() < m_header_verify_quorum) {
         return;
     }
 
@@ -348,7 +348,7 @@ void PeerManagerImpl::ProcessHeaderVerificationResponse(NodeId peer_id, const CB
         // All peers agree — accept this header
         hv.verified = true;
         LogPrint(BCLog::NET, "Header verification: height %d verified by %d peers (hash=%s)\n",
-                 height, HEADER_VERIFY_QUORUM, hv.responses[0].GetHash().ToString().substr(0, 16));
+                 height, m_header_verify_quorum, hv.responses[0].GetHash().ToString().substr(0, 16));
 
         // Process the verified header into the block index
         BlockValidationState state;
@@ -400,7 +400,7 @@ void PeerManagerImpl::ProcessHeaderVerificationResponse(NodeId peer_id, const CB
             hv.assigned_peers.clear();
 
             Shuffle(connected_peers.begin(), connected_peers.end(), FastRandomContext());
-            for (int i = 0; i < HEADER_VERIFY_QUORUM && i < (int)connected_peers.size(); i++) {
+            for (int i = 0; i < m_header_verify_quorum && i < (int)connected_peers.size(); i++) {
                 hv.assigned_peers.push_back(connected_peers[i]);
                 m_peer_assigned_heights[connected_peers[i]].insert(height);
             }

@@ -470,8 +470,8 @@ private:
     /** Maximum retries before giving up on a header. */
     static constexpr int MAX_HEADER_VERIFY_RETRIES = 5;
 
-    /** Number of peers that must agree on a header. */
-    static constexpr int HEADER_VERIFY_QUORUM = 3;
+    /** Number of peers that must agree on a header (set based on network type). */
+    int m_header_verify_quorum;
 
     /** Assign a batch of headers to 3 random peers for verification. */
     void AssignHeadersForVerification(uint64_t start_height, uint64_t end_height)
