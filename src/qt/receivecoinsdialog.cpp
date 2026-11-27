@@ -75,7 +75,6 @@ void ReceiveCoinsDialog::setModel(WalletModel *_model)
     if(_model && _model->getOptionsModel())
     {
         _model->getRecentRequestsTableModel()->sort(RecentRequestsTableModel::Date, Qt::DescendingOrder);
-        connect(_model->getOptionsModel(), &OptionsModel::displayUnitChanged, this, &ReceiveCoinsDialog::updateDisplayUnit);
         updateDisplayUnit();
 
         QTableView* tableView = ui->recentRequestsView;
@@ -121,7 +120,7 @@ void ReceiveCoinsDialog::clear()
     ui->reqAmount->clear();
     ui->reqLabel->setText("");
     ui->reqMessage->setText("");
-    updateDisplayUnit();
+    ui->reqAmount->setDisplayUnit(BitcoinUnit::BTC);
 }
 
 void ReceiveCoinsDialog::reject()
@@ -138,7 +137,7 @@ void ReceiveCoinsDialog::updateDisplayUnit()
 {
     if(model && model->getOptionsModel())
     {
-        ui->reqAmount->setDisplayUnit(model->getOptionsModel()->getDisplayUnit());
+        ui->reqAmount->setDisplayUnit(BitcoinUnit::BTC);
     }
 }
 

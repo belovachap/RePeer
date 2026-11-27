@@ -38,7 +38,6 @@ public:
         ProxyUse,               // bool
         ProxyIP,                // QString
         ProxyPort,              // int
-        DisplayUnit,            // BitcoinUnit
         UseEmbeddedMonospacedFont, // bool
         CoinControlFeatures,    // bool
         SubFeeFromAmount,       // bool
@@ -61,11 +60,6 @@ public:
     bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole) override;
     QVariant getOption(OptionID option, const std::string& suffix="") const;
     bool setOption(OptionID option, const QVariant& value, const std::string& suffix="");
-    /** Updates current unit in memory, settings and emits displayUnitChanged(new_unit) signal */
-    void setDisplayUnit(const QVariant& new_unit);
-
-    /* Explicit getters */
-    BitcoinUnit getDisplayUnit() const { return m_display_bitcoin_unit; }
     bool getUseEmbeddedMonospacedFont() const { return m_use_embedded_monospaced_font; }
     bool getCoinControlFeatures() const { return fCoinControlFeatures; }
     bool getSubFeeFromAmount() const { return m_sub_fee_from_amount; }
@@ -83,7 +77,6 @@ public:
 private:
     interfaces::Node& m_node;
     /* Qt-only settings */
-    BitcoinUnit m_display_bitcoin_unit;
     bool m_use_embedded_monospaced_font;
     bool fCoinControlFeatures;
     bool m_sub_fee_from_amount;
@@ -98,7 +91,6 @@ private:
     void checkAndMigrate();
 
 Q_SIGNALS:
-    void displayUnitChanged(BitcoinUnit unit);
     void coinControlFeaturesChanged(bool);
     void useEmbeddedMonospacedFontChanged(bool);
 };

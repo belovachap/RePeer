@@ -29,6 +29,7 @@ class Notificator;
 class OptionsModel;
 class PlatformStyle;
 class SendCoinsRecipient;
+class WalletController;
 class UnitDisplayStatusBarControl;
 class WalletController;
 class WalletFrame;
@@ -105,7 +106,6 @@ private:
     ClientModel* clientModel = nullptr;
     WalletFrame* walletFrame = nullptr;
 
-    UnitDisplayStatusBarControl* unitDisplayControl = nullptr;
     GUIUtil::ThemedLabel* labelWalletEncryptionIcon = nullptr;
     GUIUtil::ThemedLabel* labelWalletHDStatusIcon = nullptr;
     GUIUtil::ClickableLabel* labelProxyIcon = nullptr;
@@ -261,37 +261,6 @@ public Q_SLOTS:
     void showProgress(const QString &title, int nProgress);
 
     void showModalOverlay();
-};
-
-class UnitDisplayStatusBarControl : public QLabel
-{
-    Q_OBJECT
-
-public:
-    explicit UnitDisplayStatusBarControl(const PlatformStyle *platformStyle);
-    /** Lets the control know about the Options Model (and its signals) */
-    void setOptionsModel(OptionsModel *optionsModel);
-
-protected:
-    /** So that it responds to left-button clicks */
-    void mousePressEvent(QMouseEvent *event) override;
-    void changeEvent(QEvent* e) override;
-
-private:
-    OptionsModel* optionsModel{nullptr};
-    QMenu* menu{nullptr};
-    const PlatformStyle* m_platform_style;
-
-    /** Shows context menu with Display Unit options by the mouse coordinates */
-    void onDisplayUnitsClicked(const QPoint& point);
-    /** Creates context menu, its actions, and wires up all the relevant signals for mouse events. */
-    void createContextMenu();
-
-private Q_SLOTS:
-    /** When Display Units are changed on OptionsModel it will refresh the display text of the control on the status bar */
-    void updateDisplayUnit(BitcoinUnit newUnits);
-    /** Tells underlying optionsModel to update its current display unit. */
-    void onMenuSelection(QAction* action);
 };
 
 #endif // BITCOIN_QT_BITCOINGUI_H

@@ -65,7 +65,6 @@ private:
 public Q_SLOTS:
     void updateTransaction(const QString &hash, int status);
     void updateAge();
-    void updateDisplayUnit();
 
     friend class MintingTablePriv;
 };

@@ -298,7 +298,6 @@ MintingTableModel::MintingTableModel(WalletModel *parent) :
     connect(timer, SIGNAL(timeout()), this, SLOT(updateAge()));
     timer->start(MODEL_UPDATE_DELAY*1000);
 
-    connect(walletModel->getOptionsModel(), &OptionsModel::displayUnitChanged, this, &MintingTableModel::updateDisplayUnit);
     m_handler_transaction_changed = walletModel->wallet().handleTransactionChanged(std::bind(NotifyTransactionChanged, this, std::placeholders::_1, std::placeholders::_2));
 }
 
@@ -490,7 +489,7 @@ QString MintingTableModel::formatTxAge(const KernelRecord *wtx) const
 
 QString MintingTableModel::formatTxBalance(const KernelRecord *wtx) const
 {
-    return BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->nValue);
+    return BitcoinUnits::format(BitcoinUnit::BTC, wtx->nValue);
 }
 
 QVariant MintingTableModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -540,8 +539,3 @@ QModelIndex MintingTableModel::index(int row, int column, const QModelIndex &par
     }
 }
 
-void MintingTableModel::updateDisplayUnit()
-{
-    // emit dataChanged to update Balance column with the current unit
-    Q_EMIT dataChanged(index(0, Balance), index(priv->size()-1, Balance));
-}

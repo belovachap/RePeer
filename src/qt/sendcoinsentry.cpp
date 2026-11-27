@@ -66,10 +66,7 @@ void SendCoinsEntry::on_payTo_textChanged(const QString &address)
 void SendCoinsEntry::setModel(WalletModel *_model)
 {
     this->model = _model;
-
-    if (_model && _model->getOptionsModel())
-        connect(_model->getOptionsModel(), &OptionsModel::displayUnitChanged, this, &SendCoinsEntry::updateDisplayUnit);
-
+    ui->payAmount->setDisplayUnit(BitcoinUnit::BTC);
     clear();
 }
 
@@ -202,9 +199,7 @@ void SendCoinsEntry::setFocus()
 
 void SendCoinsEntry::updateDisplayUnit()
 {
-    if (model && model->getOptionsModel()) {
-        ui->payAmount->setDisplayUnit(model->getOptionsModel()->getDisplayUnit());
-    }
+    ui->payAmount->setDisplayUnit(BitcoinUnit::BTC);
 }
 
 void SendCoinsEntry::changeEvent(QEvent* e)
