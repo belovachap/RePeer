@@ -422,6 +422,8 @@ public:
     const uint64_t nKeyedNetGroup;
     std::atomic_bool fPauseRecv{false};
     std::atomic_bool fPauseSend{false};
+    /** When fPauseSend was last set from false to true */
+    std::atomic<std::chrono::seconds> m_pause_send_since{0s};
 
     const ConnectionType m_conn_type;
 
