@@ -855,7 +855,11 @@ size_t CConnman::SocketSendData(CNode& node) const
             if (node.nSendOffset == data.size()) {
                 node.nSendOffset = 0;
                 node.nSendSize -= data.size();
-                node.fPauseSend = node.nSendSize > nSendBufferMaxSize;
+                const bool pause_send{node.nSendSize > nSendBufferMaxSize};
+                if (pause_send && !node.fPauseSend) {
+                    node.m_pause_send_since = GetTime<std::chrono::seconds>();
+                }
+                node.fPauseSend = pause_send;
                 it++;
             } else {
                 // could not send full message; stop sending more
@@ -1194,6 +1198,14 @@ bool CConnman::InactivityCheck(const CNode& node) const
     if (now > last_recv + TIMEOUT_INTERVAL) {
         LogPrint(BCLog::NET, "socket receive timeout: %is peer=%d\n", count_seconds(now - last_recv), node.GetId());
         return true;
+    }
+
+    if (node.fPauseSend) {
+        const auto pause_since{node.m_pause_send_since.load()};
+        if (now > pause_since + TIMEOUT_INTERVAL) {
+            LogPrint(BCLog::NET, "send buffer full for %is, disconnecting peer=%d\n", count_seconds(now - pause_since), node.GetId());
+            return true;
+        }
     }
 
     if (!node.fSuccessfullyConnected) {
@@ -2832,7 +2844,10 @@ void CConnman::PushMessage(CNode* pnode, CSerializedNetMsg&& msg)
         pnode->AccountForSentBytes(msg.m_type, nTotalSize);
         pnode->nSendSize += nTotalSize;
 
-        if (pnode->nSendSize > nSendBufferMaxSize) pnode->fPauseSend = true;
+        if (pnode->nSendSize > nSendBufferMaxSize && !pnode->fPauseSend) {
+            pnode->m_pause_send_since = GetTime<std::chrono::seconds>();
+            pnode->fPauseSend = true;
+        }
         pnode->vSendMsg.push_back(std::move(serializedHeader));
         if (nMessageSize) pnode->vSendMsg.push_back(std::move(msg.data));
 
